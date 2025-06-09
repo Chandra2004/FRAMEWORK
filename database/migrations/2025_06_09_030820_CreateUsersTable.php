@@ -6,10 +6,17 @@ use {{NAMESPACE}}\App\Schema;
 
 class Migration_2025_06_09_030820_CreateUsersTable
 {
-    public function up()
+     public function up()
     {
         Schema::create('users', function ($table) {
-            // Define columns
+            $table->increments('id');
+            $table->text('name', 100);
+            $table->text('email')->unique();
+            $table->text('password');
+            $table->string('profile_picture')->nullable();
+            $table->boolean('is_active')->default(1);
+            $table->timestamp('created_at');
+            $table->timestamp('updated_at');
         });
     }
 
