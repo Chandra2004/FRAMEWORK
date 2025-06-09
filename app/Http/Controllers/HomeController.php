@@ -124,7 +124,6 @@
 
             $fileName = $userData['profile_picture'];
             if ($deleteProfilePicture && $fileName) {
-                // $uploadDir = dirname(__DIR__, 2) . '/private-uploads/user-pictures/';
                 $uploadDir = dirname(__DIR__, 3) . '/private-uploads/user-pictures/';
                 $filePath = $uploadDir . $fileName;
                 if (file_exists($filePath)) {
@@ -218,7 +217,8 @@
             }
         
             // Pindahkan ke direktori permanen menggunakan ROOT_DIR
-            $uploadDir = ROOT_DIR . '/private-uploads/user-pictures/';
+            // $uploadDir = ROOT_DIR . '/private-uploads/user-pictures/';
+            $uploadDir = dirname(__DIR__, 3) . '/private-uploads/user-pictures/';
             if (!file_exists($uploadDir)) {
                 mkdir($uploadDir, 0777, true);
             }
