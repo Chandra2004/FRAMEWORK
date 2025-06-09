@@ -26,6 +26,8 @@
         "illuminate/view": "^12.17",
         "illuminate/events": "^12.17",
         "illuminate/filesystem": "^12.17",
+        "predis/predis": "^3.0",
+        "spatie/image-optimizer": "^1.8",
         "respect/validation": "^2.4",
         "monolog/monolog": "^3.9",
         "defuse/php-encryption": "^2.4"

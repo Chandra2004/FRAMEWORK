@@ -159,75 +159,100 @@
 
         private function processImage($file, $userId = null) {
             if ($file['error'] !== UPLOAD_ERR_OK) {
-                return new \Exception("Gagal upload gambar.");
+                return new Exception("Failed to upload profile picture");
             }
-
+        
             $allowedExtensions = ['jpg', 'jpeg', 'png'];
             $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
             if (!in_array($ext, $allowedExtensions)) {
-                return new \Exception("Ekstensi file tidak didukung.");
+                return new Exception("Invalid file type");
             }
-
-            $maxFileSize = 2 * 1024 * 1024; // 2MB
+        
+            $maxFileSize = 2 * 1024 * 1024;
             if ($file['size'] > $maxFileSize) {
-                return new \Exception("Ukuran file terlalu besar. Maksimal 2MB.");
+                return new Exception("File size exceeds 2MB limit");
             }
-
-            $mime = mime_content_type($file['tmp_name']);
-            $allowedMimeTypes = ['image/jpeg', 'image/png'];
+        
+            // Validasi MIME type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+        
+            $allowedMimeTypes = ['image/jpeg', 'image/pjpeg', 'image/png'];
             if (!in_array($mime, $allowedMimeTypes)) {
-                return new \Exception("Tipe MIME tidak valid.");
+                return new Exception("Invalid file type.");
             }
-
-            // Buat direktori upload jika belum ada
-            $uploadDir = ROOT_DIR . '/private-uploads/user-pictures/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
+        
+            // Validasi header gambar
+            $fileContent = file_get_contents($file['tmp_name'], false, null, 0, 256);
+            $validHeaders = [
+                'jpg' => "\xFF\xD8\xFF",
+                'jpeg' => "\xFF\xD8\xFF",
+                'png' => "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A"
+            ];
+            if (!isset($validHeaders[$ext]) || strpos($fileContent, $validHeaders[$ext]) !== 0) {
+                return new Exception("Invalid image header.");
             }
-
-            // Buat nama file unik dan path tujuan
-            $fileName = uniqid('img_') . '.webp';
-            $targetPath = $uploadDir . $fileName;
-
-            // Resize dan konversi ke WebP
-            $source = null;
-            if ($ext === 'jpg' || $ext === 'jpeg') {
-                $source = imagecreatefromjpeg($file['tmp_name']);
-            } elseif ($ext === 'png') {
-                $source = imagecreatefrompng($file['tmp_name']);
+        
+            // Direktori sementara untuk sandboxing
+            $tempDir = sys_get_temp_dir() . '/image_upload_' . uniqid() . '/';
+            if (!mkdir($tempDir, 0700, true)) {
+                return new Exception("Failed to create temporary directory.");
             }
-
-            if (!$source) {
-                return new \Exception("Gagal membaca gambar.");
+        
+            $tempPath = $tempDir . basename($file['tmp_name']);
+            if (!move_uploaded_file($file['tmp_name'], $tempPath)) {
+                rmdir($tempDir);
+                return new Exception("Failed to move uploaded file.");
             }
-
-            // Resize jika terlalu lebar
-            $maxWidth = 800;
-            $width = imagesx($source);
-            $height = imagesy($source);
-
-            if ($width > $maxWidth) {
-                $newHeight = intval($height * ($maxWidth / $width));
-                $resized = imagecreatetruecolor($maxWidth, $newHeight);
-                imagecopyresampled($resized, $source, 0, 0, 0, 0, $maxWidth, $newHeight, $width, $height);
-                imagedestroy($source);
-                $source = $resized;
-            }
-
-            // Simpan ke WebP
-            imagewebp($source, $targetPath, 80);
-            imagedestroy($source);
-
-            // Hapus gambar lama (jika ada)
-            if ($userId) {
-                $old = $this->homeModel->getUserDetail($userId)['profile_picture'] ?? null;
-                if ($old && file_exists($uploadDir . $old)) {
-                    unlink($uploadDir . $old);
+        
+            // Validasi metadata menggunakan exiftool (opsional, jika tersedia)
+            if (exec('command -v exiftool')) {
+                $exif = shell_exec("exiftool -j " . escapeshellarg($tempPath));
+                $exifData = json_decode($exif, true);
+                if (isset($exifData[0]['FileType']) && !in_array($exifData[0]['FileType'], ['JPEG', 'PNG'])) {
+                    unlink($tempPath);
+                    rmdir($tempDir);
+                    return new Exception("Invalid image metadata.");
                 }
             }
-
+        
+            // Pindahkan ke direktori permanen menggunakan ROOT_DIR
+            $uploadDir = ROOT_DIR . '/private-uploads/user-pictures/';
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+        
+            $fileName = uniqid() . '.webp';
+            $filePath = $uploadDir . $fileName;
+        
+            // Konversi ke WebP
+            $image = imagecreatefromstring(file_get_contents($tempPath));
+            if (!$image) {
+                unlink($tempPath);
+                rmdir($tempDir);
+                return new Exception("Failed to process the image");
+            }
+        
+            imagewebp($image, $filePath, 70);
+            imagedestroy($image);
+        
+            // Optimasi gambar
+            OptimizerChainFactory::create()->optimize($filePath);
+        
+            // Hapus file sementara
+            unlink($tempPath);
+            rmdir($tempDir);
+        
+            // Hapus gambar lama jika ada
+            if ($userId) {
+                $oldProfilePicture = $this->homeModel->getUserDetail($userId)['profile_picture'] ?? null;
+                if ($oldProfilePicture && file_exists($uploadDir . $oldProfilePicture)) {
+                    unlink($uploadDir . $oldProfilePicture);
+                }
+            }
+        
             return $fileName;
         }
-
     }
 ?>

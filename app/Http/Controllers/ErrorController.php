@@ -17,26 +17,26 @@
             http_response_code(404);
             $model = [];
 
-            View::render('errors.404', $model);
+            View::render('error.404', $model);
         }
         
         function error500() {
             http_response_code(500);
             $model = [];
 
-            View::render('errors.500', $model);
+            View::render('error.500', $model);
         }
 
         function payment() {
             $model = [];
 
-            View::render('errors.payment', $model);
+            View::render('error.payment', $model);
         }
 
         function maintenance() {
             $model = [];
 
-            View::render('errors.maintenance', $model);
+            View::render('error.maintenance', $model);
         }
     }
 ?>
