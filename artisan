@@ -1,7 +1,8 @@
 <?php
     require __DIR__ . '/vendor/autoload.php';
 
-    function output($status, $message) {
+    function output($status, $message)
+    {
         $statusStyle = [
             'success' => ["\033[42;30m", "✔️ "],
             'error'   => ["\033[41;37m", "❌ "],
@@ -19,21 +20,25 @@
         }
     }
 
-    function getInput($prompt, $default = null) {
+    function getInput($prompt, $default = null)
+    {
         echo "$prompt" . ($default ? " [$default]: " : ": ");
         $input = trim(fgets(STDIN));
         return $input ?: $default;
     }
 
-    function validateNamespace($namespace) {
+    function validateNamespace($namespace)
+    {
         return preg_match('/^[a-zA-Z][a-zA-Z0-9\\\\]*[a-zA-Z0-9]$/', $namespace);
     }
 
-    function validateProjectName($name) {
+    function validateProjectName($name)
+    {
         return preg_match('/^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9](([_.]|-{1,2})?[a-z0-9]+)*$/', $name);
     }
 
-    function parseOptions($options) {
+    function parseOptions($options)
+    {
         foreach ($options as $option) {
             if (strpos($option, '--class=') === 0) {
                 return substr($option, 8);
@@ -42,7 +47,8 @@
         return null;
     }
 
-    function getNamespaceFromComposer($directory) {
+    function getNamespaceFromComposer($directory)
+    {
         $composer = json_decode(file_get_contents(__DIR__ . '/composer.json'), true);
         $psr4 = $composer['autoload']['psr-4'] ?? [];
         foreach ($psr4 as $namespace => $path) {
@@ -54,14 +60,15 @@
         exit(1);
     }
 
-    function handleMigration($className = null, $action = 'up') {
+    function handleMigration($className = null, $action = 'up')
+    {
         $migrationDir = __DIR__ . '/database/migrations/';
         $migrationFiles = glob($migrationDir . '*.php');
-    
+
         usort($migrationFiles, function ($a, $b) {
             return strcmp(basename($a), basename($b));
         });
-    
+
         if ($className) {
             $migrationClass = 'Database\\Migrations\\' . $className;
             $file = $migrationDir . $className . '.php';
@@ -111,7 +118,8 @@
         }
     }
 
-    function handleSeeder($className = null) {
+    function handleSeeder($className = null)
+    {
         $seederDir = __DIR__ . '/database/seeders/';
         $seederFiles = glob($seederDir . '*.php');
 
@@ -139,28 +147,30 @@
         }
     }
 
-    function handleServe() {
+    function handleServe()
+    {
         output('info', "Starting development server at http://localhost:8080...");
         $routerFile = __DIR__ . '/server.php';
 
         if (!file_exists($routerFile)) {
             file_put_contents($routerFile, <<<PHP
-    <?php
-    \$path = parse_url(\$_SERVER["REQUEST_URI"], PHP_URL_PATH);
-    \$file = __DIR__ . \$path;
+        <?php
+        \$path = parse_url(\$_SERVER["REQUEST_URI"], PHP_URL_PATH);
+        \$file = __DIR__ . \$path;
 
-    if (\$path !== '/' && file_exists(\$file)) {
-        return false;
-    }
-    require_once __DIR__ . '/index.php';
-    PHP);
+        if (\$path !== '/' && file_exists(\$file)) {
+            return false;
+        }
+        require_once __DIR__ . '/index.php';
+        PHP);
             output('success', "server.php created.");
         }
 
         passthru("php -S localhost:8080 server.php");
     }
 
-    function handleSetup() {
+    function handleSetup()
+    {
         output('info', "Setting up THE-FRAMEWORK...");
 
         // Get and validate project name
@@ -226,7 +236,8 @@
         output('success', "Setup completed. Run 'php artisan migrate' and 'php artisan seed' separately to set up the database.");
     }
 
-    function handleMakeCommand($command, $options) {
+    function handleMakeCommand($command, $options)
+    {
         $type = explode(':', $command)[1] ?? null;
         $name = $options[0] ?? null;
         $force = in_array('--force', $options);
@@ -238,28 +249,37 @@
 
         $basePath = __DIR__;
 
+        // Parse nested namespace and path
+        $nameParts = explode('/', $name);
+        $className = array_pop($nameParts); // Get the last part as class name
+        $subNamespace = implode('\\', $nameParts); // Convert folder structure to namespace
+        $subPath = implode('/', $nameParts); // Convert to path
+
         switch ($type) {
             case 'controller':
-                $path = "$basePath/app/Http/Controllers/{$name}.php";
-                $namespace = getNamespaceFromComposer('app/Http/Controllers');
+                $directory = "app/Http/Controllers/" . ($subPath ? "$subPath/" : '');
+                $path = "$basePath/$directory{$className}.php";
+                $namespace = getNamespaceFromComposer('app/Http/Controllers') . ($subNamespace ? "\\$subNamespace" : '');
                 $appNamespace = getNamespaceFromComposer('app/App');
                 $helpersNamespace = getNamespaceFromComposer('app') . '\\Helpers';
-                $content = "<?php\n\nnamespace $namespace;\n\nuse {$appNamespace}\\{Config, Database, View, CacheManager};\nuse {$helpersNamespace}\\Helper;\nuse Exception;\n\nclass $name\n{\n    public function index()\n    {\n        //\n    }\n}\n";
+                $content = "<?php\n\nnamespace $namespace;\n\nuse {$appNamespace}\\{Config, Database, View, CacheManager};\nuse {$helpersNamespace}\\Helper;\nuse Exception;\n\nclass $className\n{\n    public function Index()\n    {\n        //\n    }\n}\n";
                 break;
 
             case 'model':
-                $path = "$basePath/app/Models/{$name}.php";
-                $namespace = getNamespaceFromComposer('app/Models');
+                $directory = "app/Models/" . ($subPath ? "$subPath/" : '');
+                $path = "$basePath/$directory{$className}.php";
+                $namespace = getNamespaceFromComposer('app/Models') . ($subNamespace ? "\\$subNamespace" : '');
                 $appNamespace = getNamespaceFromComposer('app/App');
-                $content = "<?php\n\nnamespace $namespace;\n\nuse {$appNamespace}\\CacheManager;\nuse {$appNamespace}\\Database;\nuse {$appNamespace}\\Config;\nuse {$appNamespace}\\Logging;\nuse Defuse\\Crypto\\Crypto;\nuse Defuse\\Crypto\\Key;\n\nclass $name extends Database\n{\n    // your code here\n}\n";
+                $content = "<?php\n\nnamespace $namespace;\n\nuse {$appNamespace}\\CacheManager;\nuse {$appNamespace}\\Database;\nuse {$appNamespace}\\Config;\nuse {$appNamespace}\\Logging;\nuse Defuse\\Crypto\\Crypto;\nuse Defuse\\Crypto\\Key;\n\nclass $className extends Database\n{\n    // your code here\n}\n";
                 break;
 
             case 'seeder':
-                $path = "$basePath/database/seeders/{$name}.php";
-                $namespace = getNamespaceFromComposer('database/seeders');
+                $directory = "database/seeders/" . ($subPath ? "$subPath/" : '');
+                $path = "$basePath/$directory{$className}.php";
+                $namespace = getNamespaceFromComposer('database/seeders') . ($subNamespace ? "\\$subNamespace" : '');
                 $appNamespace = getNamespaceFromComposer('app/App');
-                $content = "<?php\n\nnamespace $namespace;\n\nuse {$appNamespace}\\Config;\nuse Defuse\\Crypto\\Crypto;\nuse Defuse\\Crypto\\Key;\nuse Faker\\Factory;\n\nclass $name\n{\n    private \$encryptionKey;\n\n    public function __construct()\n    {\n        Config::loadEnv();\n        \$keyString = Config::get('ENCRYPTION_KEY');\n        if (!\$keyString) {\n            throw new \\Exception('Encryption key not configured.');\n        }\n        \$this->encryptionKey = Key::loadFromAsciiSafeString(\$keyString);\n    }\n\n    public function run()\n    {\n        //\n    }\n}\n";
-                
+                $content = "<?php\n\nnamespace $namespace;\n\nuse {$appNamespace}\\Config;\nuse Defuse\\Crypto\\Crypto;\nuse Defuse\\Crypto\\Key;\nuse Faker\\Factory;\n\nclass $className\n{\n    private \$encryptionKey;\n\n    public function __construct()\n    {\n        Config::loadEnv();\n        \$keyString = Config::get('ENCRYPTION_KEY');\n        if (!\$keyString) {\n            throw new \\Exception('Encryption key not configured.');\n        }\n        \$this->encryptionKey = Key::loadFromAsciiSafeString(\$keyString);\n    }\n\n    public function run()\n    {\n        //\n    }\n}\n";
+
                 if (file_exists($path) && !$force) {
                     output('error', "File already exists at $path. Use --force to overwrite.");
                     return;
@@ -270,9 +290,10 @@
                 file_put_contents($path, $content);
                 output('success', "Seeder created successfully: " . str_replace($basePath . '/', '', $path));
 
-                $modelSeederName = str_replace('Seeder', '', $name);
-                $modelSeederPath = "$basePath/app/Models/Seeders/{$modelSeederName}.php";
-                $modelSeederNamespace = getNamespaceFromComposer('app/Models/Seeders');
+                $modelSeederName = str_replace('Seeder', '', $className);
+                $modelSeederDirectory = "app/Models/Seeders/" . ($subPath ? "$subPath/" : '');
+                $modelSeederPath = "$basePath/$modelSeederDirectory{$modelSeederName}.php";
+                $modelSeederNamespace = getNamespaceFromComposer('app/Models/Seeders') . ($subNamespace ? "\\$subNamespace" : '');
                 $tableName = strtolower($modelSeederName);
                 $modelSeederContent = "<?php\n\nnamespace $modelSeederNamespace;\n\nuse {$appNamespace}\\Database;\n\nclass $modelSeederName\n{\n    protected static Database \$db;\n\n    public static function create(array \$data)\n    {\n        self::\$db = Database::getInstance();\n        \$columns = implode(\", \", array_keys(\$data));\n        \$placeholders = \":\" . implode(\", :\", array_keys(\$data));\n\n        \$sql = \"INSERT INTO {$tableName} (\$columns) VALUES (\$placeholders)\";\n        self::\$db->query(\$sql);\n\n        foreach (\$data as \$key => \$value) {\n            self::\$db->bind(\":\$key\", \$value);\n        }\n\n        return self::\$db->execute();\n    }\n}\n";
 
@@ -289,19 +310,21 @@
 
             case 'migration':
                 $timestamp = date('Y_m_d_His');
-                $migrationFileName = "{$timestamp}_{$name}";
-                $path = "$basePath/database/migrations/{$migrationFileName}.php";
-                $namespace = getNamespaceFromComposer('database/migrations');
+                $migrationFileName = "{$timestamp}_{$className}";
+                $directory = "database/migrations/" . ($subPath ? "$subPath/" : '');
+                $path = "$basePath/$directory{$migrationFileName}.php";
+                $namespace = getNamespaceFromComposer('database/migrations') . ($subNamespace ? "\\$subNamespace" : '');
                 $appNamespace = getNamespaceFromComposer('app/App');
-                $tableName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', str_replace(['Create', 'Table'], '', $name)));
+                $tableName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', str_replace(['Create', 'Table'], '', $className)));
                 $content = "<?php\n\nnamespace $namespace;\n\nuse {$appNamespace}\\Schema;\n\nclass Migration_{$migrationFileName}\n{\n    public function up()\n    {\n        Schema::create('{$tableName}', function (\$table) {\n            // Define columns\n        });\n    }\n\n    public function down()\n    {\n        Schema::dropIfExists('{$tableName}');\n    }\n}\n";
                 break;
 
             case 'middleware':
-                $path = "$basePath/app/Middleware/{$name}.php";
-                $namespace = getNamespaceFromComposer('app/Middleware');
+                $directory = "app/Middleware/" . ($subPath ? "$subPath/" : '');
+                $path = "$basePath/$directory{$className}.php";
+                $namespace = getNamespaceFromComposer('app/Middleware') . ($subNamespace ? "\\$subNamespace" : '');
                 $middlewareNamespace = getNamespaceFromComposer('app/Middleware');
-                $content = "<?php\n\nnamespace $namespace;\n\nuse {$middlewareNamespace}\\Middleware;\n\nclass $name implements Middleware\n{\n    public function before()\n    {\n        //\n    }\n}\n";
+                $content = "<?php\n\nnamespace $namespace;\n\nuse {$middlewareNamespace}\\Middleware;\n\nclass $className implements Middleware\n{\n    public function before()\n    {\n        //\n    }\n}\n";
                 break;
 
             default:
@@ -322,7 +345,8 @@
         output('success', ucfirst($type) . " created successfully: " . str_replace($basePath . '/', '', $path));
     }
 
-    function handleGenerateAppKey() {
+    function handleGenerateAppKey()
+    {
         output('info', 'Generating APP_KEY...');
 
         $newKey = bin2hex(random_bytes(32));
