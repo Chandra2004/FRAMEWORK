@@ -35,7 +35,23 @@
 
         public static function request($key = null, $default = null) {
             $requestData = array_merge($_GET, $_POST);
-            return $key === null ? $requestData : ($requestData[$key] ?? $default);
+            return new class($requestData) {
+                private $data;
+    
+                public function __construct($data) {
+                    $this->data = $data;
+                }
+    
+                public function get($key = null, $default = null) {
+                    return $key === null ? $this->data : ($this->data[$key] ?? $default);
+                }
+    
+                public function is($pattern) {
+                    $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+                    $pattern = str_replace('*', '.*', $pattern);
+                    return preg_match("#^/?" . ltrim($pattern, '/') . "$#", $currentPath);
+                }
+            };
         }
 
         public static function set_flash($key, $message) {
