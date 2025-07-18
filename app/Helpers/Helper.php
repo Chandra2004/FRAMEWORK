@@ -141,15 +141,18 @@
             return '0.0.0.0';
         }
 
-        public static function generateUUID() {
-            return sprintf(
-                '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-                mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-                mt_rand(0, 0xffff),
-                mt_rand(0, 0x0fff) | 0x4000,
-                mt_rand(0, 0x3fff) | 0x8000,
-                mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-            );
+        public static function generateUUID(int $length = 36) {
+            $length = max(1, min($length, 128));
+            
+            $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            $charLength = strlen($characters);
+
+            $uuid = '';
+            for ($i = 0; $i < $length; $i++) {
+                $uuid .= $characters[random_int(0, $charLength - 1)];
+            }
+
+            return $uuid;
         }
     }
 ?>
