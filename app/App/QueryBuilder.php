@@ -126,11 +126,11 @@ class QueryBuilder
     public function toSql(): string
     {
         $sql = "SELECT {$this->columns} FROM {$this->table}";
-    
+
         if (!empty($this->joins)) {
             $sql .= " " . implode(" ", $this->joins);
         }
-    
+
         $conditions = [];
         if (!empty($this->wheres)) {
             $whereClauses = [];
@@ -143,25 +143,25 @@ class QueryBuilder
             }
             $conditions[] = implode(" AND ", $whereClauses);
         }
-    
+
         if (!empty($this->searches)) {
             $conditions[] = implode(" AND ", $this->searches);
         }
-    
+
         if (!empty($conditions)) {
             $sql .= " WHERE " . implode(" AND ", $conditions);
         }
-    
+
         if (!empty($this->groupBy)) {
             $sql .= " GROUP BY " . implode(", ", $this->groupBy);
         }
-    
+
         if (!empty($this->orderBy)) {
             $sql .= " ORDER BY " . implode(", ", $this->orderBy);
         }
-    
+
         return $sql;
-    }    
+    }
 
     /* -------------------------------
        EXECUTION HELPERS
@@ -264,6 +264,29 @@ class QueryBuilder
             'type' => 'raw',
             'condition' => $condition
         ];
+        return $this;
+    }
+
+    public function orWhere(string $column, string $operator, $value)
+    {
+        $param = ":where_" . count($this->bindings);
+
+        if (strpos($column, '.') !== false) {
+            $condition = "$column $operator $param";
+        } else {
+            $condition = "`$column` $operator $param";
+        }
+
+        $this->bindings[$param] = $value;
+
+        // kalau ada where sebelumnya → pakai OR
+        if (!empty($this->wheres)) {
+            $last = array_pop($this->wheres);
+            $this->wheres[] = "($last OR $condition)";
+        } else {
+            $this->wheres[] = $condition;
+        }
+
         return $this;
     }
 }
