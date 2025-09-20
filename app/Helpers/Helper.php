@@ -377,4 +377,10 @@ class Helper
         self::ensureSession();
         return isset($_SESSION['user']['role_name']) && $_SESSION['user']['role_name'] === $role;
     }
+
+    public static function authToken($data) {
+        $_SESSION['auth_token'] = hash('sha256', $data . Config::get('APP_KEY'));
+        // return $_SESSION['auth_token'];
+    }
 }
+
