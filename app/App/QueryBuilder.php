@@ -9,6 +9,9 @@ class QueryBuilder
     private $columns = "*";
     private $wherePairs = [];
 
+    private $limit;
+    private $offset;
+
     private $wheres = [];
     private $searches = [];
     private $joins = [];
@@ -136,9 +139,9 @@ class QueryBuilder
             $whereClauses = [];
             foreach ($this->wheres as $w) {
                 if (is_array($w) && isset($w['type']) && $w['type'] === 'raw') {
-                    $whereClauses[] = $w['condition']; // ambil kondisi raw
+                    $whereClauses[] = $w['condition'];
                 } else {
-                    $whereClauses[] = $w; // ambil string biasa
+                    $whereClauses[] = $w;
                 }
             }
             $conditions[] = implode(" AND ", $whereClauses);
@@ -158,6 +161,14 @@ class QueryBuilder
 
         if (!empty($this->orderBy)) {
             $sql .= " ORDER BY " . implode(", ", $this->orderBy);
+        }
+
+        // 👉 tambahkan di sini
+        if (!is_null($this->limit)) {
+            $sql .= " LIMIT {$this->limit}";
+            if (!is_null($this->offset) && $this->offset > 0) {
+                $sql .= " OFFSET {$this->offset}";
+            }
         }
 
         return $sql;
@@ -287,6 +298,13 @@ class QueryBuilder
             $this->wheres[] = $condition;
         }
 
+        return $this;
+    }
+
+    public function limit(int $limit, int $offset = 0)
+    {
+        $this->limit = $limit;
+        $this->offset = $offset;
         return $this;
     }
 }
