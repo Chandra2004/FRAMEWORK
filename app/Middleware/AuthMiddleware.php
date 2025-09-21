@@ -14,23 +14,25 @@ class AuthMiddleware implements Middleware
             SessionManager::startSecureSession();
         }
 
-        if (!isset($_SESSION['user_id']) || !isset($_SESSION['auth_token'])) {
-            return Helper::redirect('/login', 'warning', 'User unauthenticated');
+        if (!isset($_SESSION['user']['uid']) || !isset($_SESSION['auth_token'])) {
+            Helper::redirect('/login', 'error', 'You must be logged in to access this page.');
+            exit();
         }
 
         // Validasi token autentikasi
         $storedToken = $_SESSION['auth_token'];
-        $expectedToken = hash('sha256', $_SESSION['user_id'] . Config::get('APP_KEY') . $_SESSION['last_activity']);
+        $expectedToken = hash('sha256', $_SESSION['user']['uid'] . Config::get('APP_KEY'));
         if (!hash_equals($storedToken, $expectedToken)) {
+            error_log("AuthMiddleware: Token mismatch - Stored: $storedToken, Expected: $expectedToken");
             SessionManager::destroySession();
-            return Helper::redirect('/login', 'warning', 'Invalid token');
+            Helper::redirect('/login', 'error', 'Invalid authentication token.');
+            exit();
         }
 
-        // Validasi waktu kedaluwarsa (contoh: 1 jam)
-        $sessionTimeout = 3600;
-        if (time() - ($_SESSION['last_activity'] ?? 0) > $sessionTimeout) {
+        if (empty($_SESSION['auth_token']) || empty($_SESSION['user']['uid'])) {
             SessionManager::destroySession();
-            return Helper::redirect('/login', 'warning', 'Session expired');
+            Helper::redirect('/login', 'error', 'You must be logged in to access this page.');
+            exit();
         }
     }
 }
