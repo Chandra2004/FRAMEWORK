@@ -273,4 +273,14 @@ class Blueprint
         }
         return $this;
     }
+
+    public function fullText(array $columns, $indexName = null)
+    {
+        $cols = implode("`, `", $columns);
+        if (!$indexName) {
+            $indexName = "ft_" . implode("_", $columns);
+        }
+        $this->columns[] = "FULLTEXT KEY `$indexName` (`$cols`)";
+        return $this;
+    }
 }
