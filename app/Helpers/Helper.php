@@ -108,10 +108,15 @@ class Helper
         return $_SESSION[$key] ?? $default;
     }
 
-    public static function session_write($key, $value)
+    public static function session_write($key, $value, $overwrite = false)
     {
         self::ensureSession();
-        $_SESSION[$key] = $value;
+
+        if ($overwrite || !isset($_SESSION[$key])) {
+            $_SESSION[$key] = $value;
+        } else {
+            $_SESSION[$key] = array_merge($_SESSION[$key], $value);
+        }
     }
 
     public static function session_destroy_all()
