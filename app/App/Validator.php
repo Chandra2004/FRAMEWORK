@@ -157,10 +157,32 @@ class Validator
 
     protected function validate_regex(string $field, string $label, $value, $param): void
     {
-        if (!empty($value) && !preg_match($param, $value)) {
-            $this->addError($field, 'regex', "{$label} tidak sesuai format.");
+        if (empty($value)) {
+            return;
         }
-    }
+    
+        // Bungkus otomatis jika tidak pakai delimiter
+        if ($param[0] !== '/' || substr($param, -1) !== '/') {
+            $param = '/' . $param . '/';
+        }
+    
+        // Validasi regex dengan try-catch dan preg_match langsung ke value
+        try {
+            $result = @preg_match($param, $value);
+    
+            if ($result === false) {
+                throw new \RuntimeException("Invalid regex pattern");
+            }
+    
+            if ($result === 0) {
+                $this->addError($field, 'regex', "{$label} tidak sesuai format.");
+            }
+    
+        } catch (\Throwable $e) {
+            $this->addError($field, 'regex', "Regex untuk {$label} tidak valid.");
+        }
+    }    
+       
 
     protected function validate_date(string $field, string $label, $value, $param = null): void
     {
