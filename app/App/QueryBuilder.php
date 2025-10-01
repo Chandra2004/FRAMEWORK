@@ -18,10 +18,20 @@ class QueryBuilder
     private $groupBy = [];
     private $orderBy = [];
     private $bindings = [];
+    private $withRelations = [];
+
+    /** @var Model */
+    private $model;
 
     public function __construct(Database $db)
     {
         $this->db = $db;
+    }
+
+    public function setModel($model)
+    {
+        $this->model = $model;
+        return $this;
     }
 
     public function table(string $table)
@@ -37,23 +47,18 @@ class QueryBuilder
     }
 
     /* -------------------------------
-       BASIC WHERE / FILTER CONDITION
+       WHERE
     --------------------------------*/
-
     public function where(string $column, string $operator, $value)
     {
         $param = ":where_" . count($this->bindings);
 
-        // kalau ada dot, misal "user_course.user_uid"
-        if (strpos($column, '.') !== false) {
-            $this->wheres[] = "$column $operator $param";
-        } else {
-            $this->wheres[] = "`$column` $operator $param";
-        }
+        $this->wheres[] = (strpos($column, '.') !== false)
+            ? "$column $operator $param"
+            : "`$column` $operator $param";
 
         $this->bindings[$param] = $value;
 
-        // hanya simpan ke wherePairs untuk update/delete kalau TIDAK pakai dot
         if ($operator === '=' && strpos($column, '.') === false) {
             $this->wherePairs[$column] = $value;
         }
@@ -61,26 +66,26 @@ class QueryBuilder
         return $this;
     }
 
-
-
     public function filter(string $column, $value)
     {
         return $this->where($column, '=', $value);
     }
 
     /* -------------------------------
-       SEARCH & FULLTEXT SEARCH
+       SEARCH
     --------------------------------*/
     public function search(array $columns, string $keyword)
     {
         if (!$keyword) return $this;
-        $param = ":search_" . count($this->bindings);
+
         $likeClauses = [];
-        foreach ($columns as $col) {
+        foreach ($columns as $i => $col) {
+            $param = ":search_" . (count($this->bindings) + $i);
             $likeClauses[] = "`$col` LIKE $param";
+            $this->bindings[$param] = "%$keyword%";
         }
+
         $this->searches[] = "(" . implode(" OR ", $likeClauses) . ")";
-        $this->bindings[$param] = "%$keyword%";
         return $this;
     }
 
@@ -95,14 +100,12 @@ class QueryBuilder
     }
 
     /* -------------------------------
-       JOIN SUPPORT (MULTIPLE)
+       JOIN
     --------------------------------*/
     public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER')
     {
         $type = strtoupper($type);
-        if (!in_array($type, ['INNER', 'LEFT', 'RIGHT'])) {
-            $type = 'INNER';
-        }
+        if (!in_array($type, ['INNER', 'LEFT', 'RIGHT'])) $type = 'INNER';
         $this->joins[] = "$type JOIN $table ON $first $operator $second";
         return $this;
     }
@@ -118,52 +121,63 @@ class QueryBuilder
 
     public function orderBy(string $column, string $direction = 'ASC')
     {
-        $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
-        $this->orderBy[] = "$column $direction";
+        $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+        $this->orderBy[] = "$column $dir";
         return $this;
     }
 
     /* -------------------------------
-       BUILD SQL STRING
+       SQL Builder
     --------------------------------*/
     public function toSql(): string
     {
         $sql = "SELECT {$this->columns} FROM {$this->table}";
 
+        // JOIN
         if (!empty($this->joins)) {
             $sql .= " " . implode(" ", $this->joins);
         }
 
+        // WHERE
         $conditions = [];
+
         if (!empty($this->wheres)) {
             $whereClauses = [];
             foreach ($this->wheres as $w) {
                 if (is_array($w) && isset($w['type']) && $w['type'] === 'raw') {
+                    // whereRaw
                     $whereClauses[] = $w['condition'];
                 } else {
+                    // normal where/orWhere
                     $whereClauses[] = $w;
                 }
             }
-            $conditions[] = implode(" AND ", $whereClauses);
+            if (!empty($whereClauses)) {
+                $conditions[] = implode(" AND ", $whereClauses);
+            }
         }
 
+        // SEARCH
         if (!empty($this->searches)) {
             $conditions[] = implode(" AND ", $this->searches);
         }
 
+        // gabungkan semua kondisi
         if (!empty($conditions)) {
             $sql .= " WHERE " . implode(" AND ", $conditions);
         }
 
+        // GROUP BY
         if (!empty($this->groupBy)) {
             $sql .= " GROUP BY " . implode(", ", $this->groupBy);
         }
 
+        // ORDER BY
         if (!empty($this->orderBy)) {
             $sql .= " ORDER BY " . implode(", ", $this->orderBy);
         }
 
-        // 👉 tambahkan di sini
+        // LIMIT + OFFSET
         if (!is_null($this->limit)) {
             $sql .= " LIMIT {$this->limit}";
             if (!is_null($this->offset) && $this->offset > 0) {
@@ -174,25 +188,40 @@ class QueryBuilder
         return $sql;
     }
 
+
     /* -------------------------------
-       EXECUTION HELPERS
+       EXECUTION
     --------------------------------*/
     public function get()
     {
         $sql = $this->toSql();
         $this->db->query($sql);
+
         foreach ($this->bindings as $param => $value) {
             $this->db->bind($param, $value);
         }
-        return $this->db->resultSet();
+
+        $results = $this->db->resultSet();
+
+        // eager load
+        if (!empty($this->withRelations) && $this->model) {
+            foreach ($results as &$row) {
+                foreach ($this->withRelations as $relation) {
+                    if (method_exists($this->model, $relation)) {
+                        $row[$relation] = $this->model->{$relation}($row);
+                    }
+                }
+            }
+        }
+
+        return $results;
     }
 
     public function first()
     {
-        $results = $this->get();
+        $results = $this->limit(1)->get();
         return $results[0] ?? null;
     }
-
 
     public function insert(array $data)
     {
@@ -215,25 +244,25 @@ class QueryBuilder
         return $this->db->delete($this->table, $this->wherePairs);
     }
 
-
     /* -------------------------------
-       PAGINATION SUPPORT
+       PAGINATION
     --------------------------------*/
     public function paginate(int $perPage = 10, int $page = 1): array
     {
         $offset = ($page - 1) * $perPage;
 
-        // Query data
         $sql = $this->toSql() . " LIMIT :limit OFFSET :offset";
         $this->db->query($sql);
+
         foreach ($this->bindings as $param => $value) {
             $this->db->bind($param, $value);
         }
+
         $this->db->bind(':limit', $perPage);
         $this->db->bind(':offset', $offset);
+
         $data = $this->db->resultSet();
 
-        // Query hitung total data
         $countSql = "SELECT COUNT(*) as total FROM ({$this->toSql()}) as sub";
         $this->db->query($countSql);
         foreach ($this->bindings as $param => $value) {
@@ -253,8 +282,8 @@ class QueryBuilder
     public function count(): int
     {
         $sql = "SELECT COUNT(*) as total FROM ({$this->toSql()}) as sub";
-
         $this->db->query($sql);
+
         foreach ($this->bindings as $param => $value) {
             $this->db->bind($param, $value);
         }
@@ -263,6 +292,9 @@ class QueryBuilder
         return (int) ($result['total'] ?? 0);
     }
 
+    /* -------------------------------
+       EXTRA HELPERS
+    --------------------------------*/
     public function whereRaw(string $condition, array $bindings = [])
     {
         foreach ($bindings as $i => $value) {
@@ -271,26 +303,19 @@ class QueryBuilder
             $this->bindings[$key] = $value;
         }
 
-        $this->wheres[] = [
-            'type' => 'raw',
-            'condition' => $condition
-        ];
+        $this->wheres[] = ['type' => 'raw', 'condition' => $condition];
         return $this;
     }
 
     public function orWhere(string $column, string $operator, $value)
     {
         $param = ":where_" . count($this->bindings);
-
-        if (strpos($column, '.') !== false) {
-            $condition = "$column $operator $param";
-        } else {
-            $condition = "`$column` $operator $param";
-        }
+        $condition = (strpos($column, '.') !== false)
+            ? "$column $operator $param"
+            : "`$column` $operator $param";
 
         $this->bindings[$param] = $value;
 
-        // kalau ada where sebelumnya → pakai OR
         if (!empty($this->wheres)) {
             $last = array_pop($this->wheres);
             $this->wheres[] = "($last OR $condition)";
@@ -305,6 +330,12 @@ class QueryBuilder
     {
         $this->limit = $limit;
         $this->offset = $offset;
+        return $this;
+    }
+
+    public function with(array $relations)
+    {
+        $this->withRelations = $relations;
         return $this;
     }
 }
