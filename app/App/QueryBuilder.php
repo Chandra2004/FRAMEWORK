@@ -47,7 +47,7 @@ class QueryBuilder
     }
 
     /* -------------------------------
-       WHERE
+    WHERE
     --------------------------------*/
     public function where(string $column, string $operator, $value)
     {
@@ -72,7 +72,7 @@ class QueryBuilder
     }
 
     /* -------------------------------
-       SEARCH
+    SEARCH
     --------------------------------*/
     public function search(array $columns, string $keyword)
     {
@@ -89,18 +89,8 @@ class QueryBuilder
         return $this;
     }
 
-    public function fulltextSearch(array $columns, string $keyword)
-    {
-        if (!$keyword) return $this;
-        $cols = implode(", ", $columns);
-        $param = ":ft_" . count($this->bindings);
-        $this->searches[] = "MATCH($cols) AGAINST ($param IN NATURAL LANGUAGE MODE)";
-        $this->bindings[$param] = $keyword;
-        return $this;
-    }
-
     /* -------------------------------
-       JOIN
+    JOIN
     --------------------------------*/
     public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER')
     {
@@ -111,7 +101,7 @@ class QueryBuilder
     }
 
     /* -------------------------------
-       GROUP BY / ORDER BY
+    GROUP BY / ORDER BY
     --------------------------------*/
     public function groupBy($columns)
     {
@@ -126,58 +116,46 @@ class QueryBuilder
         return $this;
     }
 
+    public function orderByRaw(string $expression)
+{
+    $this->orderBy[] = $expression;
+    return $this;
+}
+
+
     /* -------------------------------
-       SQL Builder
+    SQL Builder
     --------------------------------*/
     public function toSql(): string
     {
         $sql = "SELECT {$this->columns} FROM {$this->table}";
 
-        // JOIN
         if (!empty($this->joins)) {
             $sql .= " " . implode(" ", $this->joins);
         }
 
-        // WHERE
         $conditions = [];
 
         if (!empty($this->wheres)) {
-            $whereClauses = [];
-            foreach ($this->wheres as $w) {
-                if (is_array($w) && isset($w['type']) && $w['type'] === 'raw') {
-                    // whereRaw
-                    $whereClauses[] = $w['condition'];
-                } else {
-                    // normal where/orWhere
-                    $whereClauses[] = $w;
-                }
-            }
-            if (!empty($whereClauses)) {
-                $conditions[] = implode(" AND ", $whereClauses);
-            }
+            $conditions[] = implode(" AND ", $this->wheres);
         }
 
-        // SEARCH
         if (!empty($this->searches)) {
             $conditions[] = implode(" AND ", $this->searches);
         }
 
-        // gabungkan semua kondisi
         if (!empty($conditions)) {
             $sql .= " WHERE " . implode(" AND ", $conditions);
         }
 
-        // GROUP BY
         if (!empty($this->groupBy)) {
             $sql .= " GROUP BY " . implode(", ", $this->groupBy);
         }
 
-        // ORDER BY
         if (!empty($this->orderBy)) {
             $sql .= " ORDER BY " . implode(", ", $this->orderBy);
         }
 
-        // LIMIT + OFFSET
         if (!is_null($this->limit)) {
             $sql .= " LIMIT {$this->limit}";
             if (!is_null($this->offset) && $this->offset > 0) {
@@ -188,9 +166,8 @@ class QueryBuilder
         return $sql;
     }
 
-
     /* -------------------------------
-       EXECUTION
+    EXECUTION
     --------------------------------*/
     public function get()
     {
@@ -203,15 +180,8 @@ class QueryBuilder
 
         $results = $this->db->resultSet();
 
-        // eager load
-        if (!empty($this->withRelations) && $this->model) {
-            foreach ($results as &$row) {
-                foreach ($this->withRelations as $relation) {
-                    if (method_exists($this->model, $relation)) {
-                        $row[$relation] = $this->model->{$relation}($row);
-                    }
-                }
-            }
+        if ($this->model) {
+            return $this->model->loadRelations($results, $this->withRelations);
         }
 
         return $results;
@@ -245,7 +215,7 @@ class QueryBuilder
     }
 
     /* -------------------------------
-       PAGINATION
+    PAGINATION
     --------------------------------*/
     public function paginate(int $perPage = 10, int $page = 1): array
     {
@@ -270,6 +240,11 @@ class QueryBuilder
         }
         $total = $this->db->single()['total'];
 
+        // eager load juga
+        if ($this->model) {
+            $data = $this->model->loadRelations($data, $this->withRelations);
+        }
+
         return [
             'data' => $data,
             'total' => $total,
@@ -293,7 +268,7 @@ class QueryBuilder
     }
 
     /* -------------------------------
-       EXTRA HELPERS
+    EXTRA HELPERS
     --------------------------------*/
     public function whereRaw(string $condition, array $bindings = [])
     {
@@ -303,7 +278,7 @@ class QueryBuilder
             $this->bindings[$key] = $value;
         }
 
-        $this->wheres[] = ['type' => 'raw', 'condition' => $condition];
+        $this->wheres[] = $condition;
         return $this;
     }
 
@@ -333,9 +308,28 @@ class QueryBuilder
         return $this;
     }
 
+    /* -------------------------------
+    EAGER LOADING
+    --------------------------------*/
     public function with(array $relations)
     {
         $this->withRelations = $relations;
+
+        if ($this->model) {
+            $this->model->with($relations);
+        }
+
         return $this;
     }
+
+    public function all()
+    {
+        return $this->get();
+    }
+
+    public function map(callable $callback): array
+{
+    $results = $this->get();
+    return array_map($callback, $results);
+}
 }
