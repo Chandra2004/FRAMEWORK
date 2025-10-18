@@ -3,6 +3,7 @@
 namespace TheFramework\App;
 
 use ReflectionClass;
+use Exception;
 
 abstract class Model
 {
@@ -11,8 +12,7 @@ abstract class Model
     protected $db;
     protected $builder;
 
-    // relasi
-    protected $relations = [];
+    /** 🔹 Relasi eager loading */
     protected $with = [];
 
     public function __construct()
@@ -20,137 +20,185 @@ abstract class Model
         $this->db = Database::getInstance();
         $this->builder = (new QueryBuilder($this->db))->setModel($this);
 
+        // otomatis deteksi nama tabel dari nama class model
         if (empty($this->table)) {
             $class = (new ReflectionClass($this))->getShortName();
             $this->table = strtolower(preg_replace('/Model$/', '', $class));
         }
     }
 
-    /**
-     * QueryBuilder Instance
-     */
+    /* ==================================================
+       🔹 QUERY BUILDER WRAPPER
+    ================================================== */
+
     public function query(): QueryBuilder
     {
-        return (new QueryBuilder(Database::getInstance()))
+        return (new QueryBuilder($this->db))
             ->table($this->table)
             ->setModel($this);
     }
 
-    /**
-     * Ambil semua data (+ eager load relasi jika ada)
-     */
     public function all()
     {
         $results = $this->query()->with($this->with)->get();
-        return $this->loadRelations($results);
+        return $this->loadRelations($results, $this->with);
     }
 
-    /**
-     * Find by primary key
-     */
     public function find($id)
     {
         $result = $this->query()
             ->where($this->primaryKey, '=', $id)
-            ->with($this->with)
             ->first();
 
-        return $result ? $this->loadRelations([$result])[0] : null;
+        if (!$result) return null;
+
+        return $this->loadRelations([$result], $this->with)[0];
     }
 
-    /**
-     * Where sederhana
-     */
     public function where($column, $value)
     {
         $results = $this->query()
             ->where($column, '=', $value)
-            ->with($this->with)
             ->get();
 
-        return $this->loadRelations($results);
+        return $this->loadRelations($results, $this->with);
     }
 
-    /**
-     * Insert
-     */
     public function insert(array $data)
     {
         return $this->query()->insert($data);
     }
 
-    /**
-     * Update
-     */
     public function update(array $data, $id)
     {
-        return $this->query()->where($this->primaryKey, '=', $id)->update($data);
+        return $this->query()
+            ->where($this->primaryKey, '=', $id)
+            ->update($data);
     }
 
-    /**
-     * Delete
-     */
     public function delete($id)
     {
-        return $this->query()->where($this->primaryKey, '=', $id)->delete();
+        return $this->query()
+            ->where($this->primaryKey, '=', $id)
+            ->delete();
     }
 
-    /**
-     * Pagination
-     */
     public function paginate(int $perPage = 10, int $page = 1)
     {
         return $this->query()->paginate($perPage, $page);
     }
 
     /* ==================================================
-       🔹 Bagian RELASI ala Laravel
+       🔹 RELASI MIRIP LARAVEL
     ================================================== */
 
-    public function hasMany(string $related, string $foreignKey, $localValue)
+    protected function hasMany($related, $foreignKey, $localKey = null)
     {
-        $instance = new $related();
-        return $instance->query()->where($foreignKey, '=', $localValue);
+        $localKey = $localKey ?? $this->primaryKey;
+        return new Relation('hasMany', $this, $related, $foreignKey, $localKey);
     }
 
-    public function belongsTo(string $related, string $foreignKey, string $ownerKey = 'id')
+    protected function belongsTo($related, $foreignKey, $ownerKey = 'id')
     {
-        $instance = new $related();
-        return $instance->query()->where($ownerKey, '=', $this->{$foreignKey});
+        return new Relation('belongsTo', $this, $related, $foreignKey, $ownerKey);
     }
 
-    public function hasOne(string $related, string $foreignKey, string $localKey = 'id')
+    protected function hasOne($related, $foreignKey, $localKey = null)
     {
-        $instance = new $related();
-        return $instance->query()->where($foreignKey, '=', $this->{$localKey});
+        $localKey = $localKey ?? $this->primaryKey;
+        return new Relation('hasOne', $this, $related, $foreignKey, $localKey);
     }
 
-    /**
-     * Eager Load dengan ->with()
-     */
+    /** 🔹 Tambahkan eager load relations */
     public function with(array $relations)
     {
         $this->with = $relations;
         return $this;
     }
 
-    /**
-     * Loader untuk relasi (mirip eager loading di Laravel)
-     */
-    private function loadRelations(array $results)
-    {
-        if (empty($this->with) || empty($results)) return $results;
+    /* ==================================================
+       🔹 NESTED EAGER LOADING (ala Laravel)
+    ================================================== */
 
-        foreach ($this->with as $relation) {
+    public function loadRelations(array $results, array $relations = [])
+    {
+        $relations = !empty($relations) ? $relations : $this->with;
+        if (empty($relations) || empty($results)) return $results;
+
+        // 🔹 Kelompokkan relasi: sessions.participants.user → [ sessions => [ participants.user ] ]
+        $grouped = [];
+        foreach ($relations as $relation) {
+            if (strpos($relation, '.') !== false) {
+                [$rel, $nested] = explode('.', $relation, 2);
+                $grouped[$rel][] = $nested;
+            } else {
+                $grouped[$relation] = [];
+            }
+        }
+
+        foreach ($grouped as $relation => $nestedRels) {
             if (!method_exists($this, $relation)) {
                 throw new \Exception("Relasi $relation tidak ditemukan di " . get_class($this));
             }
 
+            $relationObj = $this->$relation();
+            if (!$relationObj instanceof Relation) {
+                throw new \Exception("Method relasi '$relation' tidak mengembalikan Relation");
+            }
+
             foreach ($results as &$result) {
-                $result[$relation] = $this->{$relation}($result);
+                $relatedData = $relationObj->getResults($result);
+                if ($relatedData === null) $relatedData = [];
+
+                // 🔹 Jika ada nested, maka load lebih dalam
+                if (!empty($nestedRels)) {
+                    $relatedModel = new $relationObj->related();
+                    $relatedModel->with($nestedRels);
+                    $relatedData = $relatedModel->loadRelations(
+                        is_array($relatedData) ? $relatedData : [$relatedData],
+                        $nestedRels
+                    );
+                }
+
+                // 🔹 Merge (bukan overwrite)
+                if (!isset($result[$relation])) {
+                    $result[$relation] = $relatedData;
+                } else {
+                    if (is_array($result[$relation]) && is_array($relatedData)) {
+                        $result[$relation] = array_merge_recursive($result[$relation], $relatedData);
+                    } else {
+                        $result[$relation] = $relatedData;
+                    }
+                }
             }
         }
 
         return $results;
+    }
+
+    /* ==================================================
+       🔹 HELPER
+    ================================================== */
+
+    private function getRelationClass(string $relation)
+    {
+        $relationObj = $this->$relation();
+        if ($relationObj instanceof Relation) {
+            return $relationObj->related;
+        }
+        throw new Exception("Tidak bisa menentukan class model untuk relasi '$relation'");
+    }
+
+    public function __get($name)
+    {
+        if (method_exists($this, $name)) {
+            return $this->$name();
+        }
+
+        if (property_exists($this, $name)) {
+            return $this->$name;
+        }
+
+        throw new Exception("Property atau relasi '$name' tidak ditemukan di " . get_class($this));
     }
 }
