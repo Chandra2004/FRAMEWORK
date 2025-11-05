@@ -8,11 +8,9 @@ use Exception;
 
 class Router
 {
-    private static array $routes = [];             // Routes runtime
-    private static array $routeDefinitions = [];   // Routes cache
+    private static array $routes = [];
+    private static array $routeDefinitions = [];
     private static bool $routeFound = false;
-
-    // Tambahan: stack untuk group
     private static array $groupStack = [];
 
     /**
@@ -23,7 +21,7 @@ class Router
         $prefix = '';
         $groupMiddlewares = [];
 
-        // Gabungkan prefix dan middleware dari semua group aktif
+    
         foreach (self::$groupStack as $group) {
             if (!empty($group['prefix'])) {
                 $prefix .= rtrim($group['prefix'], '/');
@@ -33,17 +31,13 @@ class Router
             }
         }
 
-        // Pastikan path ada '/' jika perlu
         $fullPath = $prefix . $path;
 
-        // Gabungkan middleware dari group dan route
         $middlewares = array_merge($groupMiddlewares, $middlewares);
 
-        // Compile regex route
         $patternPath = preg_replace('/\{([a-zA-Z_][a-zA-Z0-9_-]*)\}/', '(?P<$1>[^/]+)', $fullPath);
         $compiledPattern = "#^" . $patternPath . "$#i";
 
-        // Simpan untuk runtime
         self::$routes[] = [
             'method'     => strtoupper($method),
             'path'       => $compiledPattern,
@@ -52,7 +46,6 @@ class Router
             'middleware' => $middlewares
         ];
 
-        // Simpan untuk cache
         self::$routeDefinitions[] = [
             'method'     => strtoupper($method),
             'path'       => $fullPath,
@@ -85,7 +78,6 @@ class Router
         Config::loadEnv();
         self::registerErrorHandlers();
 
-        // CORS OPTIONS
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             header('Access-Control-Allow-Origin: *');
             header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -96,7 +88,6 @@ class Router
         $path   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-        // Static assets
         if (preg_match('#^/assets/(.*)$#', $path, $matches)) {
             self::serveAsset($matches[1]);
             return;
@@ -109,7 +100,6 @@ class Router
                 if ($method !== $route['method']) continue;
 
                 if (preg_match($route['path'], $path, $matches)) {
-                    // Middleware
                     foreach ($route['middleware'] as $middleware) {
                         $instance = is_array($middleware)
                             ? new $middleware[0](...array_slice($middleware, 1))
@@ -117,7 +107,6 @@ class Router
                         $instance->before();
                     }
                 
-                    // ✅ Ambil hanya named capturing group
                     $params = array_intersect_key($matches, array_flip(array_filter(array_keys($matches), 'is_string')));
                 
                     if ($route['handler'] instanceof \Closure) {
