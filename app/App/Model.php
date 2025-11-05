@@ -1,5 +1,4 @@
 <?php
-
 namespace TheFramework\App;
 
 use ReflectionClass;
@@ -12,7 +11,6 @@ abstract class Model
     protected $db;
     protected $builder;
 
-    /** 🔹 Relasi eager loading */
     protected $with = [];
 
     public function __construct()
@@ -109,7 +107,11 @@ abstract class Model
         return new Relation('hasOne', $this, $related, $foreignKey, $localKey);
     }
 
-    /** 🔹 Tambahkan eager load relations */
+    protected function belongsToMany($related, $pivotTable, $foreignKey, $relatedKey, $additionalPivotColumns = [])
+    {
+        return new Relation('belongsToMany', $this, $related, $pivotTable, $foreignKey, $relatedKey, $additionalPivotColumns);
+    }
+
     public function with(array $relations)
     {
         $this->with = $relations;
@@ -125,20 +127,29 @@ abstract class Model
         $relations = !empty($relations) ? $relations : $this->with;
         if (empty($relations) || empty($results)) return $results;
 
-        // 🔹 Kelompokkan relasi: sessions.participants.user → [ sessions => [ participants.user ] ]
         $grouped = [];
-        foreach ($relations as $relation) {
-            if (strpos($relation, '.') !== false) {
-                [$rel, $nested] = explode('.', $relation, 2);
-                $grouped[$rel][] = $nested;
-            } else {
-                $grouped[$relation] = [];
+
+        foreach ($relations as $key => $relation) {
+            if ($relation instanceof \Closure) {
+                $relationName = $key;
+                $grouped[$relationName] = ['closure' => $relation, 'nested' => []];
+                continue;
+            }
+
+            // 🔸 Jika array numerik ['modules', 'modules.assessment']
+            if (is_string($relation)) {
+                if (strpos($relation, '.') !== false) {
+                    [$rel, $nested] = explode('.', $relation, 2);
+                    $grouped[$rel]['nested'][] = $nested;
+                } else {
+                    $grouped[$relation]['nested'] = [];
+                }
             }
         }
 
-        foreach ($grouped as $relation => $nestedRels) {
+        foreach ($grouped as $relation => $options) {
             if (!method_exists($this, $relation)) {
-                throw new \Exception("Relasi $relation tidak ditemukan di " . get_class($this));
+                throw new \Exception("Relasi '$relation' tidak ditemukan di " . get_class($this));
             }
 
             $relationObj = $this->$relation();
@@ -146,11 +157,13 @@ abstract class Model
                 throw new \Exception("Method relasi '$relation' tidak mengembalikan Relation");
             }
 
+            $closure = $options['closure'] ?? null;
+            $nestedRels = $options['nested'] ?? [];
+
             foreach ($results as &$result) {
-                $relatedData = $relationObj->getResults($result);
+                $relatedData = $relationObj->getResults($result, $closure);
                 if ($relatedData === null) $relatedData = [];
 
-                // 🔹 Jika ada nested, maka load lebih dalam
                 if (!empty($nestedRels)) {
                     $relatedModel = new $relationObj->related();
                     $relatedModel->with($nestedRels);
@@ -160,16 +173,7 @@ abstract class Model
                     );
                 }
 
-                // 🔹 Merge (bukan overwrite)
-                if (!isset($result[$relation])) {
-                    $result[$relation] = $relatedData;
-                } else {
-                    if (is_array($result[$relation]) && is_array($relatedData)) {
-                        $result[$relation] = array_merge_recursive($result[$relation], $relatedData);
-                    } else {
-                        $result[$relation] = $relatedData;
-                    }
-                }
+                $result[$relation] = $relatedData;
             }
         }
 
