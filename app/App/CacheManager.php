@@ -6,9 +6,6 @@ class CacheManager
 {
     protected static string $cacheDir = __DIR__ . '/../Storage/cache/';
 
-    /**
-     * Simpan cache dengan TTL (time-to-live)
-     */
     public static function remember($key, $ttl, $callback)
     {
         self::ensureCacheDir();
@@ -33,9 +30,6 @@ class CacheManager
         return $value;
     }
 
-    /**
-     * Hapus 1 atau banyak cache berdasarkan key
-     */
     public static function forget($key)
     {
         self::ensureCacheDir();
@@ -55,9 +49,6 @@ class CacheManager
         return $success;
     }
 
-    /**
-     * Pastikan direktori cache tersedia
-     */
     protected static function ensureCacheDir()
     {
         if (!is_dir(self::$cacheDir)) {
