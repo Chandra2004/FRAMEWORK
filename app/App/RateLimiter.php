@@ -47,22 +47,19 @@ class RateLimiter
             'count' => 0,
             'timestamp' => time()
         ];
-
-        // Reset hit counter jika window telah lewat
+    
         if (time() - $data['timestamp'] > $window) {
             $data = ['count' => 0, 'timestamp' => time()];
         }
-
-        // Jika sudah mencapai limit, kirimkan response 429
+    
         if ($data['count'] >= $limit) {
             self::sendRateLimitResponse();
-            return false; // Block request
+            return false;
         }
 
-        // Inkrementasi hit counter
         $data['count']++;
         file_put_contents($file, json_encode($data), LOCK_EX);
-        return true; // Izinkan request
+        return true;
     }
 
     /**
