@@ -1,5 +1,4 @@
 <?php
-
 namespace TheFramework\App;
 
 class Relation
@@ -9,7 +8,7 @@ class Relation
     public $related;
     public $foreignKey;
     public $localKey;
-    public $select = []; // tambahkan properti untuk kolom yang ingin dipilih
+    public $select = [];
 
     public function __construct($type, $parent, $related, $foreignKey, $localKey)
     {
@@ -20,43 +19,42 @@ class Relation
         $this->localKey = $localKey;
     }
 
-    /**
-     * Tambahkan kolom tertentu yang ingin diambil dari relasi
-     */
     public function select(array $columns)
     {
         $this->select = $columns;
         return $this;
     }
 
-    /**
-     * Ambil hasil relasi berdasarkan jenisnya (hasMany, hasOne, belongsTo)
-     */
-    public function getResults($parentRow)
+    public function getResults($parentRow, $closure = null)
     {
         $relatedModel = new $this->related();
         $query = $relatedModel->query();
 
-        // jika user menentukan kolom yang akan diambil
         if (!empty($this->select)) {
             $query->select($this->select);
         }
 
+        $localValue = $parentRow[$this->localKey] ?? null;
+
+        if ($localValue === null) {
+            return $this->type === 'hasOne' || $this->type === 'belongsTo' ? null : [];
+        }
+
+        if ($closure instanceof \Closure) {
+            $closure($query);
+        }
+
         switch ($this->type) {
             case 'hasMany':
-                return $query
-                    ->where($this->foreignKey, '=', $parentRow[$this->localKey])
-                    ->get();
+                return $query->where($this->foreignKey, '=', $localValue)->get();
 
             case 'hasOne':
-                return $query
-                    ->where($this->foreignKey, '=', $parentRow[$this->localKey])
-                    ->first();
+                return $query->where($this->foreignKey, '=', $localValue)->first();
 
             case 'belongsTo':
-                return $query
-                    ->where($this->localKey, '=', $parentRow[$this->foreignKey])
-                    ->first();
+                $foreignValue = $parentRow[$this->foreignKey] ?? null;
+                if ($foreignValue === null) return null;
+                return $query->where($this->localKey, '=', $foreignValue)->first();
         }
 
         return null;
