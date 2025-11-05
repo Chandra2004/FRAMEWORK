@@ -19,7 +19,6 @@ class View
             error_log("Blade rendering failed for view {$bladeView}: " . $e->getMessage());
         }
 
-        // Path
         $defaultPath = dirname(__DIR__, 2) . '/resources/Views/' . $view . '.php';
         $fallbackPath = dirname(__DIR__, 2) . '/services/' . $view . '.php';
 
