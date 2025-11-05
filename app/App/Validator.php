@@ -2,156 +2,151 @@
 
 namespace TheFramework\App;
 
+use PDO;
+
 class Validator
 {
-    protected array $data = [];
-    protected array $rules = [];
-    protected array $labels = [];
-    protected array $messages = [];
     protected array $errors = [];
 
-    /**
-     * Jalankan validasi
-     */
-    public function validate(array $data, array $rules, array $labels = [], array $messages = []): bool
+    public function validate(array $data, array $rules, array $labels = []): bool
     {
-        $this->data     = $data;
-        $this->rules    = $rules;
-        $this->labels   = $labels;
-        $this->messages = $messages;
-        $this->errors   = [];
+        foreach ($rules as $field => $ruleString) {
+            $value = $data[$field] ?? null;
+            $label = $labels[$field] ?? ucfirst(str_replace('_', ' ', $field));
 
-        foreach ($rules as $field => $ruleSet) {
-            $value    = $data[$field] ?? null;
-            $ruleList = is_array($ruleSet) ? $ruleSet : explode('|', $ruleSet);
-
-            // Label default = ucfirst(field), override jika ada di $labels
-            $label = $labels[$field] ?? ucfirst($field);
+            $ruleList = explode('|', $ruleString);
+            $skipFurther = false;
 
             foreach ($ruleList as $rule) {
-                $param = null;
+                if ($skipFurther) break;
 
+                $param = null;
                 if (str_contains($rule, ':')) {
                     [$rule, $param] = explode(':', $rule, 2);
                 }
 
                 $method = "validate_" . $rule;
-
                 if (method_exists($this, $method)) {
-                    $this->$method($field, $label, $value, $param);
+                    try {
+                        $this->$method($field, $label, $value, $param);
+                    } catch (\Exception $e) {
+                        if ($e->getMessage() === "__SKIP_VALIDATION__") {
+                            $skipFurther = true;
+                        }
+                    }
                 }
             }
         }
-
         return empty($this->errors);
     }
 
-    /**
-     * Ambil error pertama
-     */
-    public function firstError(): ?string
-    {
-        if (!empty($this->errors)) {
-            return array_values($this->errors)[0][0];
-        }
-        return null;
-    }
-
-    /**
-     * Ambil semua error
-     */
-    public function allErrors(): array
+    public function errors(): array
     {
         return $this->errors;
     }
 
-    /**
-     * Tambah error ke array
-     */
-    protected function addError(string $field, string $messageKey, string $default): void
+    public function firstError(): ?string
     {
-        // Gunakan custom message jika tersedia
-        $message = $this->messages[$field][$messageKey]
-            ?? $this->messages[$messageKey]
-            ?? $default;
-
-        $this->errors[$field][] = $message;
+        return $this->errors[array_key_first($this->errors)] ?? null;
     }
 
-    /* ===========================
-       RULES IMPLEMENTATION
-       =========================== */
+    protected function addError(string $field, string $message): void
+    {
+        $this->errors[$field] = $message;
+    }
+
+    // --------------------------
+    // RULE DEFINITIONS
+    // --------------------------
 
     protected function validate_required(string $field, string $label, $value, $param = null): void
     {
-        if (is_null($value) || $value === '') {
-            $this->addError($field, 'required', "{$label} wajib diisi.");
+        if (is_array($value) && isset($value['error']) && $value['error'] === UPLOAD_ERR_NO_FILE) {
+            $this->addError($field, "{$label} wajib diisi.");
+        } elseif (empty($value) && $value !== '0') {
+            $this->addError($field, "{$label} wajib diisi.");
+        }
+    }
+
+    protected function validate_nullable(string $field, string $label, $value, $param = null): void
+    {
+        if (!isset($value) || empty($value) || (is_array($value) && ($value['error'] ?? 0) === UPLOAD_ERR_NO_FILE)) {
+            unset($this->errors[$field]);
+            throw new \Exception("__SKIP_VALIDATION__"); // skip semua rule berikutnya
+        }
+    }
+
+
+    protected function validate_string(string $field, string $label, $value, $param = null): void
+    {
+        if (!is_string($value)) {
+            $this->addError($field, "{$label} harus berupa teks.");
+        }
+    }
+
+    protected function validate_integer(string $field, string $label, $value, $param = null): void
+    {
+        if (!filter_var($value, FILTER_VALIDATE_INT)) {
+            $this->addError($field, "{$label} harus berupa angka bulat.");
         }
     }
 
     protected function validate_email(string $field, string $label, $value, $param = null): void
     {
-        if (!empty($value) && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            $this->addError($field, 'email', "{$label} harus berupa email yang valid.");
+        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            $this->addError($field, "{$label} tidak valid.");
         }
     }
 
     protected function validate_min(string $field, string $label, $value, $param): void
     {
-        if (!empty($value) && strlen((string)$value) < (int)$param) {
-            $this->addError($field, 'min', "{$label} minimal {$param} karakter.");
+        if (is_string($value) && strlen($value) < (int)$param) {
+            $this->addError($field, "{$label} minimal {$param} karakter.");
         }
     }
 
     protected function validate_max(string $field, string $label, $value, $param): void
     {
-        if (!empty($value) && strlen((string)$value) > (int)$param) {
-            $this->addError($field, 'max', "{$label} maksimal {$param} karakter.");
+        if (is_string($value) && strlen($value) > (int)$param) {
+            $this->addError($field, "{$label} maksimal {$param} karakter.");
+        } elseif (is_array($value) && isset($value['size']) && $value['size'] > ((int)$param * 1024)) {
+            $this->addError($field, "{$label} maksimal {$param} KB.");
         }
     }
 
-    protected function validate_numeric(string $field, string $label, $value, $param = null): void
+    protected function validate_file(string $field, string $label, $value, $param = null): void
     {
-        if (!empty($value) && !is_numeric($value)) {
-            $this->addError($field, 'numeric', "{$label} harus berupa angka.");
+        if (!is_array($value) || !isset($value['tmp_name'])) {
+            $this->addError($field, "{$label} harus berupa file.");
         }
     }
 
-    protected function validate_alpha(string $field, string $label, $value, $param = null): void
+    protected function validate_mimes(string $field, string $label, $value, $param): void
     {
-        if (!empty($value) && !ctype_alpha($value)) {
-            $this->addError($field, 'alpha', "{$label} hanya boleh berisi huruf.");
-        }
-    }
+        if (!is_array($value) || empty($value['name'])) return;
 
-    protected function validate_alphanum(string $field, string $label, $value, $param = null): void
-    {
-        if (!empty($value) && !ctype_alnum($value)) {
-            $this->addError($field, 'alphanum', "{$label} hanya boleh berisi huruf dan angka.");
-        }
-    }
-
-    protected function validate_same(string $field, string $label, $value, $param): void
-    {
-        if (($this->data[$param] ?? null) !== $value) {
-            $otherLabel = $this->labels[$param] ?? ucfirst($param);
-            $this->addError($field, 'same', "{$label} harus sama dengan {$otherLabel}.");
-        }
-    }
-
-    protected function validate_in(string $field, string $label, $value, $param): void
-    {
         $allowed = explode(',', $param);
-        if (!in_array($value, $allowed)) {
-            $this->addError($field, 'in', "{$label} tidak valid.");
+        $ext = strtolower(pathinfo($value['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($ext, $allowed)) {
+            $this->addError($field, "{$label} hanya boleh berformat: " . implode(', ', $allowed));
         }
     }
 
-    protected function validate_not_in(string $field, string $label, $value, $param): void
+    protected function validate_unique(string $field, string $label, $value, $param): void
     {
-        $disallowed = explode(',', $param);
-        if (in_array($value, $disallowed)) {
-            $this->addError($field, 'not_in', "{$label} tidak boleh dipilih.");
+        Config::loadEnv();
+
+        if (!$value || !$param) return;
+
+        [$table, $column] = explode(',', $param);
+        $db = new PDO("" . Config::loadEnv('DB_CONNECTION') . ":host=" . Config::loadEnv('DB_HOST') . ";dbname=" . Config::loadEnv('DB_NAME') . ";charset=utf8", Config::loadEnv('DB_USER'), Config::loadEnv('DB_PASSWORD'));
+        $stmt = $db->prepare("SELECT COUNT(*) FROM {$table} WHERE {$column} = ?");
+        if ($stmt && $stmt->execute([$value])) {
+            $count = $stmt->fetchColumn();
+            if ($count > 0) {
+                $this->addError($field, "{$label} sudah digunakan.");
+            }
         }
     }
 
@@ -160,34 +155,20 @@ class Validator
         if (empty($value)) {
             return;
         }
-    
-        // Bungkus otomatis jika tidak pakai delimiter
+
         if ($param[0] !== '/' || substr($param, -1) !== '/') {
             $param = '/' . $param . '/';
         }
-    
-        // Validasi regex dengan try-catch dan preg_match langsung ke value
-        try {
-            $result = @preg_match($param, $value);
-    
-            if ($result === false) {
-                throw new \RuntimeException("Invalid regex pattern");
-            }
-    
-            if ($result === 0) {
-                $this->addError($field, 'regex', "{$label} tidak sesuai format.");
-            }
-    
-        } catch (\Throwable $e) {
-            $this->addError($field, 'regex', "Regex untuk {$label} tidak valid.");
-        }
-    }    
-       
 
-    protected function validate_date(string $field, string $label, $value, $param = null): void
-    {
-        if (!empty($value) && !strtotime($value)) {
-            $this->addError($field, 'date', "{$label} harus berupa tanggal yang valid.");
+        $result = @preg_match($param, $value);
+
+        if ($result === false) {
+            $this->addError($field, "Regex untuk {$label} tidak valid.");
+            return;
+        }
+
+        if ($result === 0) {
+            $this->addError($field, "{$label} tidak sesuai format.");
         }
     }
 }
