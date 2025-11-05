@@ -66,6 +66,44 @@ class QueryBuilder
         return $this;
     }
 
+    public function whereIn(string $column, array $values)
+    {
+        if (empty($values)) {
+            $this->wheres[] = "0=1";
+            return $this;
+        }
+
+        $placeholders = [];
+        foreach ($values as $value) {
+            $param = ":in_" . count($this->bindings);
+            $placeholders[] = $param;
+            $this->bindings[$param] = $value;
+        }
+
+        $columnName = (strpos($column, '.') !== false) ? $column : "`$column`";
+        $this->wheres[] = "$columnName IN (" . implode(", ", $placeholders) . ")";
+        return $this;
+    }
+
+    public function whereNotIn(string $column, array $values)
+    {
+        if (empty($values)) {
+            return $this;
+        }
+
+        $placeholders = [];
+        foreach ($values as $value) {
+            $param = ":notin_" . count($this->bindings);
+            $placeholders[] = $param;
+            $this->bindings[$param] = $value;
+        }
+
+        $columnName = (strpos($column, '.') !== false) ? $column : "`$column`";
+        $this->wheres[] = "$columnName NOT IN (" . implode(", ", $placeholders) . ")";
+        return $this;
+    }
+
+
     public function filter(string $column, $value)
     {
         return $this->where($column, '=', $value);
@@ -117,10 +155,10 @@ class QueryBuilder
     }
 
     public function orderByRaw(string $expression)
-{
-    $this->orderBy[] = $expression;
-    return $this;
-}
+    {
+        $this->orderBy[] = $expression;
+        return $this;
+    }
 
 
     /* -------------------------------
@@ -328,8 +366,31 @@ class QueryBuilder
     }
 
     public function map(callable $callback): array
-{
-    $results = $this->get();
-    return array_map($callback, $results);
-}
+    {
+        $results = $this->get();
+        return array_map($callback, $results);
+    }
+
+    /* -------------------------------
+    PLUCK
+    --------------------------------*/
+    public function pluck(string $column): array
+    {
+        $results = $this->get();
+
+        if (empty($results)) {
+            return [];
+        }
+
+        $values = [];
+        foreach ($results as $row) {
+            if (is_array($row) && array_key_exists($column, $row)) {
+                $values[] = $row[$column];
+            } elseif (is_object($row) && isset($row->$column)) {
+                $values[] = $row->$column;
+            }
+        }
+
+        return $values;
+    }
 }
