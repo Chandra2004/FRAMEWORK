@@ -12,7 +12,7 @@ class Schema
     {
         $db = Database::getInstance();
         $blueprint = new Blueprint($table);
-        $blueprint->setAlterMode(); // mode ALTER
+        $blueprint->setAlterMode();
         $callback($blueprint);
 
         $statements = $blueprint->getAlterStatements();
