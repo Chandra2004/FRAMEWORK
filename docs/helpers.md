@@ -1,3 +1,5 @@
+> **Version**: 4.0.0 | **Author**: Chandra Tri A | **Updated**: 2025
+
 # 🛠️ Helpers & Utilities Guide
 
 Dokumentasi lengkap fungsi bantuan (helpers) dan library konfigurasi eksternal.

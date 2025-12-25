@@ -1,22 +1,13 @@
-{
-    "name": "vendor/project",
-    "description": "Your project description",
-    "autoload": {
-        "psr-4": {
-            "TheFramework\\": "app/",
-            "TheFramework\\Console\\": "app/Console/",
-            "TheFramework\\Console\\Commands\\": "app/Console/Commands/",
-            "TheFramework\\Http\\Controllers\\": "app/Http/Controllers/",
-            "TheFramework\\Middleware\\": "app/Middleware/",
-            "TheFramework\\Models\\": "app/Models/",
-            "TheFramework\\Database\\Migrations\\": "database/migrations/",
-            "TheFramework\\Database\\Seeders\\": "database/seeders/"
-        }
-    },
+    "name": "chandra2004/the-framework",
+    "description": "Secure MVC Native PHP Framework - Version 4.0",
+    "version": "4.0.0",
+    "license": "MIT",
     "authors": [
         {
-            "name": "Your Name",
-            "email": "your-email@gmail.com"
+            "name": "Chandra Tri A",
+            "email": "chandratriantomo123@gmail.com",
+            "homepage": "https://www.the-framework.ct.ws",
+            "role": "Lead Developer"
         }
     ],
     "require": {

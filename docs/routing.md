@@ -1,3 +1,5 @@
+> **Version**: 4.0.0 | **Author**: Chandra Tri A | **Updated**: 2025
+
 # 🛣️ Routing & Controller Guide
 
 Panduan lengkap mengatur URL dan logika aplikasi.

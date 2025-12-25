@@ -1,3 +1,5 @@
+> **Version**: 4.0.0 | **Author**: Chandra Tri A | **Updated**: 2025
+
 # 🗄️ Database & Models Guide
 
 Panduan lengkap pengelolaan database di TheFramework, mulai dari Schema, Seeding, hingga ORM.

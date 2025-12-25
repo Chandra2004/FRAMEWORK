@@ -1,6 +1,7 @@
 # THE-FRAMEWORK - Secure MVC Native PHP Framework
 
 ![PHP Version](https://img.shields.io/badge/php-%3E%3D8.0-blue)
+![Version](https://img.shields.io/badge/version-4.0.0-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Security](https://img.shields.io/badge/security-hardened-red)
 

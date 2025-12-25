@@ -1,3 +1,5 @@
+> **Version**: 4.0.0 | **Author**: Chandra Tri A | **Updated**: 2025
+
 # 🛡️ Security Features Guide
 
 Framework ini menganut filosofi **"Security by Design"**. Fitur-fitur keamanan berikut aktif secara default untuk melindungi aplikasi Anda dari serangan umum OWASP Top 10.
