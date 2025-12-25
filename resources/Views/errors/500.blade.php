@@ -1,95 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>500 - Internal Server Error | The Framework</title>
+    <title>500 - Kesalahan Server | The Framework</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .animate-fade-in { animation: fadeIn 0.6s ease-out; }
+
+        @keyframes pulse-red {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(239, 68, 68, 0.4);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .pulse-effect {
+            animation: pulse-red 3s infinite;
+        }
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 min-h-screen text-gray-100">
-    <div class="min-h-screen flex items-center justify-center px-4">
-        <div class="max-w-2xl w-full text-center space-y-8 animate-fade-in">
-            <!-- Error Icon -->
-            <div class="flex justify-center">
-                <div class="relative">
-                    <div class="absolute inset-0 bg-red-500/20 rounded-full blur-2xl animate-pulse"></div>
-                    <div class="relative bg-slate-800/50 border border-red-500/20 rounded-full p-6">
-                        <i data-lucide="server-off" class="w-16 h-16 text-red-500"></i>
-                    </div>
-                </div>
-            </div>
+<body
+    class="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 min-h-screen text-gray-100 flex items-center justify-center p-4">
+    <div class="max-w-xl w-full text-center space-y-8 animate-fade-in">
+        <!-- Icon -->
+        <div
+            class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-slate-800 border border-slate-700 pulse-effect mb-6">
+            <i data-lucide="server-crash" class="w-12 h-12 text-red-500"></i>
+        </div>
 
-            <!-- Error Code & Message -->
-            <div class="space-y-4">
-                <h1 class="text-8xl sm:text-9xl font-bold bg-gradient-to-r from-red-500 to-pink-600 bg-clip-text text-transparent">
-                    500
-                </h1>
-                <h2 class="text-3xl sm:text-4xl font-semibold text-slate-200">
-                    Internal Server Error
-                </h2>
-                <p class="text-lg text-slate-400 max-w-md mx-auto">
-                    Oops! Something went wrong on our servers. Our team has been notified and we're working to fix it.
-                </p>
-            </div>
+        <!-- Message -->
+        <div class="space-y-4">
+            <h1 class="text-6xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+                500
+            </h1>
+            <h2 class="text-2xl font-semibold text-slate-200">Terjadi Kesalahan Server</h2>
+            <p class="text-slate-400">
+                Ups! Sesuatu yang buruk terjadi di server kami. Tim teknis kami telah diberitahu dan sedang
+                memperbaikinya.
+            </p>
+        </div>
 
-            <!-- Troubleshooting Tips -->
-            <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 text-left">
-                <div class="flex items-center gap-3 mb-4">
-                    <i data-lucide="lightbulb" class="w-5 h-5 text-cyan-400"></i>
-                    <h3 class="text-lg font-semibold text-slate-200">Troubleshooting Tips</h3>
-                </div>
-                <ul class="space-y-2 text-slate-300">
-                    <li class="flex items-start gap-2">
-                        <i data-lucide="check" class="w-4 h-4 text-cyan-400 flex-shrink-0 mt-1"></i>
-                        <span>Refresh the page in a few minutes</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i data-lucide="check" class="w-4 h-4 text-cyan-400 flex-shrink-0 mt-1"></i>
-                        <span>Check your network connection</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <i data-lucide="check" class="w-4 h-4 text-cyan-400 flex-shrink-0 mt-1"></i>
-                        <span>Clear browser cache and cookies</span>
-                    </li>
-                </ul>
-            </div>
+        <!-- Technical Note (Hidden details for security) -->
+        <div class="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 text-xs text-slate-500 font-mono">
+            <p>Error ID: {{ strtoupper(uniqid('ERR-')) }}</p>
+            <p class="mt-1">Silakan coba muat ulang halaman atau hubungi dukungan jika masalah berlanjut.</p>
+        </div>
 
-            <!-- Actions -->
-            <div class="flex flex-wrap gap-3 justify-center">
-                <a href="{{ url('/') }}" 
-                   class="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors">
-                    <i data-lucide="home" class="w-4 h-4"></i>
-                    Back to Homepage
-                </a>
-                <button onclick="window.location.reload()" 
-                        class="inline-flex items-center gap-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors">
-                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                    Try Again
-                </button>
-                <a href="https://github.com/Chandra2004/FRAMEWORK" target="_blank"
-                   class="inline-flex items-center gap-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors">
-                    <i data-lucide="help-circle" class="w-4 h-4"></i>
-                    Contact Support
-                </a>
-            </div>
+        <!-- Actions -->
+        <div class="flex flex-wrap gap-3 justify-center pt-4">
+            <button onclick="window.location.reload()"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                Coba Lagi
+            </button>
+            <a href="{{ url('/') }}"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-medium transition-colors border border-slate-700">
+                <i data-lucide="home" class="w-4 h-4"></i>
+                Beranda
+            </a>
+        </div>
 
-            <!-- Footer -->
-            <div class="pt-8 border-t border-slate-800/50">
-                <p class="text-sm text-slate-500">
-                    &copy; {{ date('Y') }} The Framework. Created with ❤️ by 
-                    <a href="https://github.com/Chandra2004" target="_blank" class="text-cyan-400 hover:underline">Chandra Tri Antomo</a>
-                </p>
-            </div>
+        <!-- Footer -->
+        <div class="pt-8 text-sm text-slate-600">
+            &copy; {{ date('Y') }} The Framework
         </div>
     </div>
 

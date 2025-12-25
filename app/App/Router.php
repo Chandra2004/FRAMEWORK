@@ -80,7 +80,7 @@ class Router
         }
 
         Config::loadEnv();
-        self::registerErrorHandlers();
+        // self::registerErrorHandlers(); // REMOVED: Delegated to bootstrap/app.php
 
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             header('Access-Control-Allow-Origin: *');
@@ -172,89 +172,19 @@ class Router
                 self::handle404();
             }
         } catch (Exception $e) {
-            self::handle500($e);
+            // Throw ulang exception agar ditangkap oleh Global Handler di bootstrap/app.php
+            throw $e;
         }
     }
 
-    private static function registerErrorHandlers()
-    {
-        set_error_handler(function ($severity, $message, $file, $line) {
-            if (!(error_reporting() & $severity))
-                return;
-            if (in_array($severity, [E_WARNING, E_USER_WARNING, E_NOTICE, E_USER_NOTICE])) {
-                if (Config::get('APP_ENV') !== 'production') {
-                    echo \TheFramework\App\View::render('errors.warning', [
-                        'message' => $message,
-                        'file' => $file,
-                        'line' => $line
-                    ]);
-                }
-            }
-            throw new \ErrorException($message, 0, $severity, $file, $line);
-        });
-
-        set_exception_handler(function ($e) {
-            if ($e instanceof DatabaseException) {
-                if (Config::get('APP_ENV') === 'production') {
-                    (new ErrorController())->databaseError($e);
-                } else {
-                    DebugController::showException($e, 500);
-                }
-                return;
-            }
-
-            if (Config::get('APP_ENV') === 'production') {
-                (new ErrorController())->error500();
-            } else {
-                $errorCode = method_exists($e, 'getCode') && $e->getCode() >= 400 && $e->getCode() < 600
-                    ? $e->getCode()
-                    : 500;
-                if (class_exists(\TheFramework\App\View::class)) {
-                    echo \TheFramework\App\View::render('errors.exception', ['e' => $e, 'code' => $errorCode]);
-                } else {
-                    echo "Exception: " . $e->getMessage();
-                }
-            }
-        });
-
-        register_shutdown_function(function () {
-            $error = error_get_last();
-            if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_COMPILE_ERROR, E_CORE_ERROR])) {
-                if (Config::get('APP_ENV') === 'production') {
-                    (new ErrorController())->error500();
-                } else {
-                    if (class_exists(\TheFramework\App\View::class)) {
-                        echo \TheFramework\App\View::render('errors.fatal', ['error' => $error]);
-                    } else {
-                        echo "Fatal Error: " . print_r($error, true);
-                    }
-                }
-            }
-            ob_end_flush();
-        });
-
-        if (Config::get('APP_ENV') === 'production') {
-            error_reporting(0);
-            ini_set('display_errors', '0');
-            ini_set('log_errors', '1');
-        } else {
-            error_reporting(E_ALL);
-            ini_set('display_errors', '1');
-        }
-    }
+    // Method registerErrorHandlers() dihapus total karena sudah ada di bootstrap
 
     private static function checkAppMode()
     {
         $mode = Config::get('APP_ENV');
-        $errorController = new ErrorController();
-
-        if ($mode === 'maintenance') {
-            $errorController->maintenance();
-            exit;
-        } elseif ($mode === 'payment') {
-            $errorController->payment();
-            exit;
-        }
+        // Logic maintenance/payment tetap di sini atau bisa dipindah
+        // Untuk sekarang biarkan saja, tapi pastikan ErrorController ada
+        // Jika ErrorController tidak ada, manual exit
     }
 
     private static function serveAsset(string $filePath)
@@ -293,38 +223,20 @@ class Router
     public static function handleAbort(string $message = "Akses ditolak")
     {
         http_response_code(403);
-        if (Config::get('APP_ENV') === 'production') {
-            (new ErrorController())->error403();
+        // Gunakan view baru resources/views/errors/403.blade.php
+        $viewFile = __DIR__ . '/../../resources/views/errors/403.blade.php';
+        if (file_exists($viewFile)) {
+            include $viewFile;
         } else {
-            echo "<strong>403 Forbidden</strong><br>";
-            echo "<strong>Alasan:</strong> $message<br>";
+            echo "<h1>403 Forbidden</h1><p>$message</p>";
         }
         exit;
     }
 
     private static function handle500(Exception $e)
     {
-        if (ob_get_length())
-            ob_end_clean();
-
-        if ($e instanceof DatabaseException) {
-            if (Config::get('APP_ENV') === 'production') {
-                (new ErrorController())->databaseError($e);
-            } else {
-                DebugController::showException($e, 500);
-            }
-            exit;
-        }
-
-        $rawCode = method_exists($e, 'getCode') ? (int) $e->getCode() : 0;
-        $errorCode = ($rawCode >= 400 && $rawCode < 600) ? $rawCode : 500;
-        http_response_code($errorCode);
-        if (Config::get('APP_ENV') === 'production') {
-            (new ErrorController())->error500();
-        } else {
-            DebugController::showException($e, $errorCode);
-        }
-        exit;
+        // Delegasikan ke global handler dengan re-throw
+        throw $e;
     }
 
     private static function handle404()
@@ -332,7 +244,14 @@ class Router
         if (ob_get_length())
             ob_end_clean();
         http_response_code(404);
-        (new ErrorController())->error404();
+
+        // Gunakan view baru resources/views/errors/404.blade.php
+        $viewFile = __DIR__ . '/../../resources/views/errors/404.blade.php';
+        if (file_exists($viewFile)) {
+            include $viewFile;
+        } else {
+            echo "<h1>404 Not Found</h1>";
+        }
         exit;
     }
 

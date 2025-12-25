@@ -1,131 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" type="image/x-icon" href="{{ url('file/public/favicon.ico') }}">
     <title>Payment Required | The Framework</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.2); }
+            50% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.4); }
         }
-        .animate-fade-in { animation: fadeIn 0.6s ease-out; }
-        .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+        .animate-fade-in { animation: fadeIn 0.8s ease-out; }
+        .animate-pulse-glow { animation: pulseGlow 4s ease-in-out infinite; }
     </style>
 </head>
-
-<body class="bg-gradient-to-br from-slate-950 via-amber-950/20 to-slate-950 min-h-screen text-gray-100">
-    <div class="min-h-screen flex items-center justify-center px-4 py-8">
-        <div class="max-w-2xl w-full space-y-8 animate-fade-in">
-            <!-- Header -->
-            <div class="text-center space-y-4">
+<body class="bg-gradient-to-b from-zinc-950 to-black min-h-screen text-zinc-100">
+    <div class="min-h-screen flex items-center justify-center px-6 py-12">
+        <div class="max-w-lg w-full space-y-14 animate-fade-in">
+            <!-- Header with Logo -->
+            <div class="text-center space-y-8">
                 <div class="flex justify-center">
-                    <div class="relative">
-                        <div class="absolute inset-0 bg-amber-500/20 rounded-full blur-2xl animate-pulse-slow"></div>
-                        <div class="relative bg-slate-800/50 border border-amber-500/20 rounded-full p-6">
-                            <i data-lucide="credit-card" class="w-16 h-16 text-amber-500"></i>
-                        </div>
+                    <div class="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-10 shadow-2xl animate-pulse-glow">
+                        <img src="{{ url('file/public/favicon.ico') }}" alt="Logo The Framework" class="w-24 h-24 mx-auto">
                     </div>
                 </div>
-                <h1 class="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-                    Payment Required
-                </h1>
-                <p class="text-lg text-slate-300">
-                    Segera selesaikan pembayaran untuk melanjutkan layanan
-                </p>
+                <div>
+                    <h1 class="text-2xl font-light tracking-wider text-zinc-400 uppercase">The Framework</h1>
+                    <h2 class="text-5xl font-bold mt-4">Payment Required</h2>
+                    <p class="text-zinc-400 mt-4 text-lg">Segera selesaikan pembayaran untuk melanjutkan layanan</p>
+                </div>
             </div>
 
             <!-- Payment Details Card -->
-            <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 space-y-6">
-                <!-- Invoice Info -->
-                <div class="grid grid-cols-2 gap-4">
+            <div class="bg-zinc-900/60 backdrop-blur-md border border-zinc-800 rounded-3xl p-10 space-y-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-base">
                     <div>
-                        <p class="text-sm text-slate-400 mb-1">Nomor Invoice</p>
-                        <p class="text-slate-200 font-semibold font-mono">SPK/2024/WEB-001</p>
+                        <p class="text-zinc-500">Nomor Invoice</p>
+                        <p class="font-mono text-xl font-bold text-zinc-100">SPK/2024/WEB-001</p>
                     </div>
                     <div>
-                        <p class="text-sm text-slate-400 mb-1">Jatuh Tempo</p>
-                        <p class="text-amber-400 font-semibold">7 April 2025</p>
+                        <p class="text-zinc-500">Jatuh Tempo</p>
+                        <p class="text-cyan-400 text-xl font-bold">7 April 2025</p>
                     </div>
-                    <div class="col-span-2">
-                        <p class="text-sm text-slate-400 mb-1">Total Tagihan</p>
-                        <p class="text-3xl font-bold text-slate-200">Rp2.580.000</p>
+                    <div class="md:col-span-2">
+                        <p class="text-zinc-500">Total Tagihan</p>
+                        <p class="text-5xl font-bold text-zinc-100 mt-2">Rp2.580.000</p>
                     </div>
                     <div>
-                        <p class="text-sm text-slate-400 mb-1">Keterlambatan</p>
-                        <p class="text-red-400 font-semibold" id="daysOverdue">0 Hari</p>
+                        <p class="text-zinc-500">Status</p>
+                        <p class="text-red-400 text-xl font-bold" id="daysOverdue">Terlambat</p>
                     </div>
                 </div>
 
-                <!-- Payment Status -->
-                <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
-                    <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
-                            <p class="text-sm text-green-400 font-medium">Sudah Dibayar</p>
-                        </div>
-                        <p class="text-xl font-bold text-green-300">Rp545.000</p>
+                <!-- Progress Bar -->
+                <div class="space-y-4">
+                    <div class="flex justify-between text-zinc-400">
+                        <span class="font-medium">Sudah Dibayar • Rp545.000</span>
+                        <span class="font-medium">Belum Dibayar • Rp2.035.000</span>
                     </div>
-                    <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                        <div class="flex items-center gap-2 mb-2">
-                            <i data-lucide="alert-circle" class="w-4 h-4 text-red-400"></i>
-                            <p class="text-sm text-red-400 font-medium">Belum Dibayar</p>
-                        </div>
-                        <p class="text-xl font-bold text-red-300">Rp2.035.000</p>
+                    <div class="w-full bg-zinc-800 rounded-full h-4 overflow-hidden shadow-inner">
+                        <div class="bg-gradient-to-r from-cyan-500 to-cyan-400 h-4 rounded-full shadow-lg" style="width: 21%; transition: width 1.5s ease;"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Payment CTA -->
-            <div class="text-center space-y-4">
+            <!-- CTA -->
+            <div class="text-center space-y-6">
                 <a href="https://wa.me/6285730676143?text=Konfirmasi%20Pembayaran%20SPK/2024/WEB-001" target="_blank"
-                   class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-lg font-semibold transition-all shadow-lg shadow-amber-500/20">
-                    <i data-lucide="credit-card" class="w-5 h-5"></i>
+                   class="inline-flex items-center gap-4 px-12 py-6 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-2xl font-bold text-xl transition-all shadow-xl">
+                    <i data-lucide="credit-card" class="w-7 h-7"></i>
                     Bayar Sekarang
                 </a>
-                <p class="text-sm text-slate-400">
-                    Sudah membayar? 
-                    <a href="https://wa.me/6285730676143?text=Konfirmasi%20Pembayaran%20SPK/2024/WEB-001" target="_blank" 
-                       class="text-amber-400 hover:underline">Konfirmasi Pembayaran</a>
+                <p class="text-zinc-400">
+                    Sudah membayar? <a href="https://wa.me/6285730676143?text=Konfirmasi%20Pembayaran%20SPK/2024/WEB-001" target="_blank" class="text-cyan-400 hover:underline font-medium">Konfirmasi di sini</a>
                 </p>
             </div>
 
-            <!-- Contact Info -->
-            <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
-                <div class="flex items-center gap-3 mb-4">
-                    <i data-lucide="help-circle" class="w-5 h-5 text-cyan-400"></i>
-                    <h3 class="text-lg font-semibold text-slate-200">Butuh Bantuan?</h3>
+            <!-- Contact -->
+            <div class="bg-zinc-900/60 backdrop-blur-md border border-zinc-800 rounded-3xl p-10">
+                <div class="flex items-center justify-center gap-4 mb-8">
+                    <i data-lucide="help-circle" class="w-6 h-6 text-cyan-400"></i>
+                    <h3 class="text-xl font-bold">Butuh Bantuan?</h3>
                 </div>
-                <div class="space-y-3 text-sm">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="mail" class="w-4 h-4 text-cyan-400"></i>
-                        <a href="mailto:chandratriantomo123@gmail.com" class="text-cyan-400 hover:underline">
-                            chandratriantomo123@gmail.com
-                        </a>
+                <div class="space-y-6 text-center">
+                    <div>
+                        <i data-lucide="mail" class="w-5 h-5 text-cyan-400 mb-2"></i>
+                        <a href="mailto:chandratriantomo123@gmail.com" class="block text-cyan-400 hover:underline text-lg">chandratriantomo123@gmail.com</a>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="phone" class="w-4 h-4 text-cyan-400"></i>
-                        <a href="tel:+6285730676143" class="text-cyan-400 hover:underline">
-                            (+62) 857-3067-6143
-                        </a>
+                    <div>
+                        <i data-lucide="phone" class="w-5 h-5 text-cyan-400 mb-2"></i>
+                        <a href="tel:+6285730676143" class="block text-cyan-400 hover:underline text-lg">(+62) 857-3067-6143</a>
                     </div>
                 </div>
-                <p class="text-xs text-slate-500 mt-4 pt-4 border-t border-slate-700/50">
+                <p class="text-xs text-zinc-500 mt-8 pt-8 border-t border-zinc-800 text-center">
                     Keterlambatan pembayaran dapat mengakibatkan penangguhan layanan
                 </p>
             </div>
 
             <!-- Footer -->
-            <div class="text-center pt-4 border-t border-slate-800/50">
-                <p class="text-sm text-slate-500">
-                    &copy; {{ date('Y') }} The Framework. Created with ❤️ by 
+            <div class="text-center text-sm text-zinc-600">
+                <p>&copy; 2025 The Framework. Created with ❤️ by 
                     <a href="https://github.com/Chandra2004" target="_blank" class="text-cyan-400 hover:underline">Chandra Tri Antomo</a>
                 </p>
             </div>
@@ -134,20 +117,17 @@
 
     <script>
         lucide.createIcons();
-        
-        // Calculate days overdue
         const dueDate = new Date('2025-04-07');
         const today = new Date();
-        const diffTime = dueDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        const daysOverdueElement = document.getElementById('daysOverdue');
+        const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+        const el = document.getElementById('daysOverdue');
         if (diffDays < 0) {
-            daysOverdueElement.textContent = `${Math.abs(diffDays)} Hari Terlambat`;
+            el.textContent = `${Math.abs(diffDays)} Hari Terlambat`;
+            el.classList.add('text-red-400');
         } else {
-            daysOverdueElement.textContent = "0 Hari (Belum Jatuh Tempo)";
+            el.textContent = `${diffDays} Hari Lagi`;
+            el.classList.add('text-cyan-400');
         }
     </script>
 </body>
-
 </html>

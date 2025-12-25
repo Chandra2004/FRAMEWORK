@@ -13,12 +13,13 @@
 
 Jangan bingung! Kami telah menyediakan panduan lengkap untuk setiap aspek framework ini di folder `docs/`.
 
-| Topik                    | Deskripsi & Link                                                                                                    |
-| :----------------------- | :------------------------------------------------------------------------------------------------------------------ |
-| **Routing & Controller** | Cara membuat URL, Controller, dan menangani Request/Response. <br> 👉 **[Baca Guide Routing](docs/routing.md)**     |
-| **Database & ORM**       | Panduan Model, Query Builder, Migrations, Seeders, dan Locking. <br> 👉 **[Baca Guide Database](docs/database.md)** |
-| **Security Features**    | Penjelasan WAF, CSRF, Secure Headers, dan proteksi lainnya. <br> 👉 **[Baca Guide Security](docs/security.md)**     |
-| **Helpers & Utilities**  | Daftar fungsi bantuan global, Email, Upload, dan Payment. <br> 👉 **[Baca Guide Helpers](docs/helpers.md)**         |
+| Topik                    | Deskripsi & Link                                                                                                              |
+| :----------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| **Routing & Controller** | Cara membuat URL, Controller, dan menangani Request/Response. <br> 👉 **[Baca Guide Routing](docs/routing.md)**               |
+| **Database & ORM**       | Panduan Model, Query Builder, Migrations, Seeders, dan Locking. <br> 👉 **[Baca Guide Database](docs/database.md)**           |
+| **Security Features**    | Penjelasan WAF, CSRF, Secure Headers, dan proteksi lainnya. <br> 👉 **[Baca Guide Security](docs/security.md)**               |
+| **Environment & Errors** | Penjelasan 4 Level Env (Local/Dev/Prod) dan Error Handling canggih. <br> 👉 **[Baca Guide Environment](docs/environment.md)** |
+| **Helpers & Utilities**  | Daftar fungsi bantuan global, Email, Upload, dan Payment. <br> 👉 **[Baca Guide Helpers](docs/helpers.md)**                   |
 
 ---
 
