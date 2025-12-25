@@ -11,10 +11,16 @@ class SessionManager
     {
         if (session_status() === PHP_SESSION_NONE) {
 
+            // Deteksi apakah berjalan di HTTPS
+            $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+
+            $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+
             ini_set('session.cookie_httponly', 1);
-            ini_set('session.cookie_secure', 1);
+            ini_set('session.cookie_secure', $isSecure ? 1 : 0);
             ini_set('session.use_strict_mode', 1);
-            ini_set('session.cookie_samesite', 'Strict');
+            ini_set('session.cookie_samesite', 'Lax');
+
 
             session_start();
 
@@ -37,7 +43,8 @@ class SessionManager
             $timeout = 30 * 60;
             if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
                 self::destroySession();
-                return Helper::redirect('/login', 'warning', 'Session expired');
+                session_start();
+                session_regenerate_id(true);
             }
             $_SESSION['last_activity'] = time();
         }

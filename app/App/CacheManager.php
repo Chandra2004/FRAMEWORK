@@ -26,7 +26,7 @@ class CacheManager
             'expires_at' => time() + $ttl
         ];
 
-        file_put_contents($filePath, json_encode($data));
+        file_put_contents($filePath, json_encode($data), LOCK_EX);
         return $value;
     }
 

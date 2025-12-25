@@ -7,11 +7,13 @@ use TheFramework\App\SessionManager;
 use TheFramework\Http\Controllers\Services\FileController;
 use TheFramework\Middleware\CsrfMiddleware;
 use TheFramework\Middleware\WAFMiddleware;
+use TheFramework\App\Container;
+use TheFramework\App\Database;
+use TheFramework\App\Request;
 
 SessionManager::startSecureSession();
 Config::loadEnv();
 
-// Security headers
 header('X-Powered-By: Native-Chandra');
 header('X-Frame-Options: DENY');
 header('X-Content-Type-Options: nosniff');
@@ -20,41 +22,30 @@ header('Referrer-Policy: no-referrer-when-downgrade');
 header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
 header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
 
-// Rate limiting sederhana
-$clientIp = $_SERVER['REMOTE_ADDR'];
-$rateLimitFile = __DIR__ . '/../app/Storage/cache/ratelimit/' . md5($clientIp);
-$limit = 100;
-$window = 120;
+// Rate Limiting Global
+TheFramework\App\RateLimiter::check($_SERVER['REMOTE_ADDR'], 100, 120);
 
-if (!file_exists(dirname($rateLimitFile))) {
-    mkdir(dirname($rateLimitFile), 0755, true);
-}
-$hits = 0;
-if (file_exists($rateLimitFile)) {
-    $data = json_decode(file_get_contents($rateLimitFile), true);
-    $hits = (time() - $data['timestamp'] < $window) ? $data['hits'] : 0;
-}
-$hits++;
-file_put_contents($rateLimitFile, json_encode(['hits' => $hits, 'timestamp' => time()]));
-if ($hits > $limit) {
-    http_response_code(429);
-    exit('Too many requests.');
-}
-
-// Jalankan router
 CsrfMiddleware::generateToken();
 
-// Middleware routes atau routes dinamis
+$container = Container::getInstance();
+
+$container->singleton(Database::class, function () {
+    return Database::getInstance();
+});
+
+$container->singleton(Request::class, function () {
+    return new Request();
+});
+
 Router::add('GET', '/file/(.*)', FileController::class, 'Serve');
 
-// ==== Tambahan untuk route cache ====
 $cacheFile = __DIR__ . '/../bootstrap/cache/routes.php';
 if (file_exists($cacheFile)) {
     $routes = include $cacheFile;
     foreach ($routes as $route) {
         Router::add(
             $route['method'],
-            $route['path_original'] ?? $route['path'], // simpan path asli juga
+            $route['path_original'] ?? $route['path'],
             $route['handler'],
             $route['function'],
             $route['middleware']
@@ -63,7 +54,6 @@ if (file_exists($cacheFile)) {
 } else {
     require_once __DIR__ . '/../routes/web.php';
 }
-
 
 BladeInit::init();
 Router::run();

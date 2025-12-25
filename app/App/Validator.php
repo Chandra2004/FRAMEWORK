@@ -135,18 +135,20 @@ class Validator
 
     protected function validate_unique(string $field, string $label, $value, $param): void
     {
-        Config::loadEnv();
-
         if (!$value || !$param) return;
 
         [$table, $column] = explode(',', $param);
-        $db = new PDO("" . Config::loadEnv('DB_CONNECTION') . ":host=" . Config::loadEnv('DB_HOST') . ";dbname=" . Config::loadEnv('DB_NAME') . ";charset=utf8", Config::loadEnv('DB_USER'), Config::loadEnv('DB_PASSWORD'));
-        $stmt = $db->prepare("SELECT COUNT(*) FROM {$table} WHERE {$column} = ?");
-        if ($stmt && $stmt->execute([$value])) {
-            $count = $stmt->fetchColumn();
-            if ($count > 0) {
-                $this->addError($field, "{$label} sudah digunakan.");
-            }
+        
+        // Gunakan Singleton Database agar lebih cepat (reuse connection)
+        $db = Database::getInstance();
+        
+        // Gunakan prepared statement via wrapper Database
+        $db->query("SELECT COUNT(*) as count FROM `$table` WHERE `$column` = :val");
+        $db->bind(':val', $value);
+        $result = $db->single();
+        
+        if ($result && $result['count'] > 0) {
+            $this->addError($field, "{$label} sudah digunakan.");
         }
     }
 

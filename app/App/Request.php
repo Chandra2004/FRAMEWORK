@@ -102,7 +102,12 @@ class Request
         $isValid = $validator->validate($this->input, $rules, $labels);
 
         if (!$isValid) {
+            $errors = $validator->errors();
             $error = $validator->firstError();
+
+            // Store validation errors in session untuk ditampilkan di view
+            Helper::set_flash('validation_errors', $errors);
+            Helper::set_flash('old_input', $this->input);
 
             $isJson = $this->forceJson ||
                 (isset($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json')) ||
@@ -112,6 +117,7 @@ class Request
                 Helper::json([
                     'status' => 'error',
                     'message' => $error,
+                    'errors' => $errors,
                 ], 422);
                 exit;
             }

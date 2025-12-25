@@ -35,28 +35,30 @@ class MakeModelCommand implements CommandInterface
         }
 
         $namespace = "TheFramework\\Models" . ($subNamespace ? "\\$subNamespace" : '');
+        // Konvensi: Nama tabel plural lowercase (User -> users)
+        // Kita gunakan library inflector simple atau manual 's' jika belum ada
+        $tableName = strtolower($className) . 's';
+
         $content = <<<PHP
         <?php
 
         namespace $namespace;
 
-        use TheFramework\App\CacheManager;
-        use TheFramework\App\Database;
-        use TheFramework\App\Config;
-        use TheFramework\App\Logging;
-        use Defuse\Crypto\Crypto;
-        use Defuse\Crypto\Key;
-        use Exception;
         use TheFramework\App\Model;
-        use TheFramework\Helpers\Helper;
 
-        class $className extends Model {
-            protected \$table = '$className';
-            protected \$primaryKey = 'uid';
+        class $className extends Model
+        {
+            protected \$table = '$tableName';
+            protected \$primaryKey = 'id';
+
+            protected \$fillable = [
+                // 'name', 'email', ...
+            ];
         }
         PHP;
 
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
         echo "\033[38;5;28m★ SUCCESS  Model dibuat: $className (app/Models/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\033[0m\n";
     }

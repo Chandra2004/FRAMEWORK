@@ -31,6 +31,29 @@ class ErrorController
         View::render('errors.500', $model);
     }
 
+    public static function databaseError(\TheFramework\App\DatabaseException $e)
+    {
+        http_response_code(500);
+        
+        // Ambil nilai dari .env untuk ditampilkan
+        Config::loadEnv();
+        $env_values = [
+            'DB_HOST' => Config::get('DB_HOST', 'not set'),
+            'DB_PORT' => Config::get('DB_PORT', 'not set'),
+            'DB_NAME' => Config::get('DB_NAME', 'not set'),
+            'DB_USER' => Config::get('DB_USER', 'not set'),
+            'DB_PASS' => Config::get('DB_PASS', 'not set') ? '***hidden***' : 'not set',
+        ];
+        
+        View::render('errors.database', [
+            'message' => $e->getMessage(),
+            'config_errors' => $e->getConfigErrors(),
+            'env_errors' => $e->getEnvErrors(),
+            'is_required' => $e->isConnectionRequired(),
+            'env_values' => $env_values,
+        ]);
+    }
+
     public static function payment()
     {
         $model = [];

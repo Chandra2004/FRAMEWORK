@@ -4,16 +4,75 @@ namespace TheFramework\App;
 
 use PDO;
 use PDOException;
+use TheFramework\App\DatabaseException;
 
 class Database
 {
     private static ?self $instance = null;
-    private PDO $dbh;
+    private ?PDO $dbh = null;
     private $stmt;
+    private bool $isConnected = false;
+    private static bool $databaseEnabled = true;
 
     private function __construct()
     {
-        $this->connect();
+        // Lazy connection - tidak langsung connect
+    }
+
+    /**
+     * Set apakah database enabled atau tidak
+     */
+    public static function setEnabled(bool $enabled): void
+    {
+        self::$databaseEnabled = $enabled;
+    }
+
+    /**
+     * Check apakah database enabled
+     */
+    public static function isEnabled(): bool
+    {
+        return self::$databaseEnabled;
+    }
+
+    /**
+     * Check apakah database sudah terhubung
+     */
+    public function isConnected(): bool
+    {
+        return $this->isConnected && $this->dbh !== null;
+    }
+
+    /**
+     * Test koneksi database (mencoba connect dan return status)
+     * Method ini akan mencoba membuat koneksi jika belum ada
+     * 
+     * @return bool True jika berhasil connect, false jika gagal
+     */
+    public function testConnection(): bool
+    {
+        // Jika sudah connected, return true
+        if ($this->isConnected()) {
+            return true;
+        }
+
+        // Jika database disabled, return false
+        if (!self::$databaseEnabled) {
+            return false;
+        }
+
+        // Coba connect, tapi jangan throw exception
+        try {
+            // Gunakan ensureConnection(true) untuk benar-benar mencoba connect
+            $this->ensureConnection(true);
+            return $this->isConnected();
+        } catch (\Exception $e) {
+            // Jika ada error, return false tanpa throw
+            // Reset state jika connection gagal
+            $this->isConnected = false;
+            $this->dbh = null;
+            return false;
+        }
     }
 
     /**
@@ -30,30 +89,153 @@ class Database
     }
 
     /**
+     * Ensure database connection (lazy connection)
+     * 
+     * @param bool $required Jika true, throw exception jika tidak bisa connect
+     * @throws DatabaseException
+     */
+    public function ensureConnection(bool $required = false): void
+    {
+        if ($this->isConnected()) {
+            return;
+        }
+
+        if (!self::$databaseEnabled) {
+            if ($required) {
+                throw new DatabaseException(
+                    "Database connection is required but database is disabled. Please enable database in your configuration.",
+                    500,
+                    null,
+                    [],
+                    [],
+                    true
+                );
+            }
+            return;
+        }
+
+        try {
+            $this->connect();
+        } catch (DatabaseException $e) {
+            if ($required) {
+                // Create new exception with connection required flag
+                throw new DatabaseException(
+                    $e->getMessage(),
+                    $e->getCode(),
+                    $e->getPrevious(),
+                    $e->getConfigErrors(),
+                    $e->getEnvErrors(),
+                    true
+                );
+            }
+            throw $e;
+        }
+    }
+
+    /**
      * Buat koneksi PDO
      *
      * Menangani perubahan konstanta ATTR_INIT_COMMAND (PHP 8.5+)
+     * 
+     * @throws DatabaseException
      */
     private function connect(): void
     {
+        $configErrors = [];
+        $envErrors = [];
+
         // Pastikan Config::loadEnv() dan Config::get() tersedia pada aplikasi Anda.
-        if (class_exists('\\TheFramework\\App\\Config')) {
-            Config::loadEnv();
-            $host = Config::get('DB_HOST');
-            $dbname = Config::get('DB_NAME');
-            $user = Config::get('DB_USER');
-            $pass = Config::get('DB_PASS');
-            $debug = Config::get('DEBUG_MODE', false);
+        if (!class_exists('\\TheFramework\\App\\Config')) {
+            throw new DatabaseException(
+                "Config class tidak ditemukan. Pastikan \\TheFramework\\App\\Config tersedia.",
+                500,
+                null,
+                ['Config class tidak ditemukan'],
+                []
+            );
+        }
+
+        Config::loadEnv();
+
+        // Get database configuration
+        $host = Config::get('DB_HOST');
+        $dbname = Config::get('DB_NAME');
+        $user = Config::get('DB_USER');
+        $pass = Config::get('DB_PASS');
+        $port = Config::get('DB_PORT', '3306');
+        $debug = Config::get('APP_DEBUG', false);
+
+        // Check for missing required values
+        if (empty($host)) {
+            $configErrors[] = "DB_HOST is missing or empty";
+        }
+        if (empty($dbname)) {
+            $configErrors[] = "DB_NAME is missing or empty";
+        }
+        if (empty($user)) {
+            $configErrors[] = "DB_USER is missing or empty";
+        }
+
+        // Check for possible typos in .env file
+        $envFile = __DIR__ . '/../../.env';
+        if (file_exists($envFile)) {
+            $envContent = file_get_contents($envFile);
+            $expectedVars = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS', 'DB_PORT'];
+            $foundVars = [];
+
+            foreach ($expectedVars as $var) {
+                if (preg_match('/^' . preg_quote($var, '/') . '\s*=/m', $envContent)) {
+                    $foundVars[] = $var;
+                }
+            }
+
+            // Check for common typos
+            $commonTypos = [
+                'DB_HOST' => ['DBHOST', 'DB_HOSTS', 'DATABASE_HOST', 'HOST'],
+                'DB_NAME' => ['DBNAME', 'DB_NAMES', 'DATABASE_NAME', 'DATABASE', 'DB_DATABASE'],
+                'DB_USER' => ['DBUSER', 'DB_USERS', 'DATABASE_USER', 'USER', 'DB_USERNAME'],
+                'DB_PASS' => ['DBPASS', 'DB_PASSWORD', 'DATABASE_PASS', 'DATABASE_PASSWORD', 'PASSWORD', 'PASS'],
+                'DB_PORT' => ['DBPORT', 'DATABASE_PORT', 'PORT']
+            ];
+
+            foreach ($expectedVars as $var) {
+                if (!in_array($var, $foundVars)) {
+                    // Check for typos
+                    $possibleTypos = $commonTypos[$var] ?? [];
+                    $foundTypo = false;
+
+                    foreach ($possibleTypos as $typo) {
+                        if (preg_match('/^' . preg_quote($typo, '/') . '\s*=/m', $envContent)) {
+                            $envErrors[] = "Found '$typo' but expected '$var'. Possible typo in .env file.";
+                            $foundTypo = true;
+                            break;
+                        }
+                    }
+
+                    if (!$foundTypo) {
+                        $configErrors[] = "$var is missing in .env file";
+                    }
+                }
+            }
         } else {
-            // Jika Anda tidak memakai Config, ubah sesuai kebutuhan.
-            throw new PDOException("Config class tidak ditemukan. Pastikan \\TheFramework\\App\\Config tersedia.");
+            $configErrors[] = ".env file not found at: $envFile";
         }
 
-        if (empty($host) || empty($dbname) || empty($user)) {
-            throw new PDOException("Database configuration is incomplete");
+        if (!empty($configErrors) || !empty($envErrors)) {
+            $message = "Database configuration error";
+            if (!empty($configErrors)) {
+                $message .= ": " . implode(", ", $configErrors);
+            }
+            throw new DatabaseException(
+                $message,
+                500,
+                null,
+                $configErrors,
+                $envErrors
+            );
         }
 
-        $dsn = "mysql:host={$host};dbname={$dbname};charset=utf8mb4";
+        $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
 
         // Build options and handle ATTR_INIT_COMMAND deprecation / new constant
         $options = [
@@ -63,11 +245,7 @@ class Database
             PDO::ATTR_EMULATE_PREPARES => false,
         ];
 
-        // Try to use the new class-constant if available: Pdo\Mysql::ATTR_INIT_COMMAND
-        // Fallback to PDO::MYSQL_ATTR_INIT_COMMAND if present.
-        // We resolve the constant's *value* (an int) and use it as key in $options.
         $initKey = null;
-        // check for new constant (class constant) first
         if (defined('Pdo\\Mysql::ATTR_INIT_COMMAND')) {
             $initKey = constant('Pdo\\Mysql::ATTR_INIT_COMMAND');
         } elseif (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
@@ -75,10 +253,8 @@ class Database
         }
 
         if ($initKey !== null) {
-            // Set init command (safe to use). Jangan gunakan string 'PDO::...' sebagai key.
             $options[$initKey] = "SET NAMES utf8mb4";
         } else {
-            // Jika tidak ada, set via exec setelah koneksi dibuat.
             $needExecInit = true;
         }
 
@@ -95,10 +271,38 @@ class Database
                     }
                 }
             }
+            $this->isConnected = true;
         } catch (PDOException $e) {
-            // Log error untuk debugging, tapi jangan expose detail ke user
+            // Log error untuk debugging
             error_log("Database Connection Error: " . $e->getMessage());
-            throw new PDOException("Database connection failed. Check error logs for details.");
+
+            // Check for common connection errors and provide helpful messages
+            $errorCode = $e->getCode();
+            $errorMessage = $e->getMessage();
+
+            $detailedMessage = "Database connection failed";
+
+            // Provide specific error messages based on error code
+            if (strpos($errorMessage, 'Access denied') !== false) {
+                $detailedMessage = "Database access denied. Please check DB_USER and DB_PASS in your .env file.";
+                $envErrors[] = "Access denied - Check DB_USER and DB_PASS credentials";
+            } elseif (strpos($errorMessage, 'Unknown database') !== false) {
+                $detailedMessage = "Database '{$dbname}' not found. Please check DB_NAME in your .env file.";
+                $envErrors[] = "Database '{$dbname}' does not exist - Check DB_NAME";
+            } elseif (strpos($errorMessage, "Can't connect") !== false || $errorCode == 2002) {
+                $detailedMessage = "Cannot connect to database server. Please check DB_HOST and DB_PORT in your .env file.";
+                $envErrors[] = "Connection failed - Check DB_HOST ({$host}) and DB_PORT ({$port})";
+            } else {
+                $detailedMessage = $errorMessage;
+            }
+
+            throw new DatabaseException(
+                $detailedMessage,
+                $errorCode,
+                $e,
+                $configErrors,
+                $envErrors
+            );
         }
     }
 
@@ -108,9 +312,11 @@ class Database
      * @param string $table
      * @param array $data
      * @return bool
+     * @throws DatabaseException
      */
     public function insert(string $table, array $data): bool
     {
+        $this->ensureConnection(true);
         $columns = array_keys($data);
         $columnList = "`" . implode("`, `", array_map([$this, 'escapeIdentifierSimple'], $columns)) . "`";
         $placeholders = ":" . implode(", :", $columns);
@@ -131,9 +337,11 @@ class Database
      * @param array $data
      * @param array $where
      * @return bool
+     * @throws DatabaseException
      */
     public function update(string $table, array $data, array $where): bool
     {
+        $this->ensureConnection(true);
         if (empty($data)) {
             throw new \InvalidArgumentException("UPDATE: data kosong");
         }
@@ -173,9 +381,11 @@ class Database
      * @param string $table
      * @param array $where
      * @return bool
+     * @throws DatabaseException
      */
     public function delete(string $table, array $where): bool
     {
+        $this->ensureConnection(true);
         if (empty($where)) {
             throw new \InvalidArgumentException("DELETE: WHERE kosong (rawan mass delete)");
         }
@@ -204,6 +414,7 @@ class Database
      * @param int|null $limit
      * @param int|null $offset
      * @return array
+     * @throws DatabaseException
      */
     public function select(
         string $table,
@@ -213,6 +424,7 @@ class Database
         ?int $limit = null,
         ?int $offset = null
     ): array {
+        $this->ensureConnection(true);
         $columnList = implode(", ", array_map(function ($c) {
             return $c === '*' ? $c : $this->escapeIdentifierSimple($c);
         }, $columns));
@@ -231,11 +443,11 @@ class Database
         }
 
         if ($limit !== null) {
-            $sql .= " LIMIT " . (int)$limit;
+            $sql .= " LIMIT " . (int) $limit;
         }
 
         if ($offset !== null) {
-            $sql .= " OFFSET " . (int)$offset;
+            $sql .= " OFFSET " . (int) $offset;
         }
 
         $this->query($sql);
@@ -250,9 +462,11 @@ class Database
      *
      * @param string $sql
      * @return void
+     * @throws DatabaseException
      */
     public function query(string $sql): void
     {
+        $this->ensureConnection(true);
         // Jika ada kelas Config, manfaatkan DEBUG_MODE
         $debug = false;
         if (class_exists('\\TheFramework\\App\\Config')) {
@@ -285,7 +499,7 @@ class Database
     {
         $debug = (class_exists('\\TheFramework\\App\\Config') ? \TheFramework\App\Config::get('DEBUG_MODE', false) : false);
         if ($debug) {
-            error_log("[BIND] $param = " . (is_scalar($value) ? (string)$value : gettype($value)));
+            error_log("[BIND] $param = " . (is_scalar($value) ? (string) $value : gettype($value)));
         }
 
         if (is_null($type)) {
@@ -310,10 +524,11 @@ class Database
      * Execute prepared statement
      *
      * @return bool
-     * @throws PDOException
+     * @throws DatabaseException|PDOException
      */
     public function execute(): bool
     {
+        $this->ensureConnection(true);
         try {
             return $this->stmt->execute();
         } catch (PDOException $e) {
@@ -322,7 +537,7 @@ class Database
                 "SQL: " . (property_exists($this->stmt, 'queryString') ? $this->stmt->queryString : 'N/A') . "\n";
             error_log($errorMessage);
             // Bungkus ulang exception agar stacktrace jelas
-            throw new PDOException($errorMessage, (int)$e->getCode(), $e);
+            throw new PDOException($errorMessage, (int) $e->getCode(), $e);
         }
     }
 
@@ -330,9 +545,11 @@ class Database
      * Ambil banyak baris
      *
      * @return array
+     * @throws DatabaseException
      */
     public function resultSet(): array
     {
+        $this->ensureConnection(true);
         $this->execute();
         $result = $this->stmt->fetchAll();
         $this->stmt->closeCursor();
@@ -343,9 +560,11 @@ class Database
      * Ambil satu baris
      *
      * @return mixed
+     * @throws DatabaseException
      */
     public function single()
     {
+        $this->ensureConnection(true);
         $this->execute();
         $result = $this->stmt->fetch();
         $this->stmt->closeCursor();
@@ -366,9 +585,11 @@ class Database
      * Mulai transaksi (jika belum)
      *
      * @return bool
+     * @throws DatabaseException
      */
     public function beginTransaction(): bool
     {
+        $this->ensureConnection(true);
         if (!$this->dbh->inTransaction()) {
             return $this->dbh->beginTransaction();
         }
@@ -379,9 +600,11 @@ class Database
      * Commit transaksi
      *
      * @return bool
+     * @throws DatabaseException
      */
     public function commit(): bool
     {
+        $this->ensureConnection(true);
         return $this->dbh->commit();
     }
 
@@ -389,9 +612,11 @@ class Database
      * Rollback transaksi
      *
      * @return bool
+     * @throws DatabaseException
      */
     public function rollBack(): bool
     {
+        $this->ensureConnection(true);
         return $this->dbh->rollBack();
     }
 

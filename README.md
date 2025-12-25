@@ -1,258 +1,118 @@
-# THE-FRAMEWORK - MVC Native PHP Framework
+# THE-FRAMEWORK - Secure MVC Native PHP Framework
 
 ## 📌 Pengenalan
 
-**THE-FRAMEWORK** adalah framework PHP berbasis MVC (Model-View-Controller) yang dibuat oleh **Chandra Tri A**. Framework ini dirancang untuk memberi struktur yang bersih dan terorganisir pada aplikasi PHP, dengan fitur-fitur utama:
+**THE-FRAMEWORK** adalah framework PHP Native berbasis MVC (Model-View-Controller) yang dirancang dengan fokus pada **Keamanan (Security First)**, **Performa (Lean Core)**, dan **Efisiensi Developer**.
 
-- Manajemen namespace dinamis PSR‑4
-- Blade Templating
-- Migrasi dan seeding database
-- Artisan CLI untuk scaffolding dan manajemen proyek
-- Support folder `resources/Views` dan fallback ke `services/`
-- Upload file terstruktur di folder `private-uploads/`
+Tidak seperti framework raksasa, framework ini ringan namun dilengkapi fitur keamanan kelas enterprise seperti **Built-in WAF (Web Application Firewall)**, **Anti-Race Condition Logic**, dan **Secure Session Management** secara default.
+
+### ✨ Fitur Utama
+
+- **Security First**:
+  - 🛡️ **Built-in WAF Middleware**: Memblokir serangan SQL Injection, XSS, dan Path Traversal sebelum masuk Controller.
+  - 🔒 **Pessimistic Locking**: Metode `lockForUpdate()` untuk mencegah race condition (cocok untuk aplikasi tiket/stok).
+  - 🔑 **Secure Headers**: Security headers otomatis (X-Frame, XSS-Protection, dll) di core bootstrap.
+- **Developer Experience**:
+  - 🛠️ **Artisan CLI**: Generator untuk Model, Controller, Middleware, dan Seeder.
+  - 🌪️ **Blade Templating**: Menggunakan engine template populer Laravel Blade.
+  - 📦 **Modern Handlers**: Helper siap pakai untuk Upload (support WebP/MIME-check), Email (PHPMailer wrapper), dan Payment (Midtrans wrapper).
+- **Architecture**:
+  - 🏗️ **PSR-4 Autoloading**: Struktur namespace modern.
+  - 🗄️ **Database Migrations & Seeders**: Manajemen skema database terkontrol versioning.
 
 ## 🚀 Instalasi
+
+### Prasyarat
+
+- PHP 8.0+
+- Composer
+- MySQL/MariaDB
 
 ### Langkah-langkah
 
 1. **Clone Proyek**:
+
    ```bash
    git clone https://github.com/Chandra2004/FRAMEWORK.git
    cd FRAMEWORK
    ```
 
-2. **Install Dependensi**:
+2. **Install Dependensi & Setup**:
+
    ```bash
    composer install
-   ```
-
-3. **Setup Proyek Awal**:
-   ```bash
    php artisan setup
    ```
-   - Perintah ini akan membuat `.env`, dan mempersiapkan struktur awal.
 
-4. **Jalankan Server**:
+   _Perintah `setup` otomatis membuat file `.env` dan `API Key`._
+
+3. **Jalankan Server**:
    ```bash
    php artisan serve
    ```
    Akses di `http://localhost:8080`.
 
-### Persyaratan
-- PHP 8.0+
-- Composer
-- MySQL (atau kompatibel)
+## 📂 Struktur Direktori (Modernized)
 
-## 📂 Struktur Direktori
 ```
 FRAMEWORK/
 ├── app/
-│   ├── App/
-│   │   ├── Blueprint.php
-│   │   ├── CacheManager.php
-│   │   ├── Config.php
-│   │   ├── Database.php
-│   │   ├── Logging.php
-│   │   ├── Model.php
-│   │   ├── QueryBuilder.php
-│   │   ├── RateLimiter.php
-│   │   ├── Router.php
-│   │   ├── Schema.php
-│   │   ├── SessionManager.php
-│   │   └── View.php
-│   ├── Config/
+│   ├── App/                # Core Framework (Jantung Sistem)
+│   │   ├── Database.php    # Lazy Loading PDO Wrapper
+│   │   ├── Router.php      # High Performance Router
+│   │   └── ...
+│   ├── Config/             # Configuration & External Services
 │   │   ├── EmailHandler.php
-│   │   └── ImageHandler.php
-│   ├── Console/
-│   │   ├── Commands/
-│   │   │   └── ServeCommand.php
-│   │   └── CommandInterface.php
-│   ├── Database/
-│   │   ├── Seeder.php
-│   │   └── Migration.php
-│   ├── Helpers/
-│   │   ├── Helper.php
-│   │   └── helpers.php
+│   │   ├── UploadHandler.php  # Secure Upload (WebP support)
+│   │   └── PaymentHandler.php # Midtrans Wrapper
+│   ├── Console/            # CLI Commands (Artisan)
+│   ├── Database/           # Base Migration & Seeder Classes
+│   ├── Helpers/            # Helper Functions (Utility only)
 │   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── Services/
-│   │   │   │   ├── DebugController.php
-│   │   │   │   ├── ErrorController.php
-│   │   │   │   └── FileController.php
-│   │   │   ├── Controller.php
-│   │   │   └── HomeController.php
-│   ├── Middleware/
-│   │   ├── AuthMiddleware.php
-│   │   ├── CsrfMiddleware.php
-│   │   ├── Middleware.php
-│   │   ├── ValidationMiddleware.php
-│   │   └── WAFMiddleware.php
-│   ├── Models/
-│   │   ├── Seeders/
-│   │   │   └── UserSeeder.php
-│   │   └── HomeModel.php                 
-│   └── BladeInit.php
-├── bootstrap/
-│   ├── app.php
-├── database/
-│   ├── migrations/
-│   │   └── UsersTable.php
-│   └── seeders/
-│       └── UserSeeder.php
-├── private-uploads/
-│   ├── dummy/
-│   └── user-pictures/
+│   │   ├── Controllers/    # Application Logic
+│   │   ├── Requests/       # Form Validation
+│   │   └── Services/       # Business Logic Layer
+│   ├── Middleware/         # HTTP Middleware (CSRF, Auth, WAF)
+│   └── Models/             # Database Models (extends Core Model)
+├── bootstrap/              # App Bootstrapper
+├── database/               # Database Files
+│   ├── migrations/         # Schema Definitions
+│   └── seeders/            # Dummy Data Generators
+├── docs/                   # Full Documentation
+├── public/                 # Public Entry Point (Assets)
 ├── resources/
-│   ├── css/
-│   ├── js/
-│   └── Views/
-│       └── (...file blade di sini)
+│   └── views/              # Blade Templates
 ├── routes/
-│   ├── web.php
-├── services/
-│   ├── error/
-│   │   ├── 404.blade.php
-│   │   ├── 500.blade.php
-│   │   ├── maintenance.blade.php
-│   │   └── payment.blade.php
-│   └── debug/
-│       ├── exception.blade.php
-│       └── fatal.blade.php
-├── vendor/
-├── .env
-├── .env.example
-├── .gitignore
-├── .htaccess 
-├── index.php 
-├── artisan
-├── composer.json
-├── composer.lock
-└── README.md
+│   └── web.php             # Route Definitions
+├── storage/                # Logs, Cache, Session Files
+├── vendor/                 # Composer Dependencies
+├── .env                    # Environment Variables
+├── artisan                 # CLI Entry Point
+└── index.php               # Web Entry Point
 ```
 
-## 🔧 Perintah Artisan
-```ini
-  config:clear             Menghapus cache konfigurasi
-  make:controller          Membuat kelas controller baru
-  make:middleware          Membuat kelas middleware baru
-  make:migration           Membuat file migrasi baru
-  make:model               Membuat kelas model baru
-  make:seeder              Membuat file seeder baru di database/seeders
-  migrate                  Menjalankan migrasi database
-  migrate:fresh            Menghapus semua tabel dan menjalankan ulang migrasi
-  migrate:rollback         Membatalkan semua migrasi dengan menghapus semua tabel database
-  route:cache              Menyimpan cache rute aplikasi
-  db:seed                     Menjalankan seeder database
-  serve                    Menjalankan aplikasi pada server pengembangan PHP
-  setup                    Menjalankan pengaturan awal (env, kunci, autoload)
-```
-> Semua file yang dihasilkan akan menggunakan namespace sesuai PSR‑4 di `composer.json`.
+## 🔧 Artisan Commands
 
-## 🌐 Konfigurasi ENV
-
-Sesuaikan file `.env`:
-```ini
-APP_ENV=local
-APP_DEBUG=false
-APP_NAME=TheFramework
-
-BASE_URL=http://localhost:8080
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=the_framework
-DB_USER=root
-DB_PASS=
-
-DB_TIMEZONE=+07:00
-
-ENCRYPTION_KEY=generated_key_here
-APP_KEY=generated_app_key_here
-
+```bash
+php artisan make:model Product     # Membuat Model baru
+php artisan make:controller Home   # Membuat Controller
+php artisan make:middleware Auth   # Membuat Middleware
+php artisan serve                  # Menjalankan Server
+php artisan migrate                # Menjalankan Migrasi
+php artisan db:seed                # Menjalankan Seeder
 ```
 
-## 🌐 Konfigurasi Jika Menggunakan Google Project IDX
+## 📖 Dokumentasi Lengkap
 
-Sesuaikan file `idx/dev.nix`:
-```
-{ pkgs, ... }: {
-  channel = "stable-24.05";
+Lihat folder `docs/` untuk panduan detail:
 
-  packages = [
-    pkgs.php83
-    pkgs.php83Extensions.curl
-    pkgs.php83Extensions.fileinfo
-    pkgs.php83Extensions.mbstring
-    pkgs.php83Extensions.openssl
-    pkgs.php83Extensions.pdo_mysql
-    pkgs.php83Extensions.tokenizer
-    pkgs.php83Extensions.xml
-    pkgs.php83Packages.composer
-    pkgs.nodejs_20
-    pkgs.python3
-    pkgs.tailwindcss
-  ];
-
-services.mysql = {
-  enable = true;
-  package = pkgs.mariadb;
-};
-
-
-  env = {
-    PHP_PATH = "${pkgs.php83}/bin/php";
-    COMPOSER_ALLOW_SUPERUSER = "1";
-  };
-
-  idx = {
-    extensions = [
-      # Laravel & Blade
-      "amirmarmul.laravel-blade-vscode"
-      "onecentlin.laravel-blade"
-      "shufo.vscode-blade-formatter"
-      "codingyu.laravel-goto-view"
-      "stef-k.laravel-goto-controller"
-      "ahinkle.laravel-model-snippets"
-
-      # Tailwind & Frontend
-      "bradlc.vscode-tailwindcss"
-      "imgildev.vscode-tailwindcss-snippets"
-      "esbenp.prettier-vscode"
-
-      # PHP & Debugging
-      "bmewburn.vscode-intelephense-client"
-      "xdebug.php-debug"
-
-      # Database
-      "cweijan.vscode-database-client2"
-      "formulahendry.vscode-mysql"
-
-      # API Testing
-      "rangav.vscode-thunder-client"
-
-      # Utils
-      "yandeu.five-server"
-    ];
-
-    previews = {
-      enable = true;
-      previews = {
-        web = {
-          command = ["php" "artisan" "serve" "--host=0.0.0.0" "--port=$PORT"];
-          manager = "web";
-        };
-      };
-    };
-  };
-}
-```
+- [Routing & Controller](docs/routing.md)
+- [Database & Models](docs/database.md)
+- [Security Features](docs/security.md)
+- [Helpers & Utilities](docs/helpers.md)
 
 ## 🤝 Kontribusi
 
-Kami terbuka untuk kontribusi! Silakan buat pull request atau hubungi:
-
-- WhatsApp: 085730676143
-- Email   : chandratriantomo123@gmail.com
-- Website : https://www.the-framework.ct.ws
-
+Project ini Open Source. Silakan fork dan pull request!
+Info kontak: chandratriantomo123@gmail.com
+Web: https://www.the-framework.ct.ws

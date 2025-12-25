@@ -1,17 +1,40 @@
-# Ignore environment file
+# Environment Variables
 .env
+.env.backup
+.env.production
 
-# Ignore Composer dependencies
+# Dependencies
 /vendor/
+composer.phar
 
-/vendor/**
+# Storage & Cache (Ignore contents but keep directory structure)
+/storage/cache/*
+!/storage/cache/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/session/*
+!/storage/session/.gitignore
 
-# Ignore storage folder (e.g., uploads, logs, cache)
-app/Storage/
-app/Storage/**
+# User Uploads (Ignore file uploads)
+/private-uploads/*
+!/private-uploads/.gitignore
+/public/assets/uploads/*
+!/public/assets/uploads/.gitignore
 
-# Optional: Ignore system files
-*.log
-*.tmp
+# System & IDE Files
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary Files
+*.log
+*.tmp
+*.bak
+
+# Node Modules (Jika nanti pakai frontend build tools)
+node_modules/
+npm-debug.log
+yarn-error.log

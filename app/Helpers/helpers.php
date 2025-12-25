@@ -57,3 +57,10 @@ if (!function_exists('rupiah')) {
         return Helper::rupiah($number);
     }
 }
+
+if (!function_exists('csrf_token')) {
+    function csrf_token()
+    {
+        return Helper::generateCsrfToken();
+    }
+}

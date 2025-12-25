@@ -22,7 +22,7 @@ class BladeInit
             $resolver = new EngineResolver();
 
             $resolver->register('blade', function () use ($filesystem) {
-                $compiler = new BladeCompiler($filesystem, __DIR__ . '/Storage/cache/views');
+                $compiler = new BladeCompiler($filesystem, dirname(__DIR__) . '/storage/cache/views');
                 $compiler->directive('csrf', function () {
                     return "<?php echo '<input type=\"hidden\" name=\"_token\" value=\"' . \$_SESSION['csrf_token'] . '\">'; ?>";
                 });
@@ -30,12 +30,11 @@ class BladeInit
             });
 
             $resolver->register('php', function () {
-                return new PhpEngine();
+                return new PhpEngine(new Filesystem);
             });
 
             $viewPaths = [
-                dirname(__DIR__) . '/resources/Views',
-                dirname(__DIR__) . '/services',
+                dirname(__DIR__) . '/resources/views',
             ];
             $finder = new FileViewFinder($filesystem, $viewPaths);
 

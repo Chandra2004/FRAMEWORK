@@ -46,9 +46,9 @@ class QueryBuilder
         return $this;
     }
 
-    /* -------------------------------
-    WHERE
-    --------------------------------*/
+    // -------------------------
+    // WHERE CLAUSES
+    // -------------------------
     public function where(string $column, string $operator, $value)
     {
         $param = ":where_" . count($this->bindings);
@@ -109,12 +109,13 @@ class QueryBuilder
         return $this->where($column, '=', $value);
     }
 
-    /* -------------------------------
-    SEARCH
-    --------------------------------*/
+    // -------------------------
+    // SEARCH
+    // -------------------------
     public function search(array $columns, string $keyword)
     {
-        if (!$keyword) return $this;
+        if (!$keyword)
+            return $this;
 
         $likeClauses = [];
         foreach ($columns as $i => $col) {
@@ -127,28 +128,39 @@ class QueryBuilder
         return $this;
     }
 
-    /* -------------------------------
-    JOIN
-    --------------------------------*/
+    // -------------------------
+    // JOINS
+    // -------------------------
     public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER')
     {
         $type = strtoupper($type);
-        if (!in_array($type, ['INNER', 'LEFT', 'RIGHT'])) $type = 'INNER';
+        if (!in_array($type, ['INNER', 'LEFT', 'RIGHT']))
+            $type = 'INNER';
         $this->joins[] = "$type JOIN $table ON $first $operator $second";
         return $this;
     }
 
-    /* -------------------------------
-    GROUP BY / ORDER BY
-    --------------------------------*/
+    // -------------------------
+    // GROUP / ORDER BY
+    // -------------------------
     public function groupBy($columns)
     {
         $this->groupBy = is_array($columns) ? $columns : [$columns];
         return $this;
     }
 
+    private $lock; // Untuk Pessimistic Locking (FOR UPDATE)
+
+    // ... (kode existing) ...
+
     public function orderBy(string $column, string $direction = 'ASC')
     {
+        // Security: Validasi nama kolom (hanya alfanumerik, underscore, titik)
+        if (!preg_match('/^[a-zA-Z0-9_\.]+$/', $column)) {
+            // Atau throw exception jika ingin strict
+            throw new \InvalidArgumentException("Invalid column name for orderBy: $column");
+        }
+
         $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
         $this->orderBy[] = "$column $dir";
         return $this;
@@ -160,10 +172,29 @@ class QueryBuilder
         return $this;
     }
 
+    /**
+     * Lock row untuk update (Pessimistic Locking).
+     * Sangat PENTING untuk sistem tiket/stok (mencegah race condition).
+     * Harus dipanggil di dalam transaction.
+     */
+    public function lockForUpdate()
+    {
+        $this->lock = "FOR UPDATE";
+        return $this;
+    }
 
-    /* -------------------------------
+    /**
+     * Lock row untuk share (Shared Lock).
+     */
+    public function sharedLock()
+    {
+        $this->lock = "LOCK IN SHARE MODE";
+        return $this;
+    }
+
+    /* --------------------------------
     SQL Builder
-    --------------------------------*/
+    ---------------------------------*/
     public function toSql(): string
     {
         $sql = "SELECT {$this->columns} FROM {$this->table}";
@@ -201,12 +232,17 @@ class QueryBuilder
             }
         }
 
+        // Append Lock Clause di akhir query
+        if ($this->lock) {
+            $sql .= " " . $this->lock;
+        }
+
         return $sql;
     }
 
-    /* -------------------------------
-    EXECUTION
-    --------------------------------*/
+    // -------------------------
+    // EXECUTION METHODS
+    // -------------------------
     public function get()
     {
         $sql = $this->toSql();
@@ -241,6 +277,18 @@ class QueryBuilder
         if (empty($this->wherePairs)) {
             throw new \InvalidArgumentException("Update tanpa WHERE dilarang");
         }
+
+        // Otomatis tambahkan updated_at jika belum ada di data
+        // User bisa override dengan menyediakan updated_at secara eksplisit
+        if (!isset($data['updated_at'])) {
+            // Gunakan Helper jika tersedia, atau gunakan date() sebagai fallback
+            if (class_exists('\\TheFramework\\Helpers\\Helper')) {
+                $data['updated_at'] = \TheFramework\Helpers\Helper::updateAt();
+            } else {
+                $data['updated_at'] = date('Y-m-d H:i:s');
+            }
+        }
+
         return $this->db->update($this->table, $data, $this->wherePairs);
     }
 
@@ -252,9 +300,9 @@ class QueryBuilder
         return $this->db->delete($this->table, $this->wherePairs);
     }
 
-    /* -------------------------------
-    PAGINATION
-    --------------------------------*/
+    // -------------------------
+    // PAGINATION
+    // -------------------------
     public function paginate(int $perPage = 10, int $page = 1): array
     {
         $offset = ($page - 1) * $perPage;
@@ -305,9 +353,9 @@ class QueryBuilder
         return (int) ($result['total'] ?? 0);
     }
 
-    /* -------------------------------
-    EXTRA HELPERS
-    --------------------------------*/
+    // -------------------------
+    // HELPERS
+    // -------------------------
     public function whereRaw(string $condition, array $bindings = [])
     {
         foreach ($bindings as $i => $value) {
@@ -346,9 +394,9 @@ class QueryBuilder
         return $this;
     }
 
-    /* -------------------------------
-    EAGER LOADING
-    --------------------------------*/
+    // -------------------------
+    // EAGER LOADING
+    // -------------------------
     public function with(array $relations)
     {
         $this->withRelations = $relations;
@@ -371,9 +419,9 @@ class QueryBuilder
         return array_map($callback, $results);
     }
 
-    /* -------------------------------
-    PLUCK
-    --------------------------------*/
+    // -------------------------
+    // PLUCK
+    // -------------------------
     public function pluck(string $column): array
     {
         $results = $this->get();

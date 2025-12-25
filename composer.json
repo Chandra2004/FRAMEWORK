@@ -26,9 +26,7 @@
         "illuminate/view": "^12.17",
         "illuminate/events": "^12.17",
         "illuminate/filesystem": "^12.17",
-        "respect/validation": "^2.4",
-        "monolog/monolog": "^3.9",
-        "defuse/php-encryption": "^2.4"
+        "monolog/monolog": "^3.9"
     },
     "require-dev": {
         "roave/security-advisories": "dev-master"

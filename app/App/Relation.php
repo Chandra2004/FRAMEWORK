@@ -9,14 +9,20 @@ class Relation
     public $foreignKey;
     public $localKey;
     public $select = [];
+    public $pivotTable;
+    public $relatedKey;
+    public $additionalPivotColumns = [];
 
-    public function __construct($type, $parent, $related, $foreignKey, $localKey)
+    public function __construct($type, $parent, $related, $foreignKey, $localKey = null, $pivotTable = null, $relatedKey = null, $additionalPivotColumns = [])
     {
         $this->type = $type;
         $this->parent = $parent;
         $this->related = $related;
         $this->foreignKey = $foreignKey;
         $this->localKey = $localKey;
+        $this->pivotTable = $pivotTable;
+        $this->relatedKey = $relatedKey;
+        $this->additionalPivotColumns = $additionalPivotColumns;
     }
 
     public function select(array $columns)

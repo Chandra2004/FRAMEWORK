@@ -15,6 +15,7 @@ abstract class Model
 
     public function __construct()
     {
+        // Lazy initialization - tidak langsung connect ke database
         $this->db = Database::getInstance();
         $this->builder = (new QueryBuilder($this->db))->setModel($this);
 
@@ -23,6 +24,24 @@ abstract class Model
             $class = (new ReflectionClass($this))->getShortName();
             $this->table = strtolower(preg_replace('/Model$/', '', $class));
         }
+    }
+
+    /**
+     * Check apakah database tersedia
+     */
+    protected function requireDatabase(): void
+    {
+        if (!Database::isEnabled()) {
+            throw new \TheFramework\App\DatabaseException(
+                "This operation requires a database connection, but database is disabled.",
+                500,
+                null,
+                [],
+                [],
+                true
+            );
+        }
+        $this->db->ensureConnection(true);
     }
 
     /* ==================================================
@@ -38,12 +57,14 @@ abstract class Model
 
     public function all()
     {
+        $this->requireDatabase();
         $results = $this->query()->with($this->with)->get();
         return $this->loadRelations($results, $this->with);
     }
 
     public function find($id)
     {
+        $this->requireDatabase();
         $result = $this->query()
             ->where($this->primaryKey, '=', $id)
             ->first();
@@ -55,6 +76,7 @@ abstract class Model
 
     public function where($column, $value)
     {
+        $this->requireDatabase();
         $results = $this->query()
             ->where($column, '=', $value)
             ->get();
@@ -64,11 +86,13 @@ abstract class Model
 
     public function insert(array $data)
     {
+        $this->requireDatabase();
         return $this->query()->insert($data);
     }
 
     public function update(array $data, $id)
     {
+        $this->requireDatabase();
         return $this->query()
             ->where($this->primaryKey, '=', $id)
             ->update($data);
@@ -76,6 +100,7 @@ abstract class Model
 
     public function delete($id)
     {
+        $this->requireDatabase();
         return $this->query()
             ->where($this->primaryKey, '=', $id)
             ->delete();

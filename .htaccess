@@ -1,39 +1,27 @@
-## START HTACCESS
-    Options -Indexes
+Options -Indexes
 
-    <IfModule mod_rewrite.c>
+<IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteRule ^(\.git|app|bootstrap|database|resources|routes|services|vendor|storage|private-uploads) - [F,L]
+    RewriteRule ^(artisan|composer\.json|composer\.lock|package\.json|phpunit\.xml|README\.md|\.env.*|\.gitignore)$ - [F,L]
 
-    # Hapus trailing slash
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # BLOK direktori internal (403)
-    RewriteRule ^(app|bootstrap|database|resources|routes|services|vendor|private-uploads)(/.*)?$ - [F,L]
-
-    # Arahkan semua request (kecuali file/direktori fisik) ke index.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [QSA,L]
 
-    # Authorization header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-    </IfModule>
+</IfModule>
 
-    # Lindungi file sensitif
-    <FilesMatch "^(\.env|composer\.(json|lock)|.*\.log|.*\.sql)$">
-    Order allow,deny
-    Deny from all
-    </FilesMatch>
-
-    # Security headers (opsional)
-    <IfModule mod_headers.c>
+<IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "DENY"
+    Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
-    </IfModule>
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
 
-    ServerSignature Off
-## END HTACCESS
+ServerSignature Off

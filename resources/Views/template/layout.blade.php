@@ -13,6 +13,7 @@
         content="PHP Framework, MVC, Database Migrations, REST API, Web Development, Laravel Alternative, MySQL, Composer">
     <meta name="author" content="Chandra Tri Antomo">
     <meta name="robots" content="index, follow">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">

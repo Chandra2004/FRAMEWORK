@@ -19,15 +19,12 @@ class View
             error_log("Blade rendering failed for view {$bladeView}: " . $e->getMessage());
         }
 
-        $defaultPath = dirname(__DIR__, 2) . '/resources/Views/' . $view . '.php';
-        $fallbackPath = dirname(__DIR__, 2) . '/services/' . $view . '.php';
+        $defaultPath = dirname(__DIR__, 2) . '/resources/views/' . $view . '.php';
 
         if (file_exists($defaultPath)) {
             require $defaultPath;
-        } elseif (file_exists($fallbackPath)) {
-            require $fallbackPath;
         } else {
-            throw new Exception("View not found: {$view} : " . $e->getMessage());
+            throw new Exception("View not found: {$view}");
         }
     }
 }

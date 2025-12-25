@@ -55,7 +55,7 @@ class Helper
     public static function request($key = null, $default = null)
     {
         $requestData = array_merge($_GET, $_POST);
-        return new class($requestData) {
+        return new class ($requestData) {
             private $data;
 
             public function __construct($data)
@@ -108,6 +108,38 @@ class Helper
         return $_SESSION[$key] ?? $default;
     }
 
+    /**
+     * Ambil validation errors dari session
+     */
+    public static function validation_errors(?string $field = null): array|string|null
+    {
+        self::ensureSession();
+        $errors = $_SESSION['validation_errors'] ?? [];
+
+        if ($field === null) {
+            return $errors;
+        }
+
+        return $errors[$field] ?? null;
+    }
+
+    /**
+     * Cek apakah ada validation error untuk field tertentu
+     */
+    public static function has_error(string $field): bool
+    {
+        return self::validation_errors($field) !== null;
+    }
+
+    /**
+     * Ambil old input value (untuk form yang gagal validasi)
+     */
+    public static function old(string $field, $default = null)
+    {
+        self::ensureSession();
+        return $_SESSION['old_input'][$field] ?? $default;
+    }
+
     public static function session_write($key, $value, $overwrite = false)
     {
         self::ensureSession();
@@ -126,49 +158,7 @@ class Helper
         session_destroy();
     }
 
-    public static function validate_user_session()
-    {
-        self::ensureSession();
 
-        if (!isset($_SESSION['user']['uid'])) return;
-
-        $uid = $_SESSION['user']['uid'];
-        $db = Database::getInstance();
-
-        // Ambil data user berdasarkan UID
-        $db->query("
-                SELECT users.*, 
-                roles.uid AS role_uniqId,
-                roles.role_name AS role_name
-                FROM users
-                JOIN roles ON users.role_uid = roles.uid
-                WHERE users.uid = :uid
-            ");
-        $db->bind(':uid', $uid);
-        $user = $db->single();
-
-        // ✅ Jika user tidak ditemukan (dihapus)
-        if (!$user) {
-            self::session_destroy_all();
-            self::redirect('/login', 'error', 'User not found.');
-        }
-
-        if ($user && $user['status'] == '0') {
-            self::session_destroy_all();
-            self::redirect('/login', 'error', 'Status anda tidak lagi aktif');
-        }
-
-        if ($_SESSION['user']['role_name'] !== $user['role_name']) {
-            $_SESSION['user']['role_name'] = $user['role_name'];
-            $_SESSION['user']['role_uid'] = $user['role_uid']; // kalau mau
-
-            // Redirect ke dashboard baru
-            switch ($user['role_name']) {
-                case $user['role_name']:
-                    self::redirect('/dashboard/' . strtolower($user['role_name']), 'warning', 'Role anda sudah berganti');
-            }
-        }
-    }
 
     public static function e($string)
     {
@@ -270,7 +260,8 @@ class Helper
         return substr($uuid, 0, $length); // Potong jika length lebih pendek
     }
 
-    public static function updateAt() {
+    public static function updateAt()
+    {
         $time = Config::get("DB_TIMEZONE");
         $dt = new DateTime('now', new DateTimeZone($time));
         return $dt->format('Y-m-d H:i:s');
@@ -310,31 +301,7 @@ class Helper
         return trim(strip_tags($input));
     }
 
-    // Fungsi baru: Handle file upload (dengan validasi)
-    public static function uploadFile($fileKey, $targetDir, $allowedTypes = ['jpg', 'png', 'jpeg'], $maxSize = 2097152)
-    { // 2MB default
-        if (!isset($_FILES[$fileKey]) || $_FILES[$fileKey]['error'] !== UPLOAD_ERR_OK) {
-            return ['error' => 'No file uploaded or upload error.'];
-        }
 
-        $file = $_FILES[$fileKey];
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-
-        if (!in_array($ext, $allowedTypes)) {
-            return ['error' => 'Invalid file type.'];
-        }
-
-        if ($file['size'] > $maxSize) {
-            return ['error' => 'File too large.'];
-        }
-
-        $targetFile = $targetDir . '/' . self::random_string(20) . '.' . $ext;
-        if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-            return ['success' => true, 'path' => $targetFile];
-        }
-
-        return ['error' => 'Failed to move file.'];
-    }
 
     // Fungsi baru: Generate pagination links
     public static function paginate($totalItems, $perPage, $currentPage, $baseUrl)
@@ -353,17 +320,7 @@ class Helper
         return $links;
     }
 
-    // Fungsi baru: Simple logging
-    public static function log($message, $level = 'info')
-    {
-        $logDir = __DIR__ . '/../../logs';
-        if (!is_dir($logDir)) {
-            mkdir($logDir, 0755, true);
-        }
-        $logFile = $logDir . '/app.log';
-        $timestamp = self::current_date('Y-m-d H:i:s');
-        file_put_contents($logFile, "[$timestamp] [$level] $message\n", FILE_APPEND);
-    }
+
 
     // Fungsi baru: Generate slug untuk URL (misalnya news title ke slug)
     public static function slugify($text)
@@ -383,7 +340,8 @@ class Helper
         return isset($_SESSION['user']['role_name']) && $_SESSION['user']['role_name'] === $role;
     }
 
-    public static function authToken($data) {
+    public static function authToken($data)
+    {
         $_SESSION['auth_token'] = hash('sha256', $data . Config::get('APP_KEY'));
         // return $_SESSION['auth_token'];
     }

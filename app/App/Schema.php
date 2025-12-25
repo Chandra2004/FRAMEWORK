@@ -28,10 +28,9 @@ class Schema
         $blueprint = new Blueprint($table);
         $callback($blueprint);
 
-        // Hapus logging sementara (sebelumnya output())
-        // output('info', "Membuat tabel '$table' dengan kolom: " . json_encode($blueprint->getColumns()));
-        // output('info', "Primary Key: " . $blueprint->getPrimaryKey());
-        // output('info', "Foreign Keys: " . json_encode($blueprint->getForeignKeys()));
+        $db = Database::getInstance();
+        $blueprint = new Blueprint($table);
+        $callback($blueprint);
 
         $sql = "CREATE TABLE IF NOT EXISTS `$table` (";
         $sql .= implode(", ", $blueprint->getColumns());
@@ -46,8 +45,8 @@ class Schema
 
         $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-        // Hapus logging sementara (sebelumnya output())
-        // output('info', "SQL yang dijalankan: $sql");
+        $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+
         $db->query($sql);
         $db->execute();
     }
@@ -56,15 +55,15 @@ class Schema
     {
         $db = Database::getInstance();
         $sql = "DROP TABLE IF EXISTS `$table`;";
-        // Hapus logging sementara (sebelumnya output())
-        // output('info', "SQL yang dijalankan: $sql");
+        $sql = "DROP TABLE IF EXISTS `$table`;";
         $db->query($sql);
         $db->execute();
     }
 
     public static function insert(string $table, array $rows)
     {
-        if (empty($rows)) return;
+        if (empty($rows))
+            return;
 
         $db = Database::getInstance();
         $columns = array_keys($rows[0]);
@@ -80,8 +79,7 @@ class Schema
 
         $sql = "INSERT INTO `$table` ($columnList) VALUES " . implode(", ", $values) . ";";
 
-        // Hapus logging sementara (sebelumnya output())
-        // output('info', "SQL Insert: $sql");
+        $sql = "INSERT INTO `$table` ($columnList) VALUES " . implode(", ", $values) . ";";
 
         $db->query($sql);
         $db->execute();

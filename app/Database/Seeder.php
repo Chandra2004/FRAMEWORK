@@ -4,46 +4,38 @@ namespace TheFramework\Database;
 
 use TheFramework\App\Database;
 
-class Seeder
+abstract class Seeder
 {
-    protected static Database $db;
-    protected static string $table;
+    protected Database $db;
 
-    public static function setTable(string $tableName)
+    public function __construct()
     {
-        self::$table = $tableName;
+        $this->db = Database::getInstance();
     }
 
-    public static function create(array $data)
+    /**
+     * Method yang akan dijalankan saat seeding.
+     * Developer harus meng-override method ini.
+     */
+    abstract public function run();
+
+    /**
+     * Memanggil seeder lain dari dalam seeder.
+     * 
+     * @param string|array $class Nama class seeder atau array class
+     */
+    public function call($class)
     {
-        if (empty(self::$table)) {
-            throw new \Exception("Table belum di-set. Gunakan setTable() sebelum create().");
-        }
+        $classes = is_array($class) ? $class : [$class];
 
-        self::$db = Database::getInstance();
-
-        // Jika array multidimensi (banyak rows)
-        if (isset($data[0]) && is_array($data[0])) {
-            foreach ($data as $row) {
-                self::insertRow($row);
+        foreach ($classes as $seederClass) {
+            $seeder = new $seederClass();
+            if (method_exists($seeder, 'run')) {
+                $seeder->run();
+                echo "\033[38;5;28m✓ Seeder executed: " . $seederClass . "\033[0m\n";
+            } else {
+                echo "\033[38;5;124m✖ Error: Class $seederClass tidak memiliki method run()\033[0m\n";
             }
-        } else {
-            self::insertRow($data);
         }
-    }
-
-    private static function insertRow(array $row)
-    {
-        $columns = implode(", ", array_keys($row));
-        $placeholders = ":" . implode(", :", array_keys($row));
-
-        $sql = "INSERT INTO " . self::$table . " ($columns) VALUES ($placeholders)";
-        self::$db->query($sql);
-
-        foreach ($row as $key => $value) {
-            self::$db->bind(":$key", $value);
-        }
-
-        self::$db->execute();
     }
 }

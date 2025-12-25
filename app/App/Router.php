@@ -4,6 +4,7 @@ namespace TheFramework\App;
 
 use TheFramework\Http\Controllers\Services\ErrorController;
 use TheFramework\Http\Controllers\Services\DebugController;
+use TheFramework\App\DatabaseException;
 use Exception;
 
 class Router
@@ -13,51 +14,43 @@ class Router
     private static bool $routeFound = false;
     private static array $groupStack = [];
 
-    /**
-     * Tambah route baru (ikut group prefix dan middleware)
-     */
     public static function add(string $method, string $path, $controllerOrCallback, string $function = null, array $middlewares = [])
     {
         $prefix = '';
         $groupMiddlewares = [];
 
-    
         foreach (self::$groupStack as $group) {
             if (!empty($group['prefix'])) {
                 $prefix .= rtrim($group['prefix'], '/');
             }
             if (!empty($group['middleware'])) {
-                $groupMiddlewares = array_merge($groupMiddlewares, (array)$group['middleware']);
+                $groupMiddlewares = array_merge($groupMiddlewares, (array) $group['middleware']);
             }
         }
 
         $fullPath = $prefix . $path;
-
         $middlewares = array_merge($groupMiddlewares, $middlewares);
 
         $patternPath = preg_replace('/\{([a-zA-Z_][a-zA-Z0-9_-]*)\}/', '(?P<$1>[^/]+)', $fullPath);
         $compiledPattern = "#^" . $patternPath . "$#i";
 
         self::$routes[] = [
-            'method'     => strtoupper($method),
-            'path'       => $compiledPattern,
-            'handler'    => $controllerOrCallback,
-            'function'   => $function,
+            'method' => strtoupper($method),
+            'path' => $compiledPattern,
+            'handler' => $controllerOrCallback,
+            'function' => $function,
             'middleware' => $middlewares
         ];
 
         self::$routeDefinitions[] = [
-            'method'     => strtoupper($method),
-            'path'       => $fullPath,
-            'handler'    => $controllerOrCallback,
-            'function'   => $function,
+            'method' => strtoupper($method),
+            'path' => $fullPath,
+            'handler' => $controllerOrCallback,
+            'function' => $function,
             'middleware' => $middlewares
         ];
     }
 
-    /**
-     * Group routes dengan prefix dan/atau middleware
-     */
     public static function group(array $attributes, callable $callback)
     {
         self::$groupStack[] = $attributes;
@@ -65,9 +58,20 @@ class Router
         array_pop(self::$groupStack);
     }
 
-    /**
-     * Jalankan router
-     */
+    public static function resource(string $basePath, $controller, array $options = []): void
+    {
+        $basePath = rtrim($basePath, '/');
+        $middlewares = $options['middleware'] ?? [];
+
+        self::add('GET', $basePath, $controller, 'index', $middlewares);
+        self::add('GET', $basePath . '/create', $controller, 'create', $middlewares);
+        self::add('POST', $basePath, $controller, 'store', $middlewares);
+        self::add('GET', $basePath . '/{id}', $controller, 'show', $middlewares);
+        self::add('GET', $basePath . '/{id}/edit', $controller, 'edit', $middlewares);
+        self::add('POST', $basePath . '/{id}', $controller, 'update', $middlewares);
+        self::add('POST', $basePath . '/{id}/delete', $controller, 'destroy', $middlewares);
+    }
+
     public static function run()
     {
         ob_start();
@@ -85,7 +89,7 @@ class Router
             exit;
         }
 
-        $path   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
         if (preg_match('#^/assets/(.*)$#', $path, $matches)) {
@@ -97,7 +101,8 @@ class Router
 
         try {
             foreach (self::$routes as $route) {
-                if ($method !== $route['method']) continue;
+                if ($method !== $route['method'])
+                    continue;
 
                 if (preg_match($route['path'], $path, $matches)) {
                     foreach ($route['middleware'] as $middleware) {
@@ -106,21 +111,56 @@ class Router
                             : new $middleware();
                         $instance->before();
                     }
-                
+
                     $params = array_intersect_key($matches, array_flip(array_filter(array_keys($matches), 'is_string')));
-                
+
                     if ($route['handler'] instanceof \Closure) {
+                        $reflection = new \ReflectionFunction($route['handler']);
+                        $dependencies = Container::getInstance()->resolveDependencies($reflection->getParameters());
                         call_user_func_array($route['handler'], $params);
+
                     } else {
                         if (!class_exists($route['handler'])) {
                             throw new Exception("Controller {$route['handler']} tidak ditemukan");
                         }
-                        $controller = new $route['handler']();
-                        $function   = $route['function'];
+
+                        $container = Container::getInstance();
+                        $controller = $container->make($route['handler']);
+
+                        $function = $route['function'];
                         if (!method_exists($controller, $function)) {
                             throw new Exception("Method {$function} tidak ditemukan di {$route['handler']}");
                         }
-                        call_user_func_array([$controller, $function], $params);
+
+                        $reflectionMethod = new \ReflectionMethod($controller, $function);
+                        $methodDependencies = $container->resolveDependencies($reflectionMethod->getParameters());
+
+                        $finalArgs = [];
+                        foreach ($reflectionMethod->getParameters() as $param) {
+                            $name = $param->getName();
+                            $type = $param->getType();
+
+                            if (array_key_exists($name, $params)) {
+                                $finalArgs[] = $params[$name];
+                                unset($params[$name]);
+                            } elseif ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+                                try {
+                                    $finalArgs[] = $container->make($type->getName());
+                                } catch (\Exception $e) {
+                                    if ($param->isDefaultValueAvailable()) {
+                                        $finalArgs[] = $param->getDefaultValue();
+                                    } else {
+                                        throw $e;
+                                    }
+                                }
+                            } elseif ($param->isDefaultValueAvailable()) {
+                                $finalArgs[] = $param->getDefaultValue();
+                            } else {
+                                $finalArgs[] = null;
+                            }
+                        }
+
+                        call_user_func_array([$controller, $function], $finalArgs);
                     }
 
                     self::$routeFound = true;
@@ -136,19 +176,17 @@ class Router
         }
     }
 
-    /**
-     * Daftar error handler
-     */
     private static function registerErrorHandlers()
     {
         set_error_handler(function ($severity, $message, $file, $line) {
-            if (!(error_reporting() & $severity)) return;
+            if (!(error_reporting() & $severity))
+                return;
             if (in_array($severity, [E_WARNING, E_USER_WARNING, E_NOTICE, E_USER_NOTICE])) {
                 if (Config::get('APP_ENV') !== 'production') {
-                    DebugController::showWarning([
+                    echo \TheFramework\App\View::render('errors.warning', [
                         'message' => $message,
-                        'file'    => $file,
-                        'line'    => $line
+                        'file' => $file,
+                        'line' => $line
                     ]);
                 }
             }
@@ -156,10 +194,26 @@ class Router
         });
 
         set_exception_handler(function ($e) {
+            if ($e instanceof DatabaseException) {
+                if (Config::get('APP_ENV') === 'production') {
+                    (new ErrorController())->databaseError($e);
+                } else {
+                    DebugController::showException($e, 500);
+                }
+                return;
+            }
+
             if (Config::get('APP_ENV') === 'production') {
                 (new ErrorController())->error500();
             } else {
-                DebugController::showException($e);
+                $errorCode = method_exists($e, 'getCode') && $e->getCode() >= 400 && $e->getCode() < 600
+                    ? $e->getCode()
+                    : 500;
+                if (class_exists(\TheFramework\App\View::class)) {
+                    echo \TheFramework\App\View::render('errors.exception', ['e' => $e, 'code' => $errorCode]);
+                } else {
+                    echo "Exception: " . $e->getMessage();
+                }
             }
         });
 
@@ -169,7 +223,11 @@ class Router
                 if (Config::get('APP_ENV') === 'production') {
                     (new ErrorController())->error500();
                 } else {
-                    DebugController::showFatal($error);
+                    if (class_exists(\TheFramework\App\View::class)) {
+                        echo \TheFramework\App\View::render('errors.fatal', ['error' => $error]);
+                    } else {
+                        echo "Fatal Error: " . print_r($error, true);
+                    }
                 }
             }
             ob_end_flush();
@@ -210,19 +268,19 @@ class Router
 
         $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
         $mime = match ($ext) {
-            'css'   => 'text/css',
-            'js'    => 'application/javascript',
+            'css' => 'text/css',
+            'js' => 'application/javascript',
             'jpg', 'jpeg' => 'image/jpeg',
-            'png'   => 'image/png',
-            'gif'   => 'image/gif',
-            'svg'   => 'image/svg+xml',
-            'webp'  => 'image/webp',
-            'woff'  => 'font/woff',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+            'webp' => 'image/webp',
+            'woff' => 'font/woff',
             'woff2' => 'font/woff2',
-            'ttf'   => 'font/ttf',
-            'otf'   => 'font/otf',
-            'eot'   => 'application/vnd.ms-fontobject',
-            'ico'   => 'image/x-icon',
+            'ttf' => 'font/ttf',
+            'otf' => 'font/otf',
+            'eot' => 'application/vnd.ms-fontobject',
+            'ico' => 'image/x-icon',
             'json', 'map' => 'application/json',
             default => mime_content_type($fullPath) ?: 'application/octet-stream'
         };
@@ -246,19 +304,33 @@ class Router
 
     private static function handle500(Exception $e)
     {
-        if (ob_get_length()) ob_end_clean();
-        http_response_code(500);
+        if (ob_get_length())
+            ob_end_clean();
+
+        if ($e instanceof DatabaseException) {
+            if (Config::get('APP_ENV') === 'production') {
+                (new ErrorController())->databaseError($e);
+            } else {
+                DebugController::showException($e, 500);
+            }
+            exit;
+        }
+
+        $rawCode = method_exists($e, 'getCode') ? (int) $e->getCode() : 0;
+        $errorCode = ($rawCode >= 400 && $rawCode < 600) ? $rawCode : 500;
+        http_response_code($errorCode);
         if (Config::get('APP_ENV') === 'production') {
             (new ErrorController())->error500();
         } else {
-            DebugController::showException($e);
+            DebugController::showException($e, $errorCode);
         }
         exit;
     }
 
     private static function handle404()
     {
-        if (ob_get_length()) ob_end_clean();
+        if (ob_get_length())
+            ob_end_clean();
         http_response_code(404);
         (new ErrorController())->error404();
         exit;

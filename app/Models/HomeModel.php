@@ -2,10 +2,9 @@
 
 namespace TheFramework\Models;
 
-use Exception;
 use TheFramework\App\Database;
-use TheFramework\App\QueryBuilder;
 use TheFramework\App\Model;
+use Throwable;
 
 class HomeModel extends Model
 {
@@ -13,16 +12,63 @@ class HomeModel extends Model
     protected $table = 'users';
     protected $primaryKey = 'uid';
 
+    public function UserAtomic(array $data, string $uid = '', string $type = 'create')
+    {
+        $db = Database::getInstance();
+        try {
+            $db->beginTransaction();
+            $result = null;
+            if ($type == 'create') {
+                if ($this->query()->where('name', '=', $data['name'])->first()) {
+                    $db->rollBack();
+                    return 'name_exist';
+                }
+
+                if ($this->query()->where('email', '=', $data['email'])->first()) {
+                    $db->rollBack();
+                    return 'email_exist';
+                }
+
+                $result = $this->insert($data);
+            } else if ($type == 'update') {
+                if ($this->query()->where('name', '=', $data['name'])->where('uid', '!=', $uid)->first()) {
+                    $db->rollBack();
+                    return 'name_exist';
+                }
+
+                if ($this->query()->where('email', '=', $data['email'])->where('uid', '!=', $uid)->first()) {
+                    $db->rollBack();
+                    return 'email_exist';
+                }
+
+                $result = $this->update($data, $uid);
+            }
+
+            if (!$result) {
+                $db->rollBack();
+                return false;
+            }
+
+            $db->commit();
+            return $result;
+        } catch (Throwable $e) {
+            if ($db->isConnected()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function Status()
     {
         $this->database = Database::getInstance();
-        return $this->database ? 'success' : 'failed';
+
+        return $this->database->testConnection() ? 'success' : 'failed';
     }
 
     public function GetAllUsers()
     {
         return $this->query()
-            ->table($this->table)
             ->orderBy('updated_at', 'DESC')
             ->get();
     }
@@ -32,92 +78,8 @@ class HomeModel extends Model
         return $this->find($uid);
     }
 
-    public function CreateUser($data)
-    {
-        $db = Database::getInstance();
-        try {
-            $db->beginTransaction();
-
-            // cek nama
-            $exists = $this->query()
-                ->table($this->table)
-                ->where('name', '=', $data['name'])
-                ->first();
-
-            if ($exists) {
-                return 'name_exist';
-            }
-
-            // cek email
-            $exists = $this->query()
-                ->table($this->table)
-                ->where('email', '=', $data['email'])
-                ->first();
-
-            if ($exists) {
-                return 'email_exist';
-            }
-
-            // insert
-            $insertUser = $this->query()
-                ->table($this->table)
-                ->insert($data);
-
-            $db->commit();
-            return $insertUser;
-        } catch (Exception $e) {
-            $db->rollBack();
-            throw $e;
-        }
-    }
-
-    public function UpdateUser($data, $uid)
-    {
-        $db = Database::getInstance();
-        try {
-            $db->beginTransaction();
-
-            $exists = $this->query()
-                ->table($this->table)
-                ->where('uid', '=', $uid)
-                ->first();
-
-            if (!$exists) {
-                $db->rollBack();
-                return 'not_found';
-            }
-
-            $updateUser = $this->query()
-                ->table($this->table)
-                ->where('uid', '=', $uid)
-                ->update($data);
-
-            if (!$updateUser) {
-                $db->rollBack();
-                return false;
-            }
-
-            $db->commit();
-            return true;
-        } catch (Exception $e) {
-            $db->rollBack();
-            throw $e;
-        }
-    }
-
     public function DeleteUser($uid)
     {
-        $db = Database::getInstance();
-        try {
-            $db->beginTransaction();
-
-            $deleteUser = $this->delete($uid);
-
-            $db->commit();
-            return $deleteUser;
-        } catch (Exception $e) {
-            $db->rollBack();
-            return $e;
-        }
+        return $this->delete($uid);
     }
 }

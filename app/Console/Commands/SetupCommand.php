@@ -2,7 +2,7 @@
 
 namespace TheFramework\Console\Commands;
 
-use Defuse\Crypto\Key;
+
 use TheFramework\Console\CommandInterface;
 
 class SetupCommand implements CommandInterface
@@ -37,12 +37,7 @@ class SetupCommand implements CommandInterface
 
         $env = file_get_contents('.env');
 
-        if (!preg_match('/ENCRYPTION_KEY=(.+)/', $env)) {
-            $key = Key::createNewRandomKey()->saveToAsciiSafeString();
-            $env .= "\nENCRYPTION_KEY=$key";
-            file_put_contents('.env', $env);
-            echo "\033[38;5;28m★ SUCCESS  Kunci enkripsi dibuat\033[0m\n";
-        }
+        // ENCRYPTION_KEY block removed (unused dependency)
 
         if (!preg_match('/APP_KEY=(.+)/', $env)) {
             $appKey = base64_encode(random_bytes(32));
