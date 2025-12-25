@@ -81,6 +81,19 @@ Jangan bingung! Kami telah menyediakan panduan lengkap untuk setiap aspek framew
 
 ---
 
+## ☁️ Setup di Google Project IDX
+
+Framework ini sudah dilengkapi konfigurasi `.idx/dev.nix` untuk pengembangan instan di Cloud.
+
+1. Buka [Project IDX](https://idx.google.com/).
+2. Import repository GitHub ini.
+3. IDX akan otomatis:
+   - Menginstall **PHP 8.3**, **Composer**, dan **MySQL**.
+   - Menginstall ekstensi VS Code (Blade, Intelephense, DB Client).
+   - Menjalankan `php artisan serve` dengan preview window.
+
+---
+
 ## 📂 Struktur Folder Modern
 
 ```
