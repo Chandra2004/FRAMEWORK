@@ -1,118 +1,118 @@
 # THE-FRAMEWORK - Secure MVC Native PHP Framework
 
-## 📌 Pengenalan
+![PHP Version](https://img.shields.io/badge/php-%3E%3D8.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Security](https://img.shields.io/badge/security-hardened-red)
 
-**THE-FRAMEWORK** adalah framework PHP Native berbasis MVC (Model-View-Controller) yang dirancang dengan fokus pada **Keamanan (Security First)**, **Performa (Lean Core)**, dan **Efisiensi Developer**.
+**THE-FRAMEWORK** adalah framework PHP Native modern berbasis MVC (Model-View-Controller) yang dirancang dengan filosofi **"Security First"** dan **"Zero Overhead"**. Framework ini memberikan struktur kode yang bersih, aman, dan siap untuk produksi skala menengah ke atas.
 
-Tidak seperti framework raksasa, framework ini ringan namun dilengkapi fitur keamanan kelas enterprise seperti **Built-in WAF (Web Application Firewall)**, **Anti-Race Condition Logic**, dan **Secure Session Management** secara default.
+---
 
-### ✨ Fitur Utama
+## 📚 Dokumentasi Lengkap (Quick Links)
 
-- **Security First**:
-  - 🛡️ **Built-in WAF Middleware**: Memblokir serangan SQL Injection, XSS, dan Path Traversal sebelum masuk Controller.
-  - 🔒 **Pessimistic Locking**: Metode `lockForUpdate()` untuk mencegah race condition (cocok untuk aplikasi tiket/stok).
-  - 🔑 **Secure Headers**: Security headers otomatis (X-Frame, XSS-Protection, dll) di core bootstrap.
-- **Developer Experience**:
-  - 🛠️ **Artisan CLI**: Generator untuk Model, Controller, Middleware, dan Seeder.
-  - 🌪️ **Blade Templating**: Menggunakan engine template populer Laravel Blade.
-  - 📦 **Modern Handlers**: Helper siap pakai untuk Upload (support WebP/MIME-check), Email (PHPMailer wrapper), dan Payment (Midtrans wrapper).
-- **Architecture**:
-  - 🏗️ **PSR-4 Autoloading**: Struktur namespace modern.
-  - 🗄️ **Database Migrations & Seeders**: Manajemen skema database terkontrol versioning.
+Jangan bingung! Kami telah menyediakan panduan lengkap untuk setiap aspek framework ini di folder `docs/`.
 
-## 🚀 Instalasi
+| Topik                    | Deskripsi & Link                                                                                                    |
+| :----------------------- | :------------------------------------------------------------------------------------------------------------------ |
+| **Routing & Controller** | Cara membuat URL, Controller, dan menangani Request/Response. <br> 👉 **[Baca Guide Routing](docs/routing.md)**     |
+| **Database & ORM**       | Panduan Model, Query Builder, Migrations, Seeders, dan Locking. <br> 👉 **[Baca Guide Database](docs/database.md)** |
+| **Security Features**    | Penjelasan WAF, CSRF, Secure Headers, dan proteksi lainnya. <br> 👉 **[Baca Guide Security](docs/security.md)**     |
+| **Helpers & Utilities**  | Daftar fungsi bantuan global, Email, Upload, dan Payment. <br> 👉 **[Baca Guide Helpers](docs/helpers.md)**         |
+
+---
+
+## ✨ Fitur Unggulan
+
+### 🛡️ Keamanan Kelas Enterprise
+
+- **Built-in WAF (Web Application Firewall)**: Middleware yang secara proaktif memblokir serangan SQL Injection, XSS, dan Path Traversal.
+- **Pessimistic Locking**: Mencegah _Race Condition_ pada transaksi kritis (misal: flash sale) menggunakan `lockForUpdate()`.
+- **Secure by Default**: Cookie session otomatis terproteksi (HttpOnly, Secure), header keamanan (HSTS, X-Frame) otomatis aktif.
+
+### ⚡ Performa Tinggi & Ringan
+
+- **Lean Core**: Tidak ada bloatware. Framework hanya memuat apa yang dibutuhkan.
+- **Lazy Loading**: Koneksi database hanya dibuka saat query pertama dijalankan.
+- **Optimized Router**: Routing regex yang cepat dan efisien.
+
+### 🛠️ Developer Experience (DX)
+
+- **Artisan CLI**: Generator kode untuk Model, Controller, dll.
+- **Blade Templating**: Menggunakan syntax template Laravel yang familiar.
+- **Ready-to-Use Handlers**: Integrasi Email (SMTP), Upload (WebP support), dan Payment (Midtrans) siap pakai.
+
+---
+
+## 🚀 Instalasi & Setup
 
 ### Prasyarat
 
-- PHP 8.0+
+- PHP 8.0 atau lebih baru
 - Composer
-- MySQL/MariaDB
+- Database MySQL/MariaDB
 
-### Langkah-langkah
+### Langkah Instalasi
 
-1. **Clone Proyek**:
+1. **Clone Repository**
 
    ```bash
    git clone https://github.com/Chandra2004/FRAMEWORK.git
    cd FRAMEWORK
    ```
 
-2. **Install Dependensi & Setup**:
+2. **Install Dependencies**
 
    ```bash
    composer install
+   ```
+
+3. **Setup Environment**
+   Jalankan perintah ini untuk membuat file `.env` dan generate key rahasia:
+
+   ```bash
    php artisan setup
    ```
 
-   _Perintah `setup` otomatis membuat file `.env` dan `API Key`._
-
-3. **Jalankan Server**:
+4. **Jalankan Server**
    ```bash
    php artisan serve
    ```
-   Akses di `http://localhost:8080`.
+   Akses aplikasi di `http://localhost:8080`.
 
-## 📂 Struktur Direktori (Modernized)
+---
+
+## 📂 Struktur Folder Modern
 
 ```
 FRAMEWORK/
 ├── app/
-│   ├── App/                # Core Framework (Jantung Sistem)
-│   │   ├── Database.php    # Lazy Loading PDO Wrapper
-│   │   ├── Router.php      # High Performance Router
-│   │   └── ...
-│   ├── Config/             # Configuration & External Services
-│   │   ├── EmailHandler.php
-│   │   ├── UploadHandler.php  # Secure Upload (WebP support)
-│   │   └── PaymentHandler.php # Midtrans Wrapper
-│   ├── Console/            # CLI Commands (Artisan)
-│   ├── Database/           # Base Migration & Seeder Classes
-│   ├── Helpers/            # Helper Functions (Utility only)
-│   ├── Http/
-│   │   ├── Controllers/    # Application Logic
-│   │   ├── Requests/       # Form Validation
-│   │   └── Services/       # Business Logic Layer
-│   ├── Middleware/         # HTTP Middleware (CSRF, Auth, WAF)
-│   └── Models/             # Database Models (extends Core Model)
-├── bootstrap/              # App Bootstrapper
-├── database/               # Database Files
-│   ├── migrations/         # Schema Definitions
-│   └── seeders/            # Dummy Data Generators
-├── docs/                   # Full Documentation
-├── public/                 # Public Entry Point (Assets)
-├── resources/
-│   └── views/              # Blade Templates
-├── routes/
-│   └── web.php             # Route Definitions
-├── storage/                # Logs, Cache, Session Files
-├── vendor/                 # Composer Dependencies
-├── .env                    # Environment Variables
-├── artisan                 # CLI Entry Point
-└── index.php               # Web Entry Point
+│   ├── App/                # Core Framework (System Files)
+│   ├── Config/             # Konfigurasi & Handler Eksternal
+│   ├── Console/            # Perintah CLI (Artisan)
+│   ├── Database/           # Base Classes untuk Migrasi
+│   ├── Helpers/            # Fungsi Bantuan Global
+│   ├── Http/               # Controllers, Requests, Middleware
+│   └── Models/             # Model Database
+├── bootstrap/              # Bootstrap Script
+├── database/               # Migrations & Seeders Files
+├── docs/                   # 📖 DOKUMENTASI LENGKAP ADA DI SINI
+├── public/                 # Entry Point (index.php, CSS, JS)
+├── resources/              # Views (Blade Templates)
+├── routes/                 # Definisi URL (web.php)
+├── storage/                # Cache, Logs, Session
+└── .env                    # Konfigurasi Environment
 ```
 
-## 🔧 Artisan Commands
+---
 
-```bash
-php artisan make:model Product     # Membuat Model baru
-php artisan make:controller Home   # Membuat Controller
-php artisan make:middleware Auth   # Membuat Middleware
-php artisan serve                  # Menjalankan Server
-php artisan migrate                # Menjalankan Migrasi
-php artisan db:seed                # Menjalankan Seeder
-```
+## 🤝 Kontribusi & Support
 
-## 📖 Dokumentasi Lengkap
+Framework ini dikembangkan oleh **Chandra Tri A**.
+Kami sangat terbuka dengan kontribusi! Silakan kirim Pull Request.
 
-Lihat folder `docs/` untuk panduan detail:
+- **Email**: chandratriantomo123@gmail.com
+- **Website**: [the-framework.ct.ws](https://www.the-framework.ct.ws)
 
-- [Routing & Controller](docs/routing.md)
-- [Database & Models](docs/database.md)
-- [Security Features](docs/security.md)
-- [Helpers & Utilities](docs/helpers.md)
+---
 
-## 🤝 Kontribusi
-
-Project ini Open Source. Silakan fork dan pull request!
-Info kontak: chandratriantomo123@gmail.com
-Web: https://www.the-framework.ct.ws
+_© 2024 TheFramework. Licensed under MIT._
