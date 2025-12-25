@@ -6,7 +6,7 @@ use TheFramework\App\Logging;
 
 class RateLimiter
 {
-    private static $fallbackDir = __DIR__ . '/../Storage/cache/ratelimit/';
+    private static $fallbackDir = __DIR__ . '/../../storage/cache/ratelimit/';
     private static $fallbackLimit = 50; // Limit fallback lebih ketat
     private static $window = 60; // Waktu window dalam detik
 
@@ -47,11 +47,11 @@ class RateLimiter
             'count' => 0,
             'timestamp' => time()
         ];
-    
+
         if (time() - $data['timestamp'] > $window) {
             $data = ['count' => 0, 'timestamp' => time()];
         }
-    
+
         if ($data['count'] >= $limit) {
             self::sendRateLimitResponse();
             return false;

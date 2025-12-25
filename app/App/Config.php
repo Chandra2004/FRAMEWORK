@@ -14,8 +14,22 @@ class Config
             return;
         }
 
-        $dotenv = Dotenv::createImmutable(__DIR__ . '/../../');
-        $dotenv->load();
+        // 🚀 PERFORMANCE MOD: Config Caching Check
+        $cacheFile = __DIR__ . '/../../storage/cache/config.php';
+
+        if (file_exists($cacheFile)) {
+            $config = require $cacheFile;
+            foreach ($config as $key => $value) {
+                $_ENV[$key] = $value;
+                $_SERVER[$key] = $value;
+                // Optional: putenv("$key=$value"); 
+            }
+        } else {
+            // Fallback: Parse .env file
+            $dotenv = Dotenv::createImmutable(__DIR__ . '/../../');
+            $dotenv->safeLoad();
+        }
+
         self::$isLoaded = true;
     }
 

@@ -14,7 +14,7 @@ class Router
     private static bool $routeFound = false;
     private static array $groupStack = [];
 
-    public static function add(string $method, string $path, $controllerOrCallback, string $function = null, array $middlewares = [])
+    public static function add(string $method, string $path, $controllerOrCallback, ?string $function = null, array $middlewares = [])
     {
         $prefix = '';
         $groupMiddlewares = [];
@@ -74,6 +74,8 @@ class Router
 
     public static function run()
     {
+        self::$routeFound = false; // Reset state untuk testing
+
         ob_start();
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
@@ -93,11 +95,44 @@ class Router
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
         if (preg_match('#^/assets/(.*)$#', $path, $matches)) {
-            self::serveAsset($matches[1]);
-            return;
+            // 🚀 PERFORMANCE MOD: Asset Serving Strategy
+            // Di Production, Nginx/Apache harus dikonfigurasi menunjuk ke folder /public
+            // PHP hanya melayani jika file fisik di public tidak ditemukan atau APP_ENV=local
+
+            // Cek file di public/assets dulu
+            $publicFile = dirname(__DIR__, 2) . "/public/assets/" . $matches[1];
+            if (file_exists($publicFile)) {
+                // Biarkan webserver/browser mengakses langsung, tapi karena request sudah masuk ke PHP (artinya rewrite rule jalan),
+                // kita bisa serve dari sini SEBAGAI FALLBACK jika webserver salah config.
+                // Tapi idealnya, URL browser harusnya mengakses file fisik langsung.
+                self::servePublicAsset($publicFile);
+                return;
+            }
+
+            // Fallback ke resources (Development Mode Support)
+            if (Config::get('APP_ENV') === 'local') {
+                self::serveAsset($matches[1]);
+                return;
+            }
         }
 
         self::checkAppMode();
+
+        // 🚀 PERFORMANCE MOD: Route Caching Check
+        $cacheFile = dirname(__DIR__, 2) . '/storage/cache/routes.php';
+        if (file_exists($cacheFile) && Config::get('APP_ENV') !== 'local') {
+            // Production mode + file cache ada -> Load Instant
+            $cachedRoutes = require $cacheFile;
+            self::$routes = []; // Reset pre-defined static routes (jika ada yang bocor)
+            self::loadCachedRoutes($cachedRoutes);
+        } else {
+            // Development mode atau cache tidak ada -> Regex Parsing on-the-fly
+            // Manual load route file karena tidak diload di tempat lain
+            $routeFile = dirname(__DIR__, 2) . '/routes/web.php';
+            if (file_exists($routeFile)) {
+                require $routeFile;
+            }
+        }
 
         try {
             foreach (self::$routes as $route) {
@@ -187,17 +222,32 @@ class Router
         // Jika ErrorController tidak ada, manual exit
     }
 
+    private static function servePublicAsset(string $fullPath)
+    {
+        $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        $mime = self::getMimeType($fullPath);
+        header("Content-Type: $mime");
+        readfile($fullPath);
+    }
+
     private static function serveAsset(string $filePath)
     {
         $fullPath = dirname(__DIR__, 2) . "/resources/$filePath";
         if (!file_exists($fullPath)) {
             http_response_code(404);
             echo "Asset not found: $filePath";
-            exit;
+            return;
         }
 
-        $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
-        $mime = match ($ext) {
+        $mime = self::getMimeType($fullPath);
+        header("Content-Type: $mime");
+        readfile($fullPath);
+    }
+
+    private static function getMimeType($filePath)
+    {
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        return match ($ext) {
             'css' => 'text/css',
             'js' => 'application/javascript',
             'jpg', 'jpeg' => 'image/jpeg',
@@ -212,12 +262,8 @@ class Router
             'eot' => 'application/vnd.ms-fontobject',
             'ico' => 'image/x-icon',
             'json', 'map' => 'application/json',
-            default => mime_content_type($fullPath) ?: 'application/octet-stream'
+            default => mime_content_type($filePath) ?: 'application/octet-stream'
         };
-
-        header("Content-Type: $mime");
-        readfile($fullPath);
-        exit;
     }
 
     public static function handleAbort(string $message = "Akses ditolak")
@@ -230,7 +276,6 @@ class Router
         } else {
             echo "<h1>403 Forbidden</h1><p>$message</p>";
         }
-        exit;
     }
 
     private static function handle500(Exception $e)
@@ -252,7 +297,6 @@ class Router
         } else {
             echo "<h1>404 Not Found</h1>";
         }
-        exit;
     }
 
     public static function getRouteDefinitions(): array
@@ -265,5 +309,11 @@ class Router
         foreach ($cachedRoutes as $route) {
             self::add($route['method'], $route['path'], $route['handler'], $route['function'], $route['middleware']);
         }
+    }
+
+    public static function cacheRoutes()
+    {
+        // TODO: Implement route caching logic
+        // File ini dipanggil oleh composer scripts
     }
 }

@@ -14,7 +14,7 @@ class Logging
     {
         if (!self::$logger) {
             self::$logger = new Logger('app');
-            self::$logger->pushHandler(new StreamHandler(__DIR__ . '/../Storage/logs/app.log', Logger::DEBUG));
+            self::$logger->pushHandler(new StreamHandler(__DIR__ . '/../../storage/logs/app.log', Logger::DEBUG));
 
             if ($webhook = Config::get('SLACK_WEBHOOK_URL')) {
                 self::$logger->pushHandler(new SlackWebhookHandler($webhook, Logger::ERROR));

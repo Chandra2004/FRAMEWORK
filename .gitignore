@@ -37,4 +37,6 @@ Thumbs.db
 # Node Modules (Jika nanti pakai frontend build tools)
 node_modules/
 npm-debug.log
-yarn-error.log
+# Test Cache
+.phpunit.cache
+.phpunit.result.cache

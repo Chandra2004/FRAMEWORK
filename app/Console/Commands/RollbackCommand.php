@@ -18,55 +18,64 @@ class RollbackCommand implements CommandInterface
 
     public function run(array $args): void
     {
-        // Tampilkan pesan konfirmasi
-        $this->warn("Apakah kamu setuju untuk rollback semua tabel di database? (y/n): ");
-        $handle = fopen("php://stdin", "r");
-        $response = trim(fgets($handle));
-        fclose($handle);
+        // 1. Konfirmasi User
+        // $this->warn("Apakah kamu setuju untuk rollback batch migrasi terakhir? (y/n): ");
+        // $handle = fopen("php://stdin", "r");
+        // $response = trim(fgets($handle));
+        // fclose($handle);
+        // if (strtolower($response) !== 'y') {
+        //     $this->info("Rollback dibatalkan.");
+        //     return;
+        // }
+        // (Opsional: Bisa dihilangkan jika ingin cepat)
 
-        // Hanya lanjutkan jika pengguna mengetik 'y' atau 'Y'
-        if (strtolower($response) !== 'y') {
-            $this->info("Rollback dibatalkan oleh pengguna.");
+        $migrator = new \TheFramework\App\Migrator();
+        $migrator->ensureTableExists();
+
+        // 2. Dapatkan daftar migrasi batch terakhir dari DB
+        $migrationsToRollback = $migrator->getLastBatch();
+
+        if (empty($migrationsToRollback)) {
+            $this->info("Tidak ada migrasi untuk di-rollback.");
             return;
         }
 
-        $migrationDir = BASE_PATH . '/database/migrations/';
-        $migrationFiles = glob($migrationDir . '*.php');
+        $this->infoWait("Rolling back " . count($migrationsToRollback) . " migrasi");
 
-        if (empty($migrationFiles)) {
-            $this->warn("Tidak ada file migrasi ditemukan di $migrationDir");
-            return;
-        }
+        foreach ($migrationsToRollback as $migrationName) {
+            $file = BASE_PATH . '/database/migrations/' . $migrationName . '.php';
 
-        $this->infoWait("Menjalankan rollback migrasi");
-
-        // Urutkan dari besar ke kecil (rollback terbaru duluan)
-        rsort($migrationFiles);
-
-        foreach ($migrationFiles as $file) {
-            $baseName = basename($file, '.php');
-            $migrationClass = 'Database\\Migrations\\Migration_' . $baseName;
-
-            if (!class_exists($migrationClass)) {
+            if (file_exists($file)) {
                 require_once $file;
-            }
+                $migrationClass = 'Database\\Migrations\\Migration_' . $migrationName;
 
-            if (class_exists($migrationClass)) {
-                try {
-                    $migration = new $migrationClass();
-                    $this->info("Rollback migrasi: $baseName...");
-                    $migration->down();
-                    $this->success("Rollback selesai untuk $baseName");
-                } catch (Throwable $e) {
-                    $this->error("Gagal rollback $baseName: " . $e->getMessage());
-                    // lanjut ke file berikutnya
+                if (class_exists($migrationClass)) {
+                    try {
+                        $migration = new $migrationClass();
+                        $this->info("Rollback: $migrationName...");
+
+                        $migration->down();
+
+                        // Hapus dari log DB
+                        $migrator->delete($migrationName);
+
+                        echo "\033[38;5;28m  ✓ Done\033[0m\n";
+                    } catch (Throwable $e) {
+                        $this->error("Gagal rollback $migrationName: " . $e->getMessage());
+                        // Kita stop rollback jika error, agar state tidak inkonsisten
+                        return;
+                    }
+                } else {
+                    $this->error("Class $migrationClass tidak ditemukan.");
                 }
             } else {
-                $this->error("Kelas migrasi '$migrationClass' tidak ditemukan.");
+                $this->warn("File migrasi tidak ditemukan: $file. Menghapus record dari database saja.");
+                // Jika file hilang, kita asumsikan user ingin menghapus jejaknya dari DB
+                $migrator->delete($migrationName);
             }
         }
 
-        $this->success("Rollback migrasi selesai.");
+        $this->success("Rollback selesai.");
     }
 
     /**

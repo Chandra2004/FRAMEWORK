@@ -1,128 +1,37 @@
-> **Version**: 4.0.0 | **Author**: Chandra Tri A | **Updated**: 2025
+# DATABASE & ORM GUIDE
 
-# 🗄️ Database & Models Guide
+Framework ini memiliki Database Layer yang kuat namun ringan wrapper di atas `PDO Native`, memberikan kontrol penuh atas Query SQL (Raw) sekaligus kemudahan ala Query Builder (Eloquent-like).
 
-Panduan lengkap pengelolaan database di TheFramework, mulai dari Schema, Seeding, hingga ORM.
+## Koneksi Database
 
-## 1. Konfigurasi
-
-Database dikonfigurasi melalui file `.env`. Framework mendukung koneksi MySQL/MariaDB secara default.
+Konfigurasi database ada di file `.env`:
 
 ```ini
-DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=the_framework
-DB_USER=root
-DB_PASS=
+DB_DATABASE=mydatabase
+DB_USERNAME=root
+DB_PASSWORD=secret
 ```
 
----
+Koneksi bersifat **Lazy Loading**: Koneksi ke database server TIDAK akan dibuat sampai query pertama dijalankan. Ini sangat menghemat resource.
 
-## 2. Migrations
+## Menggunakan Model
 
-Migration adalah version control untuk struktur database Anda.
+Model menghubungkan kode OOP Anda dengan Tabel di database.
 
-### Membuat Migration Baru
+### 1. Membuat Model
 
-Gunakan perintah Artisan:
-
-```bash
-php artisan make:migration CreateProductsTable
-```
-
-File akan dibuat di `database/migrations/`.
-
-### Struktur File Migration
-
-```php
-use TheFramework\Database\Migration;
-use TheFramework\App\Blueprint;
-use TheFramework\App\Schema;
-
-class CreateProductsTable extends Migration
-{
-    public function up()
-    {
-        Schema::create('products', function (Blueprint $table) {
-            $table->id(); // Primary Key Auto Increment
-            $table->string('name', 100);
-            $table->text('description')->nullable();
-            $table->decimal('price', 10, 2);
-            $table->integer('stock')->default(0);
-            $table->timestamps(); // created_at & updated_at
-        });
-    }
-
-    public function down()
-    {
-        Schema::dropIfExists('products');
-    }
-}
-```
-
-### Menjalankan Migration
-
-```bash
-php artisan migrate           # Jalankan semua migrasi pending
-php artisan migrate:rollback  # Batalkan migrasi terakhir
-php artisan migrate:fresh     # Hapus semua tabel & migrasi ulang
-```
-
----
-
-## 3. Seeders
-
-Seeder digunakan untuk mengisi database dengan data awal atau data dummy.
-
-### Membuat Seeder
-
-```bash
-php artisan make:seeder ProductSeeder
-```
-
-### Struktur File Seeder
-
-```php
-namespace TheFramework\Database;
-
-class ProductSeeder extends Seeder
-{
-    public function run()
-    {
-        // Cara 1: Insert Single
-        $this->db->table('products')->insert([
-            'name' => 'Kopi Arabika',
-            'price' => 50000,
-            'stock' => 100
-        ]);
-
-        // Cara 2: Panggil Seeder Lain
-        // $this->call(CategorySeeder::class);
-    }
-}
-```
-
-### Menjalankan Seeder
-
-```bash
-php artisan db:seed                # Jalankan semua seeder terdaftar
-php artisan db:seed ProductSeeder  # Jalankan seeder spesifik
-```
-
----
-
-## 4. Models (ORM)
-
-Model adalah representasi PHP dari tabel database.
-
-### Membuat Model
+Gunakan Artisan generator:
 
 ```bash
 php artisan make:model Product
 ```
 
-### Konfigurasi Model
+Ini akan membuat file `app/Models/Product.php`.
+
+### 2. Struktur Model
+
+Secara default, model akan menebak nama tabel (skema `Snake Case Plural`, misal `Product` -> `products`).
 
 ```php
 namespace TheFramework\Models;
@@ -131,155 +40,131 @@ use TheFramework\App\Model;
 
 class Product extends Model
 {
-    protected $table = 'products';     // Nama tabel (default: plural)
-    protected $primaryKey = 'id';      // Primary Key (default: id)
-    protected $fillable = ['name', 'price', 'stock']; // White-list kolom
+    // Override jika nama tabel beda
+    // protected $table = 'master_products';
+
+    // Override primary key (default 'id')
+    // protected $primaryKey = 'uuid';
 }
 ```
 
-### CRUD Operations
-
-#### Read (Mengambil Data)
+## CRUD Operation
 
 ```php
-// Ambil semua
-$all = Product::all();
-
-// Filter
-$active = Product::where('stock', '>', 0)->get();
-
-// Single Record
-$item = Product::find(1);
-$item = Product::where('email', 'user@example.com')->first();
-
-// Ordering & Limit
-$latest = Product::orderBy('created_at', 'DESC')->limit(5)->get();
-```
-
-#### Create (Menambah Data)
-
-```php
-$product = Product::create([
-    'name' => 'Meja Belajar',
-    'price' => 750000
+// 1. Create
+$product = new Product();
+$product->insert([
+    'name' => 'Laptop Gaming',
+    'price' => 15000000
 ]);
+
+// 2. Read (All)
+$products = $product->all();
+
+// 3. Read (Find by ID)
+$item = $product->find(1);
+
+// 4. Update
+$product->update(['price' => 14000000], 1); // ID 1
+
+// 5. Delete
+$product->delete(1);
 ```
 
-#### Update (Mengubah Data)
+## Query Builder (Fluent Interface)
+
+Anda bisa melakukan chaining method query yang kompleks:
 
 ```php
-// Cara 1: Via Instance
-$product = Product::find(1);
-$product->name = 'Meja Baru';
-$product->save();
-
-// Cara 2: Mass Update
-Product::where('category_id', 5)->update(['active' => 0]);
+$users = (new User())->query()
+    ->select('name', 'email')
+    ->where('active', '=', 1)
+    ->where('created_at', '>=', '2024-01-01')
+    ->orderBy('name', 'ASC')
+    ->limit(10)
+    ->get(); // Eksekusi dan return array
 ```
 
-#### Delete (Menghapus Data)
+Method tersedia:
+
+- `where($col, $operator, $val)`
+- `orWhere(...)`
+- `whereIn($col, array)`
+- `join($table, $first, $operator, $second)`
+- `leftJoin(...)`
+- `groupBy(...)`
+- `having(...)`
+- `orderBy($col, $directon)`
+- `limit($int)`
+- `offset($int)`
+
+## Advanced Features
+
+### 1. Pessimistic Locking
+
+Untuk transaksi keuangan atau stok (Flash Sale), gunakan `lockForUpdate` untuk mencegah Race Condition.
 
 ```php
-// Cara 1: Via Instance
-$product = Product::find(1);
-$product->delete();
+$db->beginTransaction();
 
-// Cara 2: Mass Delete
-Product::where('stock', 0)->delete();
+// Select... FOR UPDATE
+$wallet = $this->query()->where('uid', '=', $uid)->lockForUpdate()->first();
+
+// Update saldo aman
+$this->update(['saldo' => $wallet['saldo'] - 100], $uid);
+
+$db->commit();
 ```
 
----
-
-## 5. Relationships
-
-Framework mendukung relasi antar tabel dasar.
-
-### One to Many
-
-Contoh: 1 Kategori punya banyak Produk.
-
-**Di Model Category:**
+### 2. Transaction Management
 
 ```php
-public function products()
-{
-    return $this->hasMany(Product::class, 'category_id', 'id');
-}
-```
-
-**Penggunaan:**
-
-```php
-$category = Category::find(1);
-$products = $category->products(); // Mengambil array produk
-```
-
-### Belongs To (Many to One)
-
-Contoh: Produk milik 1 Kategori.
-
-**Di Model Product:**
-
-```php
-public function category()
-{
-    return $this->belongsTo(Category::class, 'category_id', 'id');
-}
-```
-
----
-
-## 6. Lanjutan
-
-### Pagination
-
-Membuat pagination otomatis sangat mudah.
-
-```php
-// Di Controller
-$page = request('page', 1);
-$limit = 10;
-$products = Product::paginate($limit, $page);
-
-// Output JSON otomatis ada metadata: total, per_page, current_page, last_page
-return Helper::json($products);
-```
-
-### Transactions
-
-Gunakan Database Transaction untuk memastikan integritas data (All or Nothing).
-
-```php
-use TheFramework\App\Database;
-
 try {
-    Database::beginTransaction();
-
-    $user = User::create([...]);
-    Wallet::create(['user_id' => $user->id, 'balance' => 0]);
-
-    Database::commit(); // Simpan permanen
-} catch (\Exception $e) {
-    Database::rollBack(); // Batalkan semua perubahan jika error
+    $db->beginTransaction();
+    // ... multiple queries ...
+    $db->commit();
+} catch (\Throwable $e) {
+    $db->rollBack();
     throw $e;
 }
 ```
 
-### Pessimistic Locking
+---
 
-Mencegah race condition saat trafik tinggi (misal: sistem flash sale).
+## Migrations
+
+Mengelola skema database via kode (Version Control untuk Database).
+
+```bash
+# Buat migration baru
+php artisan make:migration CreateOrdersTable
+
+# Jalankan migrasi
+php artisan migrate
+
+# Rollback langkah terakhir
+php artisan migrate:rollback
+```
+
+Contoh File Migrasi:
 
 ```php
-Database::beginTransaction();
+Schema::create('orders', function($table) {
+    $table->id(); // Auto increment ID
+    $table->string('code')->unique();
+    $table->integer('total_amount');
+    $table->timestamps(); // created_at, updated_at
+});
+```
 
-// lockForUpdate() menahan baris ini agar tidak dibaca/diedit proses lain
-$product = Product::where('id', 1)->lockForUpdate()->first();
+## Seeding
 
-if ($product->stock > 0) {
-    $product->stock -= 1;
-    $product->save();
-    Database::commit();
-} else {
-    Database::rollBack();
-}
+Mengisi database dengan data dummy untuk testing.
+
+```bash
+# Buat seeder
+php artisan make:seeder UserSeeder
+
+# Jalankan seeder
+php artisan db:seed
 ```

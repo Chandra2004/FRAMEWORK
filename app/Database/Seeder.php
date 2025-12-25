@@ -38,4 +38,32 @@ abstract class Seeder
             }
         }
     }
+    protected static $table;
+
+    /**
+     * Set target table name for subsequent create calls
+     */
+    public static function setTable($table)
+    {
+        self::$table = $table;
+    }
+
+    /**
+     * Static create method to insert data into the currently set table
+     */
+    public static function create(array $rows)
+    {
+        if (!self::$table) {
+            throw new \Exception("Table name not set. Call Seeder::setTable('tablename') first.");
+        }
+
+        // Handle array of arrays vs single assoc array
+        // Jika inputnya [[...], [...]] maka itu batch insert
+        // Jika inputnya [...] saja (assoc), bungkus jadi [[...]]
+        if (!isset($rows[0]) || !is_array($rows[0])) {
+            $rows = [$rows];
+        }
+
+        \TheFramework\App\Schema::insert(self::$table, $rows);
+    }
 }

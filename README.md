@@ -1,133 +1,127 @@
-# THE-FRAMEWORK - Secure MVC Native PHP Framework
+<p align="center">
+  <img src="private-uploads/public/favicon.ico" width="100" alt="THE-FRAMEWORK Logo">
+</p>
 
-![PHP Version](https://img.shields.io/badge/php-%3E%3D8.0-blue)
-![Version](https://img.shields.io/badge/version-4.0.0-orange)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Security](https://img.shields.io/badge/security-hardened-red)
+<h1 align="center">THE-FRAMEWORK</h1>
 
-**THE-FRAMEWORK** adalah framework PHP Native modern berbasis MVC (Model-View-Controller) yang dirancang dengan filosofi **"Security First"** dan **"Zero Overhead"**. Framework ini memberikan struktur kode yang bersih, aman, dan siap untuk produksi skala menengah ke atas.
+<p align="center">
+  <strong>Secure MVC Native PHP Framework - Version 4.0</strong><br>
+  <em>Filosofi "Security-First" dengan Performa "Zero-Overhead"</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/PHP-8.3%2B-8892bf?style=for-the-badge&logo=php" alt="PHP Version">
+  <img src="https://img.shields.io/badge/Version-4.0.0-orange?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/Security-Hardened-red?style=for-the-badge&logo=dependabot" alt="Security">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
+</p>
+
+---
+
+**THE-FRAMEWORK** adalah framework PHP Native modern berbasis MVC (Model-View-Controller) yang dirancang untuk pengembang yang menginginkan kontrol total tanpa _bloatware_. Framework ini memberikan struktur yang bersih, keamanan kelas enterprise, dan kecepatan yang melampaui framework berat lainnya.
+
+## 🚀 Mengapa THE-FRAMEWORK?
+
+| Fitur         | THE-FRAMEWORK                        | Framework Lain (Heavy)     |
+| :------------ | :----------------------------------- | :------------------------- |
+| **Kecepatan** | ⚡ **Ultra Fast** (Native Execution) | Terhambat Bloat Class      |
+| **Keamanan**  | 🛡️ **WAF & Rate Limiting** Built-in  | Perlu Konfigurasi Tambahan |
+| **Kapasitas** | 📦 **Lean Core** (< 5MB)             | Ratusan MB Dependency      |
+| **DX**        | 🛠️ **Artisan CLI** Scaffolding       | Sering Terlalu Kompleks    |
 
 ---
 
 ## 📚 Dokumentasi Lengkap (Quick Links)
 
-Jangan bingung! Kami telah menyediakan panduan lengkap untuk setiap aspek framework ini di folder `docs/`.
+Kami menyediakan panduan lengkap untuk membantu Anda membangun aplikasi dari nol hingga siap produksi.
 
-| Topik                    | Deskripsi & Link                                                                                                              |
-| :----------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
-| **Routing & Controller** | Cara membuat URL, Controller, dan menangani Request/Response. <br> 👉 **[Baca Guide Routing](docs/routing.md)**               |
-| **Database & ORM**       | Panduan Model, Query Builder, Migrations, Seeders, dan Locking. <br> 👉 **[Baca Guide Database](docs/database.md)**           |
-| **Security Features**    | Penjelasan WAF, CSRF, Secure Headers, dan proteksi lainnya. <br> 👉 **[Baca Guide Security](docs/security.md)**               |
-| **Environment & Errors** | Penjelasan 4 Level Env (Local/Dev/Prod) dan Error Handling canggih. <br> 👉 **[Baca Guide Environment](docs/environment.md)** |
-| **Helpers & Utilities**  | Daftar fungsi bantuan global, Email, Upload, dan Payment. <br> 👉 **[Baca Guide Helpers](docs/helpers.md)**                   |
+| Topik                       | Deskripsi & Link                                                                     |
+| :-------------------------- | :----------------------------------------------------------------------------------- |
+| **🚀 Tutorial Pemula**      | Panduan membuat Blog sederhana dalam 10 menit. [Baca di sini](docs/tutorial-blog.md) |
+| **🛣️ Routing & Controller** | Cara menangani Request/Response & URL. [Baca di sini](docs/routing.md)               |
+| **🗄️ Database & ORM**       | Model, Eager Loading (N+1 Fix), & Migrations. [Baca di sini](docs/database.md)       |
+| **🛡️ Security Features**    | Penjelasan WAF, CSRF, & Secure Headers. [Baca di sini](docs/security.md)             |
+| **✅ Validation System**    | Cara validasi input form dengan mudah. [Baca di sini](docs/validation.md)            |
+| **⚙️ Artisan CLI**          | Generator kode untuk mempercepat development. [Baca di sini](docs/artisan.md)        |
+| **⌛ Queue System**         | Menangani background job dengan Worker. [Baca di sini](docs/queue.md)                |
 
 ---
 
 ## ✨ Fitur Unggulan
 
-### 🛡️ Keamanan Kelas Enterprise
+### 🛡️ Keamanan Tanpa Kompromi
 
-- **Built-in WAF (Web Application Firewall)**: Middleware yang secara proaktif memblokir serangan SQL Injection, XSS, dan Path Traversal.
-- **Pessimistic Locking**: Mencegah _Race Condition_ pada transaksi kritis (misal: flash sale) menggunakan `lockForUpdate()`.
-- **Secure by Default**: Cookie session otomatis terproteksi (HttpOnly, Secure), header keamanan (HSTS, X-Frame) otomatis aktif.
+- **Built-in WAF (Web Application Firewall)**: Secara otomatis mendeteksi dan memblokir SQL Injection, XSS, dan Path Traversal.
+- **Pessimistic Locking**: Fitur `lockForUpdate()` untuk mencegah _Race Condition_ pada transaksi finansial.
+- **Auto-Hardened Headers**: Dilengkapi proteksi HSTS, CSP, dan X-Frame-Options secara default.
 
-### ⚡ Performa Tinggi & Ringan
+### ⚡ Performa Maksimal
 
-- **Lean Core**: Tidak ada bloatware. Framework hanya memuat apa yang dibutuhkan.
-- **Lazy Loading**: Koneksi database hanya dibuka saat query pertama dijalankan.
-- **Optimized Router**: Routing regex yang cepat dan efisien.
+- **Lazy Database Connection**: SQL hanya tersambung saat benar-benar dibutuhkan.
+- **Optimized Router**: Menggunakan regex engine yang efisien untuk resolusi rute instan.
+- **Route & Config Caching**: Mempercepat startup time di environment Production.
 
-### 🛠️ Developer Experience (DX)
+### 🛠️ Pengalaman Developer (DX)
 
-- **Artisan CLI**: Generator kode untuk Model, Controller, dll.
-- **Blade Templating**: Menggunakan syntax template Laravel yang familiar.
-- **Ready-to-Use Handlers**: Integrasi Email (SMTP), Upload (WebP support), dan Payment (Midtrans) siap pakai.
+- **Artisan CLI**: Satu perintah `php artisan make:crud` untuk men-generate Model, View, Controller, dan Services.
+- **Powerful DI Container**: Mendukung Auto-wiring via Reflection API (Setara Laravel Container).
+- **Integrated Handler**: SMTP Email, WebP Image Processing, dan Midtrans Payment Ready.
 
 ---
 
-## 🚀 Instalasi & Setup
+## � Instalasi
 
 ### Prasyarat
 
-- PHP 8.0 atau lebih baru
+- PHP 8.3 atau lebih baru
 - Composer
-- Database MySQL/MariaDB
+- MySQL/MariaDB
 
-### Langkah Instalasi
+### Cara Setup
 
-1. **Clone Repository**
-
+1. **Clone & Install**
    ```bash
    git clone https://github.com/Chandra2004/FRAMEWORK.git
    cd FRAMEWORK
-   ```
-
-2. **Install Dependencies**
-
-   ```bash
    composer install
    ```
-
-3. **Setup Environment**
-   Jalankan perintah ini untuk membuat file `.env` dan generate key rahasia:
-
+2. **Setup Env & Key**
    ```bash
    php artisan setup
    ```
-
-4. **Jalankan Server**
+3. **Run Server**
    ```bash
    php artisan serve
    ```
-   Akses aplikasi di `http://localhost:8080`.
+   Buka `http://localhost:8080` di browser Anda.
 
 ---
 
-## ☁️ Setup di Google Project IDX
+## 📂 Struktur Folder
 
-Framework ini sudah dilengkapi konfigurasi `.idx/dev.nix` untuk pengembangan instan di Cloud.
-
-1. Buka [Project IDX](https://idx.google.com/).
-2. Import repository GitHub ini.
-3. IDX akan otomatis:
-   - Menginstall **PHP 8.3**, **Composer**, dan **MySQL**.
-   - Menginstall ekstensi VS Code (Blade, Intelephense, DB Client).
-   - Menjalankan `php artisan serve` dengan preview window.
-
----
-
-## 📂 Struktur Folder Modern
-
-```
-FRAMEWORK/
-├── app/
-│   ├── App/                # Core Framework (System Files)
-│   ├── Config/             # Konfigurasi & Handler Eksternal
-│   ├── Console/            # Perintah CLI (Artisan)
-│   ├── Database/           # Base Classes untuk Migrasi
-│   ├── Helpers/            # Fungsi Bantuan Global
-│   ├── Http/               # Controllers, Requests, Middleware
-│   └── Models/             # Model Database
-├── bootstrap/              # Bootstrap Script
-├── database/               # Migrations & Seeders Files
-├── docs/                   # 📖 DOKUMENTASI LENGKAP ADA DI SINI
-├── public/                 # Entry Point (index.php, CSS, JS)
-├── resources/              # Views (Blade Templates)
-├── routes/                 # Definisi URL (web.php)
-├── storage/                # Cache, Logs, Session
-└── .env                    # Konfigurasi Environment
+```text
+app/
+├── App/                # Core Framework (System Files)
+├── Http/               # Controllers, Requests, Middleware
+├── Models/             # Model Database
+├── Services/           # Business Logic Layer
+bootstrap/              # Lifecycle & Error Handling
+database/               # Migrations & Seeders
+resources/              # Views (Blade Templates)
+routes/                 # Definisi URL
 ```
 
 ---
 
-## 🤝 Kontribusi & Support
+## 🤝 Kontribusi & Dukungan
 
-Framework ini dikembangkan oleh **Chandra Tri A**.
-Kami sangat terbuka dengan kontribusi! Silakan kirim Pull Request.
+Dikembangkan dengan ❤️ oleh **Chandra Tri Antomo**. Kami sangat terbuka untuk Pull Request dan masukan dari komunitas.
 
-- **Email**: chandratriantomo123@gmail.com
 - **Website**: [the-framework.ct.ws](https://www.the-framework.ct.ws)
+- **Email**: chandratriantomo123@gmail.com
 
 ---
 
-_© 2024 TheFramework. Licensed under MIT._
+<p align="center">
+  <i>© 2024 THE-FRAMEWORK. Licensed under MIT.</i>
+</p>

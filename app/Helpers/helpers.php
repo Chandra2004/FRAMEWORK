@@ -64,3 +64,10 @@ if (!function_exists('csrf_token')) {
         return Helper::generateCsrfToken();
     }
 }
+
+if (!function_exists('dispatch')) {
+    function dispatch($job, $queue = 'default')
+    {
+        return \TheFramework\App\Queue::push($job, [], $queue);
+    }
+}

@@ -1,5 +1,4 @@
 <?php
-use TheFramework\Http\Controllers\ApiHomeController;
 // ROUTER
 use TheFramework\App\Router;
 
@@ -10,9 +9,11 @@ use TheFramework\Middleware\CsrfMiddleware;
 
 // CONTROLLER
 use TheFramework\Http\Controllers\HomeController;
+use TheFramework\Http\Controllers\ApiHomeController;
 
 Router::add('GET', '/', HomeController::class, 'Welcome', [WAFMiddleware::class]);
 Router::add('GET', '/users', HomeController::class, 'Users', [WAFMiddleware::class]);
+
 Router::group(
     [
         'prefix' => '/users',
@@ -25,7 +26,6 @@ Router::group(
         Router::add('POST', '/create', HomeController::class, 'CreateUser');
         Router::add('POST', '/update/{uid}', HomeController::class, 'UpdateUser');
         Router::add('POST', '/delete/{uid}', HomeController::class, 'DeleteUser');
-
         Router::add('GET', '/information/{uid}', HomeController::class, 'InformationUser');
     }
 );

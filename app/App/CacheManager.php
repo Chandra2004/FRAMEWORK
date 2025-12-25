@@ -4,7 +4,7 @@ namespace TheFramework\App;
 
 class CacheManager
 {
-    protected static string $cacheDir = __DIR__ . '/../Storage/cache/';
+    protected static string $cacheDir = __DIR__ . '/../../storage/cache/';
 
     public static function remember($key, $ttl, $callback)
     {

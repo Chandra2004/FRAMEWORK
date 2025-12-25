@@ -114,6 +114,12 @@ class Blueprint
         return $this;
     }
 
+    public function longText($column)
+    {
+        $this->columns[] = "`$column` LONGTEXT";
+        return $this;
+    }
+
     public function boolean($column)
     {
         $this->columns[] = "`$column` TINYINT(1)";

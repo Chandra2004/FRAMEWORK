@@ -50,6 +50,39 @@ class UploadHandler
     ];
 
     /**
+     * Helper khusus untuk upload gambar ke WebP (digunakan di UserService)
+     */
+    public static function handleUploadToWebP($file, $directory = '/default', $prefix = 'img_'): string|array
+    {
+        $result = self::upload($file, [
+            'uploadDir' => $directory,
+            'prefix' => $prefix,
+            'allowedTypes' => self::DEFAULT_IMAGE_TYPES,
+            'convertTo' => 'webp',
+            // Default resize jika diperlukan, atau biarkan null
+        ]);
+
+        if ($result['success']) {
+            return $result['filename']; // Return string filename jika sukses
+        }
+
+        return $result; // Return array error jika gagal
+    }
+
+    public static function isError($result): bool
+    {
+        return is_array($result) && isset($result['success']) && $result['success'] === false;
+    }
+
+    public static function getErrorMessage($result): string
+    {
+        if (is_array($result) && isset($result['error'])) {
+            return $result['error'];
+        }
+        return 'Unknown upload error';
+    }
+
+    /**
      * Upload file dengan validasi dan processing
      * 
      * @param array $file File dari $_FILES

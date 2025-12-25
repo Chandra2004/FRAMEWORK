@@ -10,19 +10,28 @@ class ConfigClearCommand implements CommandInterface
     {
         return 'config:clear';
     }
+
     public function getDescription(): string
     {
-        return 'Menghapus cache konfigurasi';
+        return 'Hapus file cache konfigurasi';
     }
 
     public function run(array $args): void
     {
-        $cachePath = BASE_PATH . '/storage/cache/config.php';
-        if (file_exists($cachePath)) {
-            unlink($cachePath);
-            echo "\033[38;5;28m★ SUCCESS  Cache konfigurasi dihapus\033[0m\n";
+        if (!defined('ROOT_DIR')) {
+            define('ROOT_DIR', dirname(__DIR__, 3));
+        }
+
+        $cacheFile = ROOT_DIR . '/storage/cache/config.php';
+
+        if (file_exists($cacheFile)) {
+            if (unlink($cacheFile)) {
+                echo "\033[38;5;28m★ SUCCESS  Config cache berhasil dihapus.\033[0m\n";
+            } else {
+                echo "\033[38;5;124m✖ ERROR  Gagal menghapus file cache config.\033[0m\n";
+            }
         } else {
-            echo "\033[38;5;214m⚠ WARNING  Tidak ada cache konfigurasi ditemukan\033[0m\n";
+            echo "\033[38;5;214m➤ INFO  Tidak ada file cache config yang ditemukan.\033[0m\n";
         }
     }
 }

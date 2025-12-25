@@ -1,152 +1,59 @@
-> **Version**: 4.0.0 | **Author**: Chandra Tri A | **Updated**: 2025
+# SECURITY GUIDE
 
-# 🛡️ Security Features Guide
+Keamanan bukan fitur tambahan, melainkan fondasi utama dari The-Framework.
 
-Framework ini menganut filosofi **"Security by Design"**. Fitur-fitur keamanan berikut aktif secara default untuk melindungi aplikasi Anda dari serangan umum OWASP Top 10.
+## 1. Web Application Firewall (WAF)
 
----
+Middleware `WAFMiddleware` terpasang secara default untuk semua request HTTP. WAF ini memeriksa payload request (GET, POST, COOKIE) terhadap pola serangan umum:
 
-## 1. WAF Middleware (Web Application Firewall)
+- **SQL Injection**: `UNION SELECT`, `DROP TABLE`, dll.
+- **XSS (Cross Site Scripting)**: `<script>`, `javascript:`, `onerror=`.
+- **Path Traversal**: `../`, `/etc/passwd`.
 
-Setiap request yang masuk akan diperiksa oleh `WAFMiddleware` sebelum mencapai Controller. Middleware ini memindai pola serangan pada `GET`, `POST`, dan URI.
+Jika serangan terdeteksi, request langsung ditolak dengan status **403 Forbidden** sebelum menyentuh controller Anda.
 
-**Serangan yang Diblokir:**
+## 2. CSRF Protection
 
-- **SQL Injection**: Pattern seperti `UNION SELECT`, `DROP TABLE`, `1=1`.
-- **XSS (Cross Site Scripting)**: Tag `<script>`, event handler `onload=`, `javascript:`.
-- **Path Traversal**: Percobaan akses file sistem seperti `../etc/passwd`.
-- **Command Injection**: Fungsi eksekusi shell `exec(`, `system(`.
+Cross-Site Request Forgery dicegah menggunakan token yang divalidasi pada setiap request `POST`, `PUT`, `DELETE`.
 
-**Konfigurasi:**
-File: `app/Middleware/WAFMiddleware.php`
+- **Form Helper**: Gunakan directive `@csrf` di Blade view Anda.
+  ```html
+  <form method="POST">@csrf ...</form>
+  ```
+- **Ajax**: Token otomatis disisipkan di meta tag `csrf-token` dan header `X-CSRF-TOKEN`.
 
-- Anda dapat menyesuaikan pola Regex jika terjadi _false positive_.
-- Di mode `local`, WAF akan menampilkan JSON detail serangan.
-- Di mode `production`, WAF akan langsung memutus koneksi (403 Forbidden) tanpa detail.
+## 3. Secure Headers
 
----
+Response HTTP otomatis menyertakan header keamanan modern:
 
-## 2. CSRF Protection (Cross-Site Request Forgery)
+- `X-Frame-Options: DENY`: Mencegah Clickjacking (iframe embedding).
+- `X-Content-Type-Options: nosniff`: Mencegah MIME sniffing.
+- `Strict-Transport-Security (HSTS)`: Memaksa browser menggunakan HTTPS.
+- `Permissions-Policy`: Mematikan akses fitur sensitif browser (kamera, mic, lokasi) kecuali dibutuhkan.
 
-Mencegah serangan di mana website berbahaya memaksa browser user untuk melakukan aksi yang tidak diinginkan di aplikasi Anda.
+## 4. Upload Security (UploadHandler)
 
-**Cara Kerja:**
-Framework menghasilkan token unik setiap session. Setiap form `POST`, `PUT`, `DELETE` wajib menyertakan token ini.
+Fitur upload file (`UploadHandler`) sangat ketat (Paranoid Mode):
 
-**Penggunaan di Blade:**
+- **Randomized Filename**: File di-rename menggunakan `uniqid` untuk mencegah eksekusi file berbahaya dengan nama yang bisa ditebak.
+- **Extension & MIME Validation**: Memastikan file gambar benar-benar gambar (header content), bukan script PHP yang disamarkan.
+- **WebP Conversion**: Upload gambar otomatis dikonversi ke WebP, stripping metadata berbahaya (EXIF) yang mungkin tertanam.
 
-```html
-<form method="POST" action="/profile/update">
-  @csrf
-  <!-- Output: <input type="hidden" name="_token" value="a1b2c3..."> -->
+## 5. Rate Limiting
 
-  <button type="submit">Simpan</button>
-</form>
-```
+Mencegah Brute Force dan DoS serangan ringan.
 
-**Pada Request AJAX:**
-Ambil token dari helper atau meta tag:
-
-```javascript
-let token = "{{ csrf_token() }}";
-// Sertakan dalam data POST sebagai '_token'
-```
+- Config: `app/App/RateLimiter.php`
+- Default: 100 request per menit per IP (bisa disesuaikan).
+- Storage: Menggunakan File Cache yang cepat.
 
 ---
 
-## 3. SQL Injection Prevention (PDO Binding)
+## Best Practices untuk Developer
 
-Core Database (`app/App/Database.php`) menggunakan **PDO (PHP Data Objects)** dengan **Prepared Statements** sepenuhnya.
+1. **Gunakan Query Builder / Binding**: Jangan pernah melakukan raw query dengan konkatinasi string variabel input.
 
-**JANGAN** melakukan ini (Raw Query tidak aman):
+   - ❌ `$db->query("SELECT * FROM users WHERE name = '$name'")`
+   - ✅ `$user->where('name', '=', $name)` (Parameter Binding otomatis)
 
-```php
-// ❌ BAHAYA! Rentan SQL Injection
-$db->query("SELECT * FROM users WHERE email = '$email'");
-```
-
-**LAKUKAN** ini (Aman):
-
-```php
-// ✅ AMAN! Menggunakan Parameter Binding
-$db->query("SELECT * FROM users WHERE email = :email");
-$db->bind(':email', $inputEmail);
-$results = $db->resultSet();
-```
-
-Atau gunakan Query Builder yang otomatis aman:
-
-```php
-// ✅ AMAN & PRAKTIS
-$user = User::where('email', $inputEmail)->first();
-```
-
----
-
-## 4. XSS Protection (Output Escaping)
-
-Saat menampilkan data di View (Blade), framework otomatis melakukan escaping karakter berbahaya HTML.
-
-**Escaped Output (Default):**
-
-```html
-<!-- Input: <script>alert('hack')</script> -->
-Hello, {{ $name }}
-<!-- Output: Hello, &lt;script&gt;alert('hack')&lt;/script&gt; -->
-```
-
-**Raw Output (Hati-hati):**
-Gunakan hanya jika Anda yakin data tersebut aman (misal HTML dari editor teks terpercaya).
-
-```html
-{!! $content !!}
-```
-
----
-
-## 5. Rate Limiting (Anti-Brute Force & DDoS)
-
-Mencegah client membanjiri server dengan terlalu banyak request dalam waktu singkat.
-
-**Konfigurasi Default:**
-Lokasi: `bootstrap/app.php`
-
-- **Limit**: 100 request
-- **Window**: 120 detik (2 menit)
-- Penyimpanan: File-based cache di `storage/cache/ratelimit/`.
-
-Jika limit terlampaui, server akan merespon dengan **HTTP 429 Too Many Requests**.
-
----
-
-## 6. Secure Headers
-
-Framework secara otomatis menambahkan HTTP Security Headers pada setiap respons (`bootstrap/app.php`) untuk mengeraskan pertahanan browser.
-
-| Header                      | Value                        | Fungsi                                        |
-| :-------------------------- | :--------------------------- | :-------------------------------------------- |
-| `X-Frame-Options`           | `DENY`                       | Mencegah Clickjacking (tidak bisa di-iframe). |
-| `X-Content-Type-Options`    | `nosniff`                    | Mencegah browser menebak MIME type file.      |
-| `X-XSS-Protection`          | `1; mode=block`              | Mengaktifkan filter XSS bawaan browser.       |
-| `Referrer-Policy`           | `no-referrer-when-downgrade` | Menjaga privasi URL referrer.                 |
-| `Strict-Transport-Security` | `max-age=31536000`           | Memaksa HTTPS (HSTS).                         |
-
----
-
-## 7. Secure Session & Cookie `HttpOnly`
-
-Session dikonfigurasi (`app/App/SessionManager.php`) agar:
-
-- **HttpOnly**: Cookie session tidak bisa diakses via JavaScript (anti XSS session hijacking).
-- **Secure**: Cookie hanya dikirim via HTTPS (jika server support).
-- **SameSite**: Strict/Lax untuk perlindungan CSRF tambahan.
-
----
-
-## 8. Secure File Upload
-
-`UploadHandler` (`app/Config/UploadHandler.php`) melakukan validasi berlapis:
-
-1.  **MIME Type Check**: Menggunakan `finfo_file` (Magic Bytes) untuk memastikan file asli gambar, bukan script PHP yang di-rename `.jpg`.
-2.  **Extension Whitelist**: Hanya mengizinkan ekstensi tertentu.
-3.  **Auto Rename**: File di-rename menjadi random string (`5f3a...jpg`) untuk mencegah eksekusi file berbahaya yang mungkin lolos filter nama.
+2. **Output Escaping**: Blade `{{ $variable }}` otomatis melakukan `htmlspecialchars`. Gunakan `{!! $variable !!}` HANYA jika Anda yakin data tersebut aman (HTML terpercaya).

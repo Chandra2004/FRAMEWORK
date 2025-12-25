@@ -1,3 +1,4 @@
+{
     "name": "chandra2004/the-framework",
     "description": "Secure MVC Native PHP Framework - Version 4.0",
     "version": "4.0.0",
@@ -10,6 +11,18 @@
             "role": "Lead Developer"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "TheFramework\\": "app/",
+            "TheFramework\\Console\\": "app/Console/",
+            "TheFramework\\Console\\Commands\\": "app/Console/Commands/",
+            "TheFramework\\Http\\Controllers\\": "app/Http/Controllers/",
+            "TheFramework\\Middleware\\": "app/Middleware/",
+            "TheFramework\\Models\\": "app/Models/",
+            "Database\\Migrations\\": "database/migrations/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
     "require": {
         "php": "^8.3",
         "vlucas/phpdotenv": "^5.6",
@@ -17,12 +30,23 @@
         "illuminate/view": "^12.17",
         "illuminate/events": "^12.17",
         "illuminate/filesystem": "^12.17",
-        "monolog/monolog": "^3.9"
+        "respect/validation": "^2.4",
+        "monolog/monolog": "^3.9",
+        "defuse/php-encryption": "^2.4"
     },
     "require-dev": {
-        "roave/security-advisories": "dev-master"
+        "roave/security-advisories": "dev-master",
+        "phpunit/phpunit": "*"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
     },
     "scripts": {
+        "test": [
+             "@php vendor/bin/phpunit"
+        ],
         "post-autoload-dump": [
             "TheFramework\\App\\Router::cacheRoutes"
         ]

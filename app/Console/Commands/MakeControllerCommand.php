@@ -18,7 +18,20 @@ class MakeControllerCommand implements CommandInterface
 
     public function run(array $args): void
     {
-        $name = $args[0] ?? null;
+        $name = null;
+        $isResource = false;
+        $modelName = null;
+
+        foreach ($args as $arg) {
+            if ($arg === '-r' || $arg === '--resource') {
+                $isResource = true;
+            } elseif (strpos($arg, '--model=') === 0) {
+                $modelName = substr($arg, 8);
+            } elseif (strpos($arg, '-') !== 0) {
+                $name = $arg;
+            }
+        }
+
         if (!$name) {
             echo "\033[38;5;124m✖ ERROR  Harap masukkan nama controller\033[0m\n";
             exit(1);
@@ -36,28 +49,110 @@ class MakeControllerCommand implements CommandInterface
         }
 
         $namespace = "TheFramework\\Http\\Controllers" . ($subNamespace ? "\\$subNamespace" : '');
+
+        $useStatements = "use Exception;\nuse TheFramework\\App\\View;\nuse TheFramework\\Helpers\\Helper;";
+        if ($modelName) {
+            $useStatements .= "\nuse TheFramework\\Models\\$modelName;";
+        }
+
+        // Template Content
+        if ($isResource) {
+            $modelClass = $modelName ?? 'Model';
+            $varName = strtolower($modelName ?? 'id');
+
+            $methods = <<<PHP
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        // \$items = $modelClass::all();
+        return View::render('$folderPath.index');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return View::render('$folderPath.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store()
+    {
+        // \$data = request()->all();
+        // $modelClass::create(\$data);
+        redirect('/$folderPath');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(\$$varName)
+    {
+        // \$item = $modelClass::find(\$$varName);
+        return View::render('$folderPath.show', ['item' => \$$varName]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(\$$varName)
+    {
+        // \$item = $modelClass::find(\$$varName);
+        return View::render('$folderPath.edit', ['item' => \$$varName]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(\$$varName)
+    {
+        // \$data = request()->all();
+        // \$item = $modelClass::find(\$$varName);
+        // \$item->update(\$data);
+        redirect('/$folderPath');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(\$$varName)
+    {
+        // $modelClass::destroy(\$$varName);
+        redirect('/$folderPath');
+    }
+PHP;
+        } else {
+            $methods = <<<PHP
+    public function Index() {
+        \$notification = Helper::get_flash('notification');
+        
+        return View::render('welcome', [
+            'notification' => \$notification,
+            'title' => 'The Framework'
+        ]);
+    }
+PHP;
+        }
+
         $content = <<<PHP
 <?php
 
 namespace $namespace;
 
-use Exception;
-use TheFramework\App\View;
-use TheFramework\Helpers\Helper;
+$useStatements
 
 class $className extends Controller {
-    public function Index() {
-        \$notification = Helper::get_flash('notification');
-        
-        return View::render('your.view', [
-            'notification' => \$notification,
-            'title' => 'Your title'
-        ]);
-    }
+$methods
 }
 PHP;
 
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
         echo "\033[38;5;28m★ SUCCESS  Controller dibuat: $className (app/Http/Controllers/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\033[0m\n";
     }

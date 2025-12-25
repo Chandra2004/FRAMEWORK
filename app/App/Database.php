@@ -628,6 +628,7 @@ class Database
      */
     public function quote($value): string
     {
+        $this->ensureConnection(true);
         if (is_null($value)) {
             return 'NULL';
         }

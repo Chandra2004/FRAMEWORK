@@ -69,7 +69,8 @@ abstract class Model
             ->where($this->primaryKey, '=', $id)
             ->first();
 
-        if (!$result) return null;
+        if (!$result)
+            return null;
 
         return $this->loadRelations([$result], $this->with)[0];
     }
@@ -150,56 +151,57 @@ abstract class Model
     public function loadRelations(array $results, array $relations = [])
     {
         $relations = !empty($relations) ? $relations : $this->with;
-        if (empty($relations) || empty($results)) return $results;
+        if (empty($relations) || empty($results))
+            return $results;
 
-        $grouped = [];
+        // Normalisasi format array relation
+        $normalizedRelations = [];
+        foreach ($relations as $key => $value) {
+            $name = is_numeric($key) ? $value : $key;
+            $closure = is_numeric($key) ? null : ($value instanceof \Closure ? $value : null);
 
-        foreach ($relations as $key => $relation) {
-            if ($relation instanceof \Closure) {
-                $relationName = $key;
-                $grouped[$relationName] = ['closure' => $relation, 'nested' => []];
-                continue;
-            }
-
-            // 🔸 Jika array numerik ['modules', 'modules.assessment']
-            if (is_string($relation)) {
-                if (strpos($relation, '.') !== false) {
-                    [$rel, $nested] = explode('.', $relation, 2);
-                    $grouped[$rel]['nested'][] = $nested;
-                } else {
-                    $grouped[$relation]['nested'] = [];
-                }
+            // Handle nested "posts.comments"
+            if (is_string($name) && strpos($name, '.') !== false) {
+                [$root, $child] = explode('.', $name, 2);
+                $normalizedRelations[$root]['nested'][] = $child;
+                $normalizedRelations[$root]['closure'] = $closure;
+            } else {
+                $normalizedRelations[$name]['nested'] = [];
+                $normalizedRelations[$name]['closure'] = $closure;
             }
         }
 
-        foreach ($grouped as $relation => $options) {
-            if (!method_exists($this, $relation)) {
-                throw new \Exception("Relasi '$relation' tidak ditemukan di " . get_class($this));
+        // Proses setiap relasi root
+        foreach ($normalizedRelations as $relationName => $options) {
+            if (!method_exists($this, $relationName)) {
+                // Skip jika method tidak ada (biar aman)
+                continue;
             }
 
-            $relationObj = $this->$relation();
-            if (!$relationObj instanceof Relation) {
-                throw new \Exception("Method relasi '$relation' tidak mengembalikan Relation");
+            // Ambil objek Relation dari method model (panggil $this->user())
+            $relationObj = $this->$relationName();
+            if (!$relationObj instanceof Relation)
+                continue;
+
+            // 1. Siapkan Query Constraints (WHERE foreign_key IN (...))
+            $query = $relationObj->addEagerConstraints($results);
+
+            // 2. Terapkan Closure (jika ada custom select/where user)
+            if ($options['closure']) {
+                ($options['closure'])($query);
             }
 
-            $closure = $options['closure'] ?? null;
-            $nestedRels = $options['nested'] ?? [];
+            // 3. Eksekusi Query (Hanya 1x query untuk semua parent!)
+            $relatedResults = $query->get();
 
-            foreach ($results as &$result) {
-                $relatedData = $relationObj->getResults($result, $closure);
-                if ($relatedData === null) $relatedData = [];
-
-                if (!empty($nestedRels)) {
-                    $relatedModel = new $relationObj->related();
-                    $relatedModel->with($nestedRels);
-                    $relatedData = $relatedModel->loadRelations(
-                        is_array($relatedData) ? $relatedData : [$relatedData],
-                        $nestedRels
-                    );
-                }
-
-                $result[$relation] = $relatedData;
+            // 4. Jika ada nested relations, load recursively
+            if (!empty($options['nested'])) {
+                $relatedPrototype = new $relationObj->related();
+                $relatedResults = $relatedPrototype->loadRelations($relatedResults, $options['nested']);
             }
+
+            // 5. Pasangkan hasil (Match) ke parent models
+            $results = $relationObj->match($results, $relatedResults, $relationName);
         }
 
         return $results;

@@ -45,8 +45,6 @@ class Schema
 
         $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-        $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-
         $db->query($sql);
         $db->execute();
     }

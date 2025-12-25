@@ -1,43 +1,65 @@
-> **Version**: 4.0.0 | **Author**: Chandra Tri A | **Updated**: 2025
+# CONFIGURATION & ENVIRONMENT
 
-# 🌍 Environment & Error Handling
+The-Framework menggunakan library `vlucas/phpdotenv` untuk mengelola variabel environment, namun dilengkapi dengan layer caching khusus untuk performa maksimal.
 
-Framework ini memiliki sistem environment yang canggih untuk memastikan keamanan dan kenyamanan developer.
-Anda dapat mengatur environment melalui file `.env` pada variabel `APP_ENV`.
+## File `.env`
 
-## 4 Level Environment
+Semua konfigurasi sensitif harus disimpan di file `.env`. Jangan pernah commit file ini ke Git repository.
 
-### 1. Local (`APP_ENV=local`)
+Contoh konfigurasi standar:
 
-- **Fungsi**: Untuk development di komputer lokal.
-- **Error**: Menampilkan **Full Stack Trace** (pesan error lengkap, baris kode, variabel).
-- **WAF**: Hanya mencatat log (Log Warning), tidak memblokir agar coding lancar.
+```ini
+APP_NAME="The Framework"
+APP_ENV=local          # local, development, production
+APP_KEY=base64:...
+APP_DEBUG=true
+APP_URL=http://localhost:8080
 
-### 2. Development (`APP_ENV=development`)
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=framework_db
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-- **Fungsi**: Untuk server development tim.
-- **Error**: Menampilkan **Short Error Message** (hanya pesan inti, tanpa stack trace).
-- **WAF**: Mulai aktif (Strict Mode).
+## Mengakses Config
 
-### 3. Testing / Staging (`APP_ENV=testing`)
+Gunakan class helper `Config` untuk mengambil nilai environment.
 
-- **Fungsi**: Untuk QA Tester sebelum rilis.
-- **Error**: Menampilkan **Error ID Unik** (contoh: `#A1B2C3`). User melapor kode ini ke developer, developer cek log server. Detail error **tidak** muncul di layar.
+```php
+use TheFramework\App\Config;
 
-### 4. Production (`APP_ENV=production`)
+// Ambil value basic
+$mode = Config::get('APP_ENV');
 
-- **Fungsi**: Untuk User Asli (Live).
-- **Error**: Menampilkan **Halaman Cantik** (Error 500) yang sopan ("We are currently experiencing issues"). Tidak ada detail teknis sama sekali.
-- **Security**: Strict HTTPS, Secure Cookies, WAF Blocking Mode.
+// Ambil dengan default value jika tidak ada
+$apiKey = Config::get('API_KEY', 'default-key-123');
+```
 
 ---
 
-## 🎨 Halaman Error (Custom Error Pages)
+## ⚡ Config Caching (Wajib untuk Production)
 
-Framework sudah dilengkapi halaman error estetik di `resources/views/errors/`:
+Parsing file `.env` itu berat (lambat) karena melibatkan pembacaan file text dari disk di setiap request.
 
-- **403 Forbidden**: Tema "Cyber Security / Terminal Block".
-- **404 Not Found**: Tema "Lost in Space".
-- **500 Server Error**: Tema "System Failure" (Dark Minimalist).
+Fitur **Config Caching** akan membaca `.env` sekali, lalu menyimpannya sebagai file PHP native di `storage/cache/config.php`.
 
-Anda dapat mengubah desain halaman ini sesuai branding aplikasi Anda.
+### Cara Menggunakan:
+
+1. Jalankan command:
+   ```bash
+   php artisan config:cache
+   ```
+2. Framework sekarang akan mem-bypass parsing `.env` dan langsung memuat array dari cache.
+3. **Peringatan:** Jika Anda mengubah isi `.env`, perubahan tidak akan terbaca sampai Anda menjalankan cache ulang atau clear.
+
+### Cara Menghapus Cache:
+
+Jika Anda dalam mode development dan sering gonta-ganti config, hapus cache:
+
+```bash
+php artisan config:clear
+```
+
+Atau cukup jangan jalankan cache command di local development.

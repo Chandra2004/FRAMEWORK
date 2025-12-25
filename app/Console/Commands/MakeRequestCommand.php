@@ -66,13 +66,15 @@ class $className extends Request
         ];
     }
 
-        public function validated(): array {
+    public function validated(): array
+    {
         return \$this->validate(\$this->rules(), \$this->messages());
     }
 }
 PHP;
 
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
         echo "\033[38;5;28m★ SUCCESS  Request dibuat: $className (app/Http/Requests/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\033[0m\n";
     }
