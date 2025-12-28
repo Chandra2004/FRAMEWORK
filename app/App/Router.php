@@ -94,6 +94,11 @@ class Router
         $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+        // Method Spoofing for PUT, PATCH, DELETE from HTML Forms
+        if ($method === 'POST' && isset($_POST['_method'])) {
+            $method = strtoupper($_POST['_method']);
+        }
+
         if (preg_match('#^/assets/(.*)$#', $path, $matches)) {
             // 🚀 PERFORMANCE MOD: Asset Serving Strategy
             // Di Production, Nginx/Apache harus dikonfigurasi menunjuk ke folder /public

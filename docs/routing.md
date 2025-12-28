@@ -17,6 +17,40 @@ Router::add('POST', '/login', AuthController::class, 'login');
 
 // Parameter Dinamis
 Router::add('GET', '/user/{id}', UserController::class, 'profile');
+
+// RESTful Methods
+Router::add('PUT', '/user/{id}', UserController::class, 'update');
+Router::add('PATCH', '/user/{id}', UserController::class, 'updateStatus');
+Router::add('DELETE', '/user/{id}', UserController::class, 'destroy');
+```
+
+## Fitur RESTful & API Modern
+
+Framework ini mendukung standar API modern sekelas Laravel untuk memudahkan integrasi dengan Frontend (React/Vue) maupun API client (Postman).
+
+### 1. Method Spoofing (HTML Form)
+
+Karena HTML form secara native hanya mendukung `GET` dan `POST`, Anda bisa menggunakan field tersembunyi `_method` untuk menggunakan metode lainnya.
+
+```html
+<form action="/user/1" method="POST">
+  <!-- Spoofing ke metode DELETE -->
+  <input type="hidden" name="_method" value="DELETE" />
+
+  <button type="submit">Hapus Data</button>
+</form>
+```
+
+### 2. Native JSON Support
+
+Framework secara otomatis mendeteksi jika request mengirimkan header `Content-Type: application/json`.
+Data JSON akan diurai otomatis dan bisa diakses langsung via class `Request`:
+
+```php
+public function store(Request $request) {
+    // Jika input adalah {"name": "Chandra"}, maka $request->input('name') akan mengembalikan "Chandra"
+    $name = $request->input('name');
+}
 ```
 
 ## Advanced Routing

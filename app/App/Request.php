@@ -15,6 +15,15 @@ class Request
     {
         $this->input = array_merge($_GET ?? [], $_POST ?? []);
 
+        // Parse JSON Input if Content-Type is application/json
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+        if (str_contains(strtolower($contentType), 'application/json')) {
+            $json = json_decode(file_get_contents('php://input'), true);
+            if (is_array($json)) {
+                $this->input = array_merge($this->input, $json);
+            }
+        }
+
         foreach ($_FILES ?? [] as $key => $file) {
             if (is_array($file['name'])) {
                 $files = [];
