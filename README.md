@@ -63,7 +63,8 @@ Kami menyediakan panduan lengkap untuk membantu Anda membangun aplikasi dari nol
 
 ### 🛠️ Pengalaman Developer (DX)
 
-- **Artisan CLI**: Satu perintah `php artisan make:crud` untuk men-generate Model, View, Controller, dan Services.
+- **Artisan CLI**: Satu perintah `php artisan make:crud` untuk men-generate Model, View, Controller, dan Services secara instan.
+- **Enterprise Ready Architecture**: Generator untuk **Services** dan **Repositories** via Artisan CLI.
 - **Powerful DI Container**: Mendukung Auto-wiring via Reflection API (Setara Laravel Container).
 - **Integrated Handler**: SMTP Email, WebP Image Processing, dan Midtrans Payment Ready.
 

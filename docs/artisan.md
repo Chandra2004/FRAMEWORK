@@ -62,7 +62,23 @@ php artisan make:controller ProductController -r --model=Product
 
 Ini akan menyiapkan method `index`, `create`, `store`, dll dengan referensi ke model `Product`.
 
-### 3. Queue & Jobs
+### 3. Arsitektur & Logic Bisnis
+
+**Membuat Repository:**
+Lapis abstraksi query untuk menjaga Model tetap bersih.
+
+```bash
+php artisan make:repository ProductRepository
+```
+
+**Membuat Service:**
+Tempat menaruh logika bisnis yang kompleks agar Controller tetap tipis.
+
+```bash
+php artisan make:service LabService
+```
+
+### 4. Queue & Jobs
 
 **Membuat Job:**
 
