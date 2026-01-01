@@ -1,7 +1,6 @@
 {
     "name": "chandra2004/the-framework",
     "description": "Secure MVC Native PHP Framework - Version 4.0",
-    "version": "4.0.0",
     "license": "MIT",
     "authors": [
         {
@@ -18,25 +17,27 @@
             "TheFramework\\Console\\Commands\\": "app/Console/Commands/",
             "TheFramework\\Http\\Controllers\\": "app/Http/Controllers/",
             "TheFramework\\Middleware\\": "app/Middleware/",
-            "TheFramework\\Models\\": "app/Models/",
-            "Database\\Migrations\\": "database/migrations/",
-            "Database\\Seeders\\": "database/seeders/"
-        }
+            "TheFramework\\Models\\": "app/Models/"
+        },
+        "classmap": [
+            "database/migrations/",
+            "database/seeders/"
+        ]
     },
     "require": {
         "php": "^8.3",
-        "vlucas/phpdotenv": "^5.6",
+        "defuse/php-encryption": "^2.4",
         "fakerphp/faker": "^1.24",
-        "illuminate/view": "^12.17",
         "illuminate/events": "^12.17",
         "illuminate/filesystem": "^12.17",
-        "respect/validation": "^2.4",
+        "illuminate/view": "^12.17",
         "monolog/monolog": "^3.9",
-        "defuse/php-encryption": "^2.4"
+        "respect/validation": "^2.4",
+        "vlucas/phpdotenv": "^5.6"
     },
     "require-dev": {
-        "roave/security-advisories": "dev-master",
-        "phpunit/phpunit": "*"
+        "phpunit/phpunit": "^11.5",
+        "roave/security-advisories": "dev-master"
     },
     "autoload-dev": {
         "psr-4": {
@@ -50,5 +51,13 @@
         "post-autoload-dump": [
             "TheFramework\\App\\Router::cacheRoutes"
         ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
     }
 }
