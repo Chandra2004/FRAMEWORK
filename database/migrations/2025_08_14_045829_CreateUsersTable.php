@@ -17,6 +17,7 @@ class Migration_2025_08_14_045829_CreateUsersTable
             $table->string('password');
             $table->string('profile_picture')->nullable();
             $table->boolean('is_active')->default(1);
+            $table->boolean('is_deleted')->default(0);
 
             $table->timestamps();
         });

@@ -30,7 +30,13 @@ class MigrateFreshCommand implements CommandInterface
             usleep(200000);
         }
         echo "\033[0m\n";
-        require BASE_PATH . '/artisan_migrate.php';
-        echo "\033[38;5;28m★ SUCCESS  Semua tabel dihapus dan migrasi dijalankan\033[0m\n";
+
+        $migrator = new \TheFramework\App\Migrator();
+        $migrator->dropAllTables();
+
+        $migrateCommand = new MigrateCommand();
+        $migrateCommand->run($args);
+
+        echo "\033[38;5;28m★ SUCCESS  Semua tabel dihapus dan migrasi dijalankan ulang\033[0m\n";
     }
 }

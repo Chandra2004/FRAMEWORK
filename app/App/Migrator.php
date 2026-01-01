@@ -99,4 +99,29 @@ class Migrator
 
         return array_map(fn($r) => $r['migration'], $rows);
     }
+
+    /**
+     * Hapus semua tabel di database saat ini.
+     */
+    public function dropAllTables()
+    {
+        $this->db->query("SHOW TABLES");
+        $tables = $this->db->resultSet();
+
+        if (empty($tables)) {
+            return;
+        }
+
+        $this->db->query("SET FOREIGN_KEY_CHECKS = 0");
+        $this->db->execute();
+
+        foreach ($tables as $table) {
+            $tableName = array_values($table)[0];
+            $this->db->query("DROP TABLE IF EXISTS `{$tableName}`");
+            $this->db->execute();
+        }
+
+        $this->db->query("SET FOREIGN_KEY_CHECKS = 1");
+        $this->db->execute();
+    }
 }
