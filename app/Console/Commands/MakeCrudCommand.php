@@ -65,7 +65,7 @@ class MakeCrudCommand implements CommandInterface
         }
 
         $modelVar = lcfirst($model);
-        $varName = '\$' . $modelVar;
+        $varName = '$' . $modelVar;
 
         $content = "<?php\n\n";
         $content .= "namespace TheFramework\\Services;\n\n";
@@ -101,7 +101,8 @@ class MakeCrudCommand implements CommandInterface
         $content .= "    }\n";
         $content .= "}\n";
 
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
         echo "\033[38;5;28m★ SUCCESS  Service dibuat: {$serviceClass}\033[0m\n";
     }
@@ -176,7 +177,8 @@ class {$controller} extends Controller
 }
 PHP;
 
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
         echo "\033[38;5;28m★ SUCCESS  Controller dibuat: {$controller}\033[0m\n";
     }
@@ -203,7 +205,8 @@ class {$model} extends Model
 }
 PHP;
 
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
         echo "\033[38;5;28m★ SUCCESS  Model dibuat: {$model}\033[0m\n";
     }
@@ -246,14 +249,16 @@ class {$request} extends Request
 }
 PHP;
 
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
         echo "\033[38;5;28m★ SUCCESS  Request dibuat: {$request}\033[0m\n";
     }
 
     private function makeViews(string $dir, string $slug, string $base): void
     {
-        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        if (!is_dir($dir))
+            mkdir($dir, 0755, true);
 
         $index = <<<BLADE
 @extends('template.layout')

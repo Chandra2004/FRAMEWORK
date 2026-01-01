@@ -28,7 +28,7 @@ class MakeJobCommand implements CommandInterface
         $className = ucfirst($name); // Sesuaikan naming convention user
 
         // Buat folder app/Jobs jika belum ada
-        $dir = __DIR__ . '/../../Jobs';
+        $dir = BASE_PATH . '/app/Jobs';
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
