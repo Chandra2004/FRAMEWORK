@@ -50,7 +50,8 @@ class MakeControllerCommand implements CommandInterface
 
         $namespace = "TheFramework\\Http\\Controllers" . ($subNamespace ? "\\$subNamespace" : '');
 
-        $useStatements = "use Exception;\nuse TheFramework\\App\\View;\nuse TheFramework\\Helpers\\Helper;";
+        // UPGRADE: Tambahkan import penting
+        $useStatements = "use TheFramework\Http\Controllers\Controller;\nuse TheFramework\App\Request;\nuse TheFramework\App\View;\nuse TheFramework\Helpers\Helper;\nuse Exception;";
         if ($modelName) {
             $useStatements .= "\nuse TheFramework\\Models\\$modelName;";
         }
@@ -81,11 +82,14 @@ class MakeControllerCommand implements CommandInterface
     /**
      * Store a newly created resource in storage.
      */
-    public function store()
+    public function store(Request \$request)
     {
-        // \$data = request()->all();
+        // \$data = \$request->validated();
+        
         // $modelClass::create(\$data);
-        redirect('/$folderPath');
+        
+        Helper::flash('notification', ['type' => 'success', 'message' => 'Data berhasil disimpan']);
+        return redirect('/$folderPath');
     }
 
     /**
@@ -93,7 +97,7 @@ class MakeControllerCommand implements CommandInterface
      */
     public function show(\$$varName)
     {
-        // \$item = $modelClass::find(\$$varName);
+        // \$item = $modelClass::findOrFail(\$$varName);
         return View::render('$folderPath.show', ['item' => \$$varName]);
     }
 
@@ -102,19 +106,21 @@ class MakeControllerCommand implements CommandInterface
      */
     public function edit(\$$varName)
     {
-        // \$item = $modelClass::find(\$$varName);
+        // \$item = $modelClass::findOrFail(\$$varName);
         return View::render('$folderPath.edit', ['item' => \$$varName]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(\$$varName)
+    public function update(Request \$request, \$$varName)
     {
-        // \$data = request()->all();
-        // \$item = $modelClass::find(\$$varName);
+        // \$data = \$request->validated();
+        // \$item = $modelClass::findOrFail(\$$varName);
         // \$item->update(\$data);
-        redirect('/$folderPath');
+        
+        Helper::flash('notification', ['type' => 'success', 'message' => 'Data berhasil diupdate']);
+        return redirect('/$folderPath');
     }
 
     /**
@@ -122,13 +128,17 @@ class MakeControllerCommand implements CommandInterface
      */
     public function destroy(\$$varName)
     {
-        // $modelClass::destroy(\$$varName);
-        redirect('/$folderPath');
+        // \$item = $modelClass::findOrFail(\$$varName);
+        // \$item->delete();
+        
+        Helper::flash('notification', ['type' => 'success', 'message' => 'Data berhasil dihapus']);
+        return redirect('/$folderPath');
     }
 PHP;
         } else {
             $methods = <<<PHP
-    public function Index() {
+    public function index()
+    {
         \$notification = Helper::get_flash('notification');
         
         return View::render('welcome', [
@@ -146,7 +156,8 @@ namespace $namespace;
 
 $useStatements
 
-class $className extends Controller {
+class $className extends Controller
+{
 $methods
 }
 PHP;

@@ -21,11 +21,40 @@ class BladeInit
             $filesystem = new Filesystem();
             $resolver = new EngineResolver();
 
-            $resolver->register('blade', function () use ($filesystem) {
-                $compiler = new BladeCompiler($filesystem, dirname(__DIR__) . '/storage/cache/views');
+            // Ensure cache directory exists
+            $cachePath = dirname(__DIR__) . '/storage/cache/views';
+            if (!is_dir($cachePath)) {
+                mkdir($cachePath, 0755, true);
+            }
+
+            $resolver->register('blade', function () use ($filesystem, $cachePath) {
+                $compiler = new BladeCompiler($filesystem, $cachePath);
+
+                // @csrf
                 $compiler->directive('csrf', function () {
-                    return "<?php echo '<input type=\"hidden\" name=\"_token\" value=\"' . \$_SESSION['csrf_token'] . '\">'; ?>";
+                    return "<?php echo '<input type=\"hidden\" name=\"_token\" value=\"' . \\TheFramework\\Helpers\\Helper::generateCsrfToken() . '\">'; ?>";
                 });
+
+                // @auth
+                $compiler->if('auth', function () {
+                    // Cek session user login standar
+                    return isset($_SESSION['user']);
+                });
+
+                // @guest
+                $compiler->if('guest', function () {
+                    return !isset($_SESSION['user']);
+                });
+
+                // @error('field_name')
+                $compiler->directive('error', function ($expression) {
+                    return "<?php if (\\TheFramework\\Helpers\\Helper::has_error($expression)): ?>";
+                });
+
+                $compiler->directive('enderror', function () {
+                    return "<?php endif; ?>";
+                });
+
                 return new CompilerEngine($compiler, $filesystem);
             });
 

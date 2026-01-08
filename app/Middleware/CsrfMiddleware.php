@@ -28,10 +28,28 @@ class CsrfMiddleware implements Middleware
             $token = $_POST['_token'] ?? '';
 
             if (!self::verifyToken($token)) {
-                // Di sini kita bisa throw Exception dan biar ErrorController yg handle
-                // Tapi untuk middleware, respon 403 langsung lebih cepat & aman
+                // Handling Elegan (JSON support & View Support)
+                $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
+                    || (!empty($_SERVER['HTTP_ACCEPT']) && str_contains($_SERVER['HTTP_ACCEPT'], 'application/json'));
+
                 http_response_code(403);
-                die('403 Forbidden - CSRF Token Invalid');
+
+                if ($isAjax) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['status' => 'error', 'message' => 'Session expired or Invalid CSRF Token', 'code' => 403]);
+                    exit;
+                }
+
+                // Coba load view error 403 jika ada
+                $viewFile = dirname(__DIR__, 2) . '/resources/views/errors/403.blade.php';
+                if (file_exists($viewFile)) {
+                    // Quick include view (tanpa Blade Engine full untuk performa error)
+                    // Atau bisa panggil View::render() jika class View sudah diload
+                    require $viewFile;
+                    exit;
+                }
+
+                die('<h1>403 Forbidden</h1><p>Sesi Anda telah berakhir atau Token CSRF tidak valid. Silakan refresh halaman.</p>');
             }
         }
     }

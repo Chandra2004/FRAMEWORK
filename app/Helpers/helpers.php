@@ -65,6 +65,34 @@ if (!function_exists('csrf_token')) {
     }
 }
 
+if (!function_exists('e')) {
+    function e($value)
+    {
+        return Helper::e($value);
+    }
+}
+
+if (!function_exists('old')) {
+    function old($field, $default = null)
+    {
+        return Helper::old($field, $default);
+    }
+}
+
+if (!function_exists('error')) {
+    function error($field)
+    {
+        return Helper::validation_errors($field);
+    }
+}
+
+if (!function_exists('has_error')) {
+    function has_error($field)
+    {
+        return Helper::has_error($field);
+    }
+}
+
 if (!function_exists('dispatch')) {
     function dispatch($job, $queue = 'default')
     {

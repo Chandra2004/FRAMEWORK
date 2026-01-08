@@ -29,6 +29,14 @@ abstract class Seeder
         $classes = is_array($class) ? $class : [$class];
 
         foreach ($classes as $seederClass) {
+            if (!class_exists($seederClass)) {
+                // Coba namespace default
+                $namespacedClass = "Database\\Seeders\\" . $seederClass;
+                if (class_exists($namespacedClass)) {
+                    $seederClass = $namespacedClass;
+                }
+            }
+
             $seeder = new $seederClass();
             if (method_exists($seeder, 'run')) {
                 $seeder->run();

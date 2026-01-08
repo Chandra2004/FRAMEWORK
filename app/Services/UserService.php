@@ -2,48 +2,57 @@
 
 namespace TheFramework\Services;
 
-use TheFramework\Models\HomeModel;
+use TheFramework\Models\User;
 use TheFramework\Config\UploadHandler;
 use TheFramework\Helpers\Helper;
 use TheFramework\Http\Requests\UserRequest;
 
 class UserService
 {
-    protected HomeModel $model;
+    protected User $model;
 
     public function __construct()
     {
-        $this->model = new HomeModel();
+        $this->model = new User();
     }
 
     public function status()
     {
-        return $this->model->Status();
+        // Simple check via DB Helper or just try a query
+        return \TheFramework\Helpers\DatabaseHelper::isConnected() ? 'success' : 'failed';
     }
 
     public function getAllUsers()
     {
-        return $this->model->GetAllUsers();
+        return $this->model->query()
+            ->orderBy('updated_at', 'DESC')
+            ->get();
     }
 
     public function getUser(string $uid)
     {
-        return $this->model->InformationUser($uid);
+        return $this->model->find($uid);
     }
 
     public function getUserByEmail(string $email)
     {
-        // Menggunakan fitur Query Builder dasar dari Model
-        // Asumsi Model punya method 'query()' yg me-return instance Query/Builder
         return $this->model->query()->where('email', '=', $email)->first();
     }
 
     public function createFromRequest(UserRequest $request)
     {
         $validated = $request->validated();
-        $validated['uid'] = Helper::uuid();
         $uploadedFileName = null;
 
+        // 1. Business Logic: Check Uniqueness
+        if ($this->model->query()->where('name', '=', $validated['name'])->first()) {
+            return 'name_exist';
+        }
+        if ($this->model->query()->where('email', '=', $validated['email'])->first()) {
+            return 'email_exist';
+        }
+
+        // 2. Handle Upload
         if ($request->hasFile('profile_picture')) {
             $uploadResult = UploadHandler::handleUploadToWebP($request->file('profile_picture'), '/user-pictures', 'foto_');
             if (UploadHandler::isError($uploadResult)) {
@@ -55,15 +64,14 @@ class UserService
             $validated['profile_picture'] = null;
         }
 
-        $result = $this->model->UserAtomic($validated, '', 'create');
-        if ($result === 'name_exist' || $result === 'email_exist') {
-            if ($uploadedFileName) {
-                UploadHandler::delete($uploadedFileName, '/user-pictures');
-            }
-            return $result;
-        }
+        // 3. Prepare Data
+        $validated['uid'] = Helper::uuid();
 
-        if ($result === false) {
+        // 4. Insert to DB
+        $result = $this->model->create($validated);
+
+        if (!$result) {
+            // Cleanup upload on failure
             if ($uploadedFileName) {
                 UploadHandler::delete($uploadedFileName, '/user-pictures');
             }
@@ -75,18 +83,26 @@ class UserService
 
     public function updateFromRequest(string $uid, UserRequest $request)
     {
-        $uploadedFileName = null;
-        $oldProfilePicture = null;
-
         $user = $this->getUser($uid);
         if (empty($user)) {
             return 'not_found';
         }
-        $oldProfilePicture = $user['profile_picture'] ?? null;
 
         $validated = $request->validated();
+
+        // 1. Business Logic: Check Uniqueness (Exclude Self)
+        if ($this->model->query()->where('name', '=', $validated['name'])->where('uid', '!=', $uid)->first()) {
+            return 'name_exist';
+        }
+        if ($this->model->query()->where('email', '=', $validated['email'])->where('uid', '!=', $uid)->first()) {
+            return 'email_exist';
+        }
+
+        $oldProfilePicture = $user['profile_picture'] ?? null;
+        $uploadedFileName = null;
         $deletePicture = !empty($validated['delete_profile_picture']);
 
+        // 2. Handle Upload
         $profilePicture = $oldProfilePicture;
 
         if ($request->hasFile('profile_picture')) {
@@ -100,18 +116,20 @@ class UserService
             $profilePicture = $deletePicture ? null : $oldProfilePicture;
         }
 
+        // 3. Prepare Data
         unset($validated['delete_profile_picture']);
         $validated['profile_picture'] = $profilePicture;
 
-        $result = $this->model->UserAtomic($validated, $uid, 'update');
+        // 4. Update DB
+        $result = $this->model->update($validated, $uid);
 
-        if ($result === true) {
-            if ($deletePicture && $oldProfilePicture) {
-                UploadHandler::delete($oldProfilePicture, '/user-pictures');
-            } elseif ($uploadedFileName && $oldProfilePicture) {
+        if ($result) {
+            // Cleanup old file if replaced or deleted
+            if (($deletePicture && $oldProfilePicture) || ($uploadedFileName && $oldProfilePicture)) {
                 UploadHandler::delete($oldProfilePicture, '/user-pictures');
             }
         } else {
+            // Cleanup new file if update failed
             if ($uploadedFileName) {
                 UploadHandler::delete($uploadedFileName, '/user-pictures');
             }
@@ -122,6 +140,6 @@ class UserService
 
     public function deleteUser(string $uid)
     {
-        return $this->model->DeleteUser($uid);
+        return $this->model->delete($uid);
     }
 }

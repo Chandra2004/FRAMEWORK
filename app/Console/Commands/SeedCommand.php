@@ -37,17 +37,29 @@ class SeedCommand implements CommandInterface
         }
 
         if ($specificSeeder) {
-            $seederFile = $seedersPath . '/' . $specificSeeder . '.php';
-            $className = 'Database\\Seeders\\Seeder_' . $specificSeeder;
+            // Cari file yang berakhiran dengan string yang diminta
+            // Misal: user ketik --UsersSeeder, kita cari *UsersSeeder.php
+            $foundFile = null;
+            $files = glob($seedersPath . '/*.php');
 
-            if (file_exists($seederFile)) {
-                require_once $seederFile;
+            foreach ($files as $file) {
+                if (str_ends_with(basename($file, '.php'), $specificSeeder)) {
+                    $foundFile = $file;
+                    break;
+                }
+            }
+
+            if ($foundFile) {
+                $fileName = basename($foundFile, '.php');
+                $className = 'Database\\Seeders\\Seeder_' . $fileName;
+
+                require_once $foundFile;
                 if (class_exists($className)) {
                     $seeder = new $className();
                     if (method_exists($seeder, 'run')) {
-                        echo "\033[38;5;39m➤ INFO  Menjalankan seeder: {$specificSeeder}\033[0m\n";
+                        echo "\033[38;5;39m➤ INFO  Menjalankan seeder: {$fileName}\033[0m\n";
                         $seeder->run();
-                        echo "\033[38;5;28m★ SUCCESS  Seeder {$specificSeeder} selesai\033[0m\n";
+                        echo "\033[38;5;28m★ SUCCESS  Seeder {$fileName} selesai\033[0m\n";
                         return;
                     }
                 }

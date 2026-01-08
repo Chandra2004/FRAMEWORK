@@ -2,8 +2,8 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteRule ^(\.git|app|bootstrap|database|resources|routes|services|vendor|storage|private-uploads) - [F,L]
-    RewriteRule ^(artisan|composer\.json|composer\.lock|package\.json|phpunit\.xml|README\.md|\.env.*|\.gitignore)$ - [F,L]
+    RewriteRule ^(\.git|app|bootstrap|database|resources|routes|services|vendor|storage|private-uploads|tests|docs) - [F,L]
+    RewriteRule ^(artisan|composer\.json|composer\.lock|package\.json|phpunit\.xml|README\.md|\.env.*|\.idx.*|\.gitignore)$ - [F,L]
 
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$

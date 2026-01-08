@@ -28,10 +28,6 @@ class Schema
         $blueprint = new Blueprint($table);
         $callback($blueprint);
 
-        $db = Database::getInstance();
-        $blueprint = new Blueprint($table);
-        $callback($blueprint);
-
         $sql = "CREATE TABLE IF NOT EXISTS `$table` (";
         $sql .= implode(", ", $blueprint->getColumns());
 
@@ -53,7 +49,6 @@ class Schema
     {
         $db = Database::getInstance();
         $sql = "DROP TABLE IF EXISTS `$table`;";
-        $sql = "DROP TABLE IF EXISTS `$table`;";
         $db->query($sql);
         $db->execute();
     }
@@ -74,8 +69,6 @@ class Schema
             }, $row);
             $values[] = "(" . implode(", ", $escaped) . ")";
         }
-
-        $sql = "INSERT INTO `$table` ($columnList) VALUES " . implode(", ", $values) . ";";
 
         $sql = "INSERT INTO `$table` ($columnList) VALUES " . implode(", ", $values) . ";";
 

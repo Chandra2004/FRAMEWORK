@@ -5,7 +5,6 @@ namespace TheFramework\Http\Controllers\Traits;
 use Exception;
 use TheFramework\App\View;
 use TheFramework\Helpers\Helper;
-use TheFramework\Models\HomeModel;
 
 trait BaseCrudTrait
 {
@@ -44,9 +43,9 @@ trait BaseCrudTrait
     {
         $notification = Helper::get_flash('notification');
         $model = $this->getModel();
-        
+
         $data = $model->all();
-        
+
         return View::render($this->getViewPath() . '.index', [
             'title' => $this->getViewTitle('List'),
             'notification' => $notification,
@@ -62,7 +61,7 @@ trait BaseCrudTrait
     public function create()
     {
         $notification = Helper::get_flash('notification');
-        
+
         return View::render($this->getViewPath() . '.create', [
             'title' => $this->getViewTitle('Create'),
             'notification' => $notification,
@@ -76,14 +75,10 @@ trait BaseCrudTrait
      */
     public function store()
     {
-        if (!Helper::is_post() || !Helper::is_csrf()) {
-            return Helper::redirect($this->getRoutePath(), 'error', 'Invalid request', 5);
-        }
-
         try {
             $request = $this->getRequest();
             $data = $request->validated();
-            
+
             // Tambahkan primary key jika perlu (mis. UUID)
             if ($this->getPrimaryKey() === 'uid' && !isset($data['uid'])) {
                 $data['uid'] = Helper::uuid();
@@ -155,14 +150,10 @@ trait BaseCrudTrait
      */
     public function update($id)
     {
-        if (!Helper::is_post() || !Helper::is_csrf()) {
-            return Helper::redirect($this->getRoutePath(), 'error', 'Invalid request', 5);
-        }
-
         try {
             $request = $this->getRequest();
             $data = $request->validated();
-            
+
             $model = $this->getModel();
             $result = $model->update($data, $id);
 
@@ -181,10 +172,6 @@ trait BaseCrudTrait
      */
     public function destroy($id)
     {
-        if (!Helper::is_post() || !Helper::is_csrf()) {
-            return Helper::redirect($this->getRoutePath(), 'error', 'Invalid request', 5);
-        }
-
         try {
             $model = $this->getModel();
             $result = $model->delete($id);

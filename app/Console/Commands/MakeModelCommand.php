@@ -65,6 +65,17 @@ namespace $namespace;
 
 use TheFramework\App\Model;
 
+/**
+ * @method static \TheFramework\App\QueryBuilder query()
+ * @method static array all()
+ * @method static mixed find(\$id)
+ * @method static mixed where(\$column, \$value)
+ * @method static mixed insert(array \$data)
+ * @method static mixed update(array \$data, \$id)
+ * @method static mixed delete(\$id)
+ * @method static mixed paginate(int \$perPage = 10, int \$page = 1)
+ * @method static static with(array \$relations)
+ */
 class $className extends Model
 {
     protected \$table = '$tableName';
@@ -72,6 +83,10 @@ class $className extends Model
 
     protected \$fillable = [
         // 'name', 'email', ...
+    ];
+
+    protected \$hidden = [
+        // 'password', 'token', ...
     ];
 }
 PHP;

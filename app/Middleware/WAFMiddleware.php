@@ -34,33 +34,37 @@ class WAFMiddleware implements Middleware
         ];
 
         // Helper untuk scan
-        $scan = function ($data, $sourceName) use ($patterns) {
+        // Helper recursive scanning
+        $scan = function ($data, $sourceName) use ($patterns, &$scan) {
             foreach ($data as $key => $value) {
+                // Scan Key
+                // ... (scan key logic if needed)
+
                 if (is_array($value)) {
-                    // Recursive untuk array input
-                    // $scan($value, $sourceName); // Recursive require closure reference optimization, skip for simple
+                    // Recursive call
+                    $scan($value, $sourceName . "[$key]");
                     continue;
                 }
 
                 if (!is_string($value))
                     continue;
 
-                // Allow some keys (optional logic could be added here)
-
                 foreach ($patterns as $type => $rule) {
                     if (preg_match($rule['pattern'], $value)) {
                         Logging::getLogger()->warning("WAF: Blocked $type in $sourceName key='$key'. Value snippet: " . substr($value, 0, 50));
 
+                        $response = [
+                            'error' => 'Security Alert',
+                            'reason' => $rule['description'],
+                            'key' => $key
+                        ];
+
+                        http_response_code(403);
+
                         if (\TheFramework\App\Config::get('APP_ENV') === 'production') {
-                            http_response_code(403);
-                            exit; // Silent block in prod
+                            exit;
                         } else {
-                            http_response_code(403);
-                            die(json_encode([
-                                'error' => 'Security Alert',
-                                'reason' => $rule['description'],
-                                'key' => $key
-                            ]));
+                            die(json_encode($response));
                         }
                     }
                 }

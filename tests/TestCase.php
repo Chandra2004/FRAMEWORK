@@ -38,6 +38,13 @@ abstract class TestCase extends BaseTestCase
             define('ROOT_DIR', dirname(__DIR__));
         }
 
+        // Force ENV to testing
+        $_ENV['APP_ENV'] = 'testing';
+        // Atau jika pakai Config class
+        if (class_exists('\\TheFramework\\App\\Config')) {
+            // Kita bisa paksa Config meload .env.testing nanti
+        }
+
         // Load Helpers explicitely if needed, or rely on bootstrap
         require_once BASE_PATH . '/app/Helpers/helpers.php';
 
@@ -128,6 +135,19 @@ class TestResponse
             $this->content,
             "Expected to see '$text' in response."
         );
+        return $this;
+    }
+
+    public function assertJson(array $data)
+    {
+        $json = json_decode($this->content, true);
+
+        $this->test->assertIsArray($json, "Response was not JSON: " . substr($this->content, 0, 100));
+
+        foreach ($data as $key => $value) {
+            $this->test->assertArrayHasKey($key, $json);
+            $this->test->assertEquals($value, $json[$key]);
+        }
         return $this;
     }
 }

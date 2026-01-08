@@ -14,16 +14,12 @@ class SessionManager
             // Deteksi apakah berjalan di HTTPS
             $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
 
-            $isSecure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
-
             ini_set('session.cookie_httponly', 1);
             ini_set('session.cookie_secure', $isSecure ? 1 : 0);
             ini_set('session.use_strict_mode', 1);
             ini_set('session.cookie_samesite', 'Lax');
 
-
             session_start();
-
 
             if (!isset($_SESSION['initiated'])) {
                 session_regenerate_id(true);

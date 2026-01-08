@@ -215,6 +215,11 @@ class Blueprint
 
     public function getForeignKeys()
     {
+        if ($this->pendingForeign) {
+            $foreign = $this->pendingForeign;
+            $this->foreignKeys[] = "FOREIGN KEY (`{$foreign['column']}`) REFERENCES `{$foreign['on']}` (`{$foreign['references']}`) ON DELETE {$foreign['onDelete']} ON UPDATE {$foreign['onUpdate']}";
+            $this->pendingForeign = null;
+        }
         return $this->foreignKeys;
     }
 
@@ -272,10 +277,6 @@ class Blueprint
     {
         if ($this->pendingForeign) {
             $this->pendingForeign['onUpdate'] = strtoupper($action);
-            // Simpan ke foreignKeys setelah onUpdate selesai
-            $foreign = $this->pendingForeign;
-            $this->foreignKeys[] = "FOREIGN KEY (`{$foreign['column']}`) REFERENCES `{$foreign['on']}` (`{$foreign['references']}`) ON DELETE {$foreign['onDelete']} ON UPDATE {$foreign['onUpdate']}";
-            $this->pendingForeign = null;
         }
         return $this;
     }

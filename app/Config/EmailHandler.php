@@ -36,11 +36,11 @@ class EmailHandler
         Config::loadEnv();
 
         if (empty($to))
-            throw new Exception("Recipient (To) address is required.");
+            throw new \Exception("Recipient (To) address is required.");
         if (empty($subject))
-            throw new Exception("Subject is required.");
+            throw new \Exception("Subject is required.");
         if (empty($body))
-            throw new Exception("Email body is required.");
+            throw new \Exception("Email body is required.");
 
         $mailHost = Config::get('MAIL_HOST');
         $mailPort = Config::get('MAIL_PORT', 587);
@@ -50,7 +50,7 @@ class EmailHandler
         $mailName = Config::get('MAIL_FROM_NAME', 'No Reply');
 
         if (!$mailHost || !$mailUser || !$mailPass) {
-            throw new Exception("SMTP Configuration is missing in .env");
+            throw new \Exception("SMTP Configuration is missing in .env");
         }
 
         $mail = new PHPMailer(true);
@@ -87,8 +87,8 @@ class EmailHandler
             $mail->Body = $body;
 
             return $mail->send();
-        } catch (Exception $e) {
-            throw new Exception("Mail Error: " . $mail->ErrorInfo);
+        } catch (\Exception $e) {
+            throw new \Exception("Mail Error: " . $mail->ErrorInfo);
         }
     }
 }
