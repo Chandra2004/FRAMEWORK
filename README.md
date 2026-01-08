@@ -1,4 +1,5 @@
 # The Framework
+
 **A High-Performance, Secure, and Elegant PHP MVC Framework.**
 
 Designed by **Chandra Tri Antomo**, this framework combines the elegance of Laravel-like syntax with the speed of native PHP. It features a powerful routing engine, robust security features (CSRF, WAF, XSS Protection), and a flexible Database ORM.
@@ -19,24 +20,29 @@ Designed by **Chandra Tri Antomo**, this framework combines the elegance of Lara
 ## 🛠 Installation
 
 1.  **Clone the Repository**
+
     ```bash
     git clone https://github.com/your-repo/the-framework.git
     cd the-framework
     ```
 
 2.  **Install Dependencies**
+
     ```bash
     composer install
     ```
 
 3.  **Setup Environment**
     Copy the example environment file:
+
     ```bash
     cp .env.example .env
     ```
+
     Then configure your Database credentials in `.env`.
 
 4.  **Run Migrations**
+
     ```bash
     php artisan migrate
     ```
@@ -51,62 +57,88 @@ Designed by **Chandra Tri Antomo**, this framework combines the elegance of Lara
 
 ## 📚 Documentation
 
+Detailed documentation is available in the `docs/` directory.
+
+| Topic | Description | Link |
+| :--- | :--- | :--- |
+| 🛠 **Artisan** | CLI commands for generating code & managing app | [Read](docs/artisan.md) |
+| 🗄️ **Database** | ORM, Query Builder, Migrations & Seeding | [Read](docs/database.md) |
+| 🚦 **Routing** | Route definitions, Groups, and Middleware | [Read](docs/routing.md) |
+| 🛡️ **Security** | CSRF, WAF, XSS Protection & Sessions | [Read](docs/security.md) |
+| ✅ **Validation** | Input validation rules & middleware | [Read](docs/validation.md) |
+| 🆘 **Helpers** | Global helper functions reference | [Read](docs/helpers.md) |
+| 🌍 **Environment** | Configuration & .env setup | [Read](docs/environment.md) |
+| ⚡ **Performance** | Caching strategies & optimization | [Read](docs/performance.md) |
+| 👷 **Queue** | Background jobs & worker management | [Read](docs/queue.md) |
+| 🧪 **Testing** | Unit & Feature testing guide | [Read](docs/testing.md) |
+| 📝 **Tutorial** | Step-by-step generic blog tutorial | [Read](docs/tutorial-blog.md) |
+
 ### 1. Database ORM (Models)
+
 The Model system is designed to mimic Laravel's Eloquent syntax.
 
 **Defining a Model:**
 Use Artisan to create a model:
+
 ```bash
 php artisan make:model Product
 ```
+
 This generates `app/Models/Product.php` with built-in `$fillable` and `$hidden` protection property.
 
 **Using Models:**
 
--   **Fetch All:**
-    ```php
-    $products = Product::all();
-    ```
+- **Fetch All:**
 
--   **Find by ID (or Fail):**
-    ```php
-    // Throws 404 Exception if not found
-    $product = Product::findOrFail(1);
-    ```
+  ```php
+  $products = Product::all();
+  ```
 
--   **Create New Data (Mass Assignment):**
-    ```php
-    // Automatically handles timestamps (created_at, updated_at)
-    // Automatically filters input based on $fillable
-    $product = Product::create([
-        'name' => 'Laptop',
-        'price' => 5000000
-    ]);
-    ```
+- **Find by ID (or Fail):**
 
--   **Update Data:**
-    ```php
-    $product = Product::find(1);
-    $product->update([
-        'price' => 5500000
-    ]);
-    ```
+  ```php
+  // Throws 404 Exception if not found
+  $product = Product::findOrFail(1);
+  ```
 
--   **Delete Data:**
-    ```php
-    Product::delete(1);
-    ```
+- **Create New Data (Mass Assignment):**
 
--   **Query Builder:**
-    ```php
-    $users = User::where('active', '=', 1)
-                 ->orderBy('created_at', 'DESC')
-                 ->limit(10)
-                 ->get();
-    ```
+  ```php
+  // Automatically handles timestamps (created_at, updated_at)
+  // Automatically filters input based on $fillable
+  $product = Product::create([
+      'name' => 'Laptop',
+      'price' => 5000000
+  ]);
+  ```
+
+- **Update Data:**
+
+  ```php
+  $product = Product::find(1);
+  $product->update([
+      'price' => 5500000
+  ]);
+  ```
+
+- **Delete Data:**
+
+  ```php
+  Product::delete(1);
+  ```
+
+- **Query Builder:**
+  ```php
+  $users = User::where('active', '=', 1)
+               ->orderBy('created_at', 'DESC')
+               ->limit(10)
+               ->get();
+  ```
 
 ### 2. Controllers & Routing
+
 **Creating a Controller:**
+
 ```bash
 # Standard Controller
 php artisan make:controller HomeController
@@ -116,6 +148,7 @@ php artisan make:controller ProductController --resource --model=Product
 ```
 
 **Defining Routes (`routes/web.php`):**
+
 ```php
 use TheFramework\App\Router;
 use TheFramework\Http\Controllers\HomeController;
@@ -133,6 +166,7 @@ Router::group(['prefix' => '/admin', 'middleware' => [AuthMiddleware::class]], f
 ```
 
 ### 3. Request & Validation
+
 In your controller methods (especially for Resource controllers), `Request` object is injected automatically if generated via Artisan.
 
 ```php
@@ -154,18 +188,31 @@ public function store(Request $request)
 ```
 
 ### 4. Security
--   **CSRF Protection**: Enabled by default for all POST requests. Ensure your forms have `Warning: CSRF token invalid` handling or use `Helper::csrf_field()`.
--   **XSS Protection**: Use `Helper::e($string)` when outputting user data in views.
--   **SQL Injection**: All QueryBuilder methods use PDO Parameter Binding.
+
+- **CSRF Protection**: Enabled by default for all POST requests. Ensure your forms have `Warning: CSRF token invalid` handling or use `Helper::csrf_field()`.
+- **XSS Protection**: Use `Helper::e($string)` when outputting user data in views.
+- **SQL Injection**: All QueryBuilder methods use PDO Parameter Binding.
 
 ---
 
 ## 🤝 Contributing
+
 1.  Fork the Project
 2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
 3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
 4.  Push to the Branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
+
+---
+
+## 🔄 Changelog (Version 1.1.0)
+
+- **Core Refactoring**: Completely cleaned up `app/Models`, `app/Services`, and `app/Middleware` for better MVC compliance.
+- **New User Model**: Replaced ambiguous `HomeModel` with standard `User` model.
+- **Enhanced Services**: `UserService` now handles full business logic (validation, uploads, transaction).
+- **Security Upgrades**: Improved Session Security (HttpOnly, SameSite) and decoupled CSRF logic from View.
+- **CLI Improvements**: Smarter `db:seed` command and fixes in `make:model`.
+- **Global Helpers**: Added `e()`, `old()`, `error()`, and `has_error()` for cleaner Views.
 
 ---
 
