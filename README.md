@@ -1,219 +1,87 @@
+
+<p align="center">
+  <img src="private-uploads/public/favicon.ico" alt="The Framework Logo" width="100">
+</p>
+
 # The Framework
 
-**A High-Performance, Secure, and Elegant PHP MVC Framework.**
+**The Framework** adalah PHP Framework modern yang ringan, aman, dan berkinerja tinggi. Dibangun dengan arsitektur MVC (Model-View-Controller) yang solid, framework ini dirancang untuk pengembangan aplikasi web yang cepat tanpa mengorbankan keamanan atau fleksibilitas.
 
-Designed by **Chandra Tri Antomo**, this framework combines the elegance of Laravel-like syntax with the speed of native PHP. It features a powerful routing engine, robust security features (CSRF, WAF, XSS Protection), and a flexible Database ORM.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![PHP Version](https://img.shields.io/badge/php-%3E%3D%208.3-8892BF.svg)](https://php.net/)
 
----
+## 🚀 Fitur Unggulan
 
-## 🚀 Features
+*   **Security First Core:**
+    *   🛡️ **WAF (Web Application Firewall)** Terintegrasi.
+    *   🔒 **CSRF Protection** otomatis pada setiap form.
+    *   ✨ **Secure Headers** (HSTS, CSP, XSS-Protection) out-of-the-box.
+    *   🔑 **Encryption Service** menggunakan Defuse PHP Encryption.
+*   **Modern Database Layer:**
+    *   ⚡ **Query Builder** yang ekspresif & fluent.
+    *   💾 **Automatic Query Caching** (`->remember(3600)`).
+    *   🔄 **Migration & Seeding** support (termasuk Alter Table & Views).
+    *   🤝 **Eloquent-like Relationships** (hasOne, hasMany, belongsTo).
+*   **Developer Experience:**
+    *   🎨 **Blade Templating Engine** (powered by Illuminate/View).
+    *   🛣️ **Expressive Routing** dengan dukungan Grouping & Middleware.
+    *   📦 **Dependency Injection Container**.
+    *   📂 **Private File Serving** untuk dokumen sensitif.
 
-- **MVC Architecture**: Clean separation of concerns.
-- **Eloquent-like ORM**: Magic methods for Database operations (`User::all()`, `User::create()`).
-- **Advanced Routing**: Support for Groups, Middleware, and Regex Constraints.
-- **Security First**: Built-in CSRF Protection, XSS Filtering, SQL Injection Prevention, and Secure Session handling.
-- **Artisan CLI**: Powerful command-line interface for generating code.
-- **Blade-like View Engine**: Simple yet powerful templating.
+## 📋 Persyaratan Sistem
 
----
+Pastikan server Anda memenuhi persyaratan berikut sebelum menginstal:
 
-## 🛠 Installation
+*   **PHP**: >= 8.3
+*   **Composer**: Versi terbaru
+*   **Extension PHP Wajib**:
+    *   `pdo_mysql` (atau driver database lain)
+    *   `mbstring`
+    *   `openssl`
+    *   `xml`
+    *   `ctype`
+    *   `json`
 
-1.  **Clone the Repository**
+## 🛠️ Instalasi
 
+1.  **Clone Repository:**
     ```bash
-    git clone https://github.com/your-repo/the-framework.git
+    git clone https://github.com/chandra2004/the-framework.git
     cd the-framework
     ```
 
-2.  **Install Dependencies**
-
+2.  **Install Dependencies:**
     ```bash
     composer install
     ```
 
-3.  **Setup Environment**
-    Copy the example environment file:
-
+3.  **Konfigurasi Environment:**
+    Salin file contoh `.env`:
     ```bash
     cp .env.example .env
     ```
+    Sesuaikan konfigurasi database dan app key Anda di file `.env`.
 
-    Then configure your Database credentials in `.env`.
-
-4.  **Run Migrations**
-
+4.  **Jalankan Aplikasi:**
+    Framework ini dirancang untuk berjalan di Apache/Nginx, namun untuk development bisa menggunakan built-in server:
     ```bash
-    php artisan migrate
+    php -S localhost:8000
     ```
 
-5.  **Serve Application**
-    ```bash
-    php artisan serve
-    ```
-    Access your app at `http://127.0.0.1:8080`.
+## 📖 Dokumentasi
 
----
+Dokumentasi lengkap tersedia di folder `docs/`. Berikut panduan cepat untuk memulai:
 
-## 📚 Documentation
+*   [Routing & Controllers](docs/routing.md)
+*   [Database & Models](docs/database.md) - *Termasuk Query Builder & Relationships*
+*   [Migrations & Schema](docs/migrations.md) - *Termasuk Views & Indexing*
+*   [Security Features](docs/security.md)
+*   [Views (Blade)](docs/views.md)
 
-Detailed documentation is available in the `docs/` directory.
+## 🤝 Kontribusi
 
-| Topic | Description | Link |
-| :--- | :--- | :--- |
-| 🛠 **Artisan** | CLI commands for generating code & managing app | [Read](docs/artisan.md) |
-| 🗄️ **Database** | ORM, Query Builder, Migrations & Seeding | [Read](docs/database.md) |
-| 🚦 **Routing** | Route definitions, Groups, and Middleware | [Read](docs/routing.md) |
-| 🛡️ **Security** | CSRF, WAF, XSS Protection & Sessions | [Read](docs/security.md) |
-| ✅ **Validation** | Input validation rules & middleware | [Read](docs/validation.md) |
-| 🆘 **Helpers** | Global helper functions reference | [Read](docs/helpers.md) |
-| 🌍 **Environment** | Configuration & .env setup | [Read](docs/environment.md) |
-| ⚡ **Performance** | Caching strategies & optimization | [Read](docs/performance.md) |
-| 👷 **Queue** | Background jobs & worker management | [Read](docs/queue.md) |
-| 🧪 **Testing** | Unit & Feature testing guide | [Read](docs/testing.md) |
-| 📝 **Tutorial** | Step-by-step generic blog tutorial | [Read](docs/tutorial-blog.md) |
+Kontribusi sangat diterima! Silakan fork repository ini dan buat Pull Request untuk perbaikan bug atau fitur baru.
 
-### 1. Database ORM (Models)
+## 📄 Lisensi
 
-The Model system is designed to mimic Laravel's Eloquent syntax.
-
-**Defining a Model:**
-Use Artisan to create a model:
-
-```bash
-php artisan make:model Product
-```
-
-This generates `app/Models/Product.php` with built-in `$fillable` and `$hidden` protection property.
-
-**Using Models:**
-
-- **Fetch All:**
-
-  ```php
-  $products = Product::all();
-  ```
-
-- **Find by ID (or Fail):**
-
-  ```php
-  // Throws 404 Exception if not found
-  $product = Product::findOrFail(1);
-  ```
-
-- **Create New Data (Mass Assignment):**
-
-  ```php
-  // Automatically handles timestamps (created_at, updated_at)
-  // Automatically filters input based on $fillable
-  $product = Product::create([
-      'name' => 'Laptop',
-      'price' => 5000000
-  ]);
-  ```
-
-- **Update Data:**
-
-  ```php
-  $product = Product::find(1);
-  $product->update([
-      'price' => 5500000
-  ]);
-  ```
-
-- **Delete Data:**
-
-  ```php
-  Product::delete(1);
-  ```
-
-- **Query Builder:**
-  ```php
-  $users = User::where('active', '=', 1)
-               ->orderBy('created_at', 'DESC')
-               ->limit(10)
-               ->get();
-  ```
-
-### 2. Controllers & Routing
-
-**Creating a Controller:**
-
-```bash
-# Standard Controller
-php artisan make:controller HomeController
-
-# Resource Controller (CRUD ready)
-php artisan make:controller ProductController --resource --model=Product
-```
-
-**Defining Routes (`routes/web.php`):**
-
-```php
-use TheFramework\App\Router;
-use TheFramework\Http\Controllers\HomeController;
-
-// Basic GET
-Router::add('GET', '/home', HomeController::class, 'index');
-
-// Route with Parameter
-Router::add('GET', '/user/{id}', HomeController::class, 'show');
-
-// Group with Middleware
-Router::group(['prefix' => '/admin', 'middleware' => [AuthMiddleware::class]], function() {
-    Router::add('GET', '/dashboard', AdminController::class, 'index');
-});
-```
-
-### 3. Request & Validation
-
-In your controller methods (especially for Resource controllers), `Request` object is injected automatically if generated via Artisan.
-
-```php
-use TheFramework\App\Request;
-
-public function store(Request $request)
-{
-    // Validate inputs
-    $validated = $request->validate([
-        'title' => 'required|min:5',
-        'email' => 'required|email'
-    ]);
-
-    // Create user securely
-    User::create($validated);
-
-    Helper::redirect('/users');
-}
-```
-
-### 4. Security
-
-- **CSRF Protection**: Enabled by default for all POST requests. Ensure your forms have `Warning: CSRF token invalid` handling or use `Helper::csrf_field()`.
-- **XSS Protection**: Use `Helper::e($string)` when outputting user data in views.
-- **SQL Injection**: All QueryBuilder methods use PDO Parameter Binding.
-
----
-
-## 🤝 Contributing
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
-
----
-
-## 🔄 Changelog (Version 1.1.0)
-
-- **Core Refactoring**: Completely cleaned up `app/Models`, `app/Services`, and `app/Middleware` for better MVC compliance.
-- **New User Model**: Replaced ambiguous `HomeModel` with standard `User` model.
-- **Enhanced Services**: `UserService` now handles full business logic (validation, uploads, transaction).
-- **Security Upgrades**: Improved Session Security (HttpOnly, SameSite) and decoupled CSRF logic from View.
-- **CLI Improvements**: Smarter `db:seed` command and fixes in `make:model`.
-- **Global Helpers**: Added `e()`, `old()`, `error()`, and `has_error()` for cleaner Views.
-
----
-
-**Made with ❤️ by Chandra Tri Antomo**
+Open-sourced software licensed under the [MIT license](LICENSE).

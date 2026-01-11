@@ -65,7 +65,7 @@ class Schema
         $values = [];
         foreach ($rows as $row) {
             $escaped = array_map(function ($value) use ($db) {
-                return $db->quote($value); // Pastikan Database class punya method quote()
+                return $db->quote($value);
             }, $row);
             $values[] = "(" . implode(", ", $escaped) . ")";
         }
@@ -73,6 +73,21 @@ class Schema
         $sql = "INSERT INTO `$table` ($columnList) VALUES " . implode(", ", $values) . ";";
 
         $db->query($sql);
+        $db->execute();
+    }
+
+    public static function createView($viewName, $query)
+    {
+        $db = Database::getInstance();
+        $sql = "CREATE OR REPLACE VIEW `$viewName` AS $query";
+        $db->query($sql);
+        $db->execute();
+    }
+
+    public static function dropView($viewName)
+    {
+        $db = Database::getInstance();
+        $db->query("DROP VIEW IF EXISTS `$viewName`");
         $db->execute();
     }
 }

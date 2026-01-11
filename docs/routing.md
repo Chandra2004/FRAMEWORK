@@ -1,71 +1,37 @@
-# ROUTING SYSTEM
+# Routing
 
-Routing di `The-Framework` didesain untuk menjadi **ekspresif**, **sederhana**, dan **super cepat**.
-Lokasi definisi route ada di File: `routes/web.php`.
+Routing adalah pintu gerbang aplikasi Anda. Semua definisi route terdapat di `routes/web.php`.
 
-## Dasar Routing
+## Basic Routing
+
+Gunakan `Router::add()` untuk mendefinisikan route.
 
 ```php
 use TheFramework\App\Router;
 use TheFramework\Http\Controllers\HomeController;
 
-// GET Request
-Router::add('GET', '/about', HomeController::class, 'about');
+// Basic GET route
+Router::add('GET', '/home', HomeController::class, 'index');
 
-// POST Request
-Router::add('POST', '/login', AuthController::class, 'login');
+// Route dengan Parameter
+Router::add('GET', '/user/{id}', HomeController::class, 'showUser');
 
-// Parameter Dinamis
-Router::add('GET', '/user/{id}', UserController::class, 'profile');
-
-// RESTful Methods
-Router::add('PUT', '/user/{id}', UserController::class, 'update');
-Router::add('PATCH', '/user/{id}', UserController::class, 'updateStatus');
-Router::add('DELETE', '/user/{id}', UserController::class, 'destroy');
+// Route dengan multiple parameters
+Router::add('GET', '/post/{postId}/comment/{commentId}', PostController::class, 'showComment');
 ```
 
-## Fitur RESTful & API Modern
+## Route Groups
 
-Framework ini mendukung standar API modern sekelas Laravel untuk memudahkan integrasi dengan Frontend (React/Vue) maupun API client (Postman).
-
-### 1. Method Spoofing (HTML Form)
-
-Karena HTML form secara native hanya mendukung `GET` dan `POST`, Anda bisa menggunakan field tersembunyi `_method` untuk menggunakan metode lainnya.
-
-```html
-<form action="/user/1" method="POST">
-  <!-- Spoofing ke metode DELETE -->
-  <input type="hidden" name="_method" value="DELETE" />
-
-  <button type="submit">Hapus Data</button>
-</form>
-```
-
-### 2. Native JSON Support
-
-Framework secara otomatis mendeteksi jika request mengirimkan header `Content-Type: application/json`.
-Data JSON akan diurai otomatis dan bisa diakses langsung via class `Request`:
+Grouping memudahkan Anda menerapkan prefix URL atau Middleware ke banyak route sekaligus.
 
 ```php
-public function store(Request $request) {
-    // Jika input adalah {"name": "Chandra"}, maka $request->input('name') akan mengembalikan "Chandra"
-    $name = $request->input('name');
-}
-```
-
-## Advanced Routing
-
-### 1. Route Group & Middleware
-
-Anda bisa mengelompokkan route yang memiliki prefix atau middleware yang sama.
-
-```php
-use TheFramework\Middleware\AuthMiddleware;
-
-Router::group(['prefix' => '/admin', 'middleware' => [AuthMiddleware::class]], function() {
+Router::group([
+    'prefix' => '/admin',
+    'middleware' => [AuthMiddleware::class]
+], function () {
 
     // URL: /admin/dashboard
-    Router::add('GET', '/dashboard', AdminController::class, 'index');
+    Router::add('GET', '/dashboard', AdminController::class, 'dashboard');
 
     // URL: /admin/users
     Router::add('GET', '/users', AdminController::class, 'users');
@@ -73,42 +39,58 @@ Router::group(['prefix' => '/admin', 'middleware' => [AuthMiddleware::class]], f
 });
 ```
 
-### 2. Resource (CRUD) Routing
+## Middleware
 
-Membuat route standar RESTful CRUD dalam satu baris.
+Middleware dieksekusi sebelum controller. Cocok untuk autentikasi, proteksi CSRF, atau logging.
+
+### Menggunakan Middleware
+
+Anda bisa memasang middleware per-route atau per-grup.
 
 ```php
-// Otomatis membuat route: index, create, store, show, edit, update, destroy
+Router::add('POST', '/profile', UserController::class, 'update', [
+    CsrfMiddleware::class,
+    AuthMiddleware::class
+]);
+```
+
+### Membuat Middleware
+
+Buat class di `app/Middleware/` yang memiliki method `before()`.
+
+```php
+namespace TheFramework\Middleware;
+
+class CheckAge
+{
+    public function before()
+    {
+        if ($_SESSION['age'] < 18) {
+            header('Location: /restriction');
+            exit;
+        }
+    }
+}
+```
+
+## Resource Routing
+
+Untuk mempercepat pembuatan CRUD, gunakan `Router::resource`.
+
+```php
+// Otomatis membuat route index, create, store, show, edit, update, destroy
 Router::resource('/products', ProductController::class);
 ```
 
-### 3. Serving Assets (Development Mode)
+Default Mapping:
 
-Untuk kenyamanan development, framework bisa melayani file statis via PHP jika file public belum ada.
+- GET `/products` -> index
+- GET `/products/create` -> create
+- POST `/products` -> store
+- GET `/products/{id}` -> show
+- ... dst
 
-```php
-// URL: /assets/css/style.css -> resources/css/style.css
-// Note: Jangan digunakan di production demi performa.
-```
+## Route Caching
 
----
-
-## ⚡ Route Caching (Performance)
-
-Secara default, Router akan memproses regex satu per satu (Iterative). Ini cepat untuk <50 routes, tapi lambat untuk aplikasi besar.
-
-Untuk **Production**, aktifkan fitur cache:
-
-```bash
-php artisan route:cache
-```
-
-Framework akan mengubah `web.php` menjadi array statis `storage/cache/routes.php` yang diload secara instan.
-
-**PENTING:**
-Jika Anda mengubah file `web.php` setelah menjalankan `route:cache`, perubahan TIDAK akan terlihat sampai Anda menjalankan:
-
-```bash
-php artisan route:clear
-# atau jalankan route:cache lagi
-```
+Untuk performa production, framework mendukung route caching.
+Pastikan untuk menjalankan perintah cache route (jika tersedia script build) saat deploy untuk menghindari parsing Route file setiap request.

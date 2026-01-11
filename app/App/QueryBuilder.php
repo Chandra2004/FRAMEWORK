@@ -19,6 +19,7 @@ class QueryBuilder
     private $orderBy = [];
     private $bindings = [];
     private $withRelations = [];
+    private $cacheTtl = 0; // Cache duration in seconds
 
     /** @var Model */
     private $model;
@@ -245,6 +246,20 @@ class QueryBuilder
     // -------------------------
     public function get()
     {
+        // Check cache if TTL > 0
+        if ($this->cacheTtl > 0 && class_exists('\\TheFramework\\App\\CacheManager')) {
+            $cacheKey = $this->getCacheKey();
+
+            return \TheFramework\App\CacheManager::remember($cacheKey, $this->cacheTtl, function () {
+                return $this->executeQuery();
+            });
+        }
+
+        return $this->executeQuery();
+    }
+
+    private function executeQuery()
+    {
         $sql = $this->toSql();
         $this->db->query($sql);
 
@@ -440,5 +455,22 @@ class QueryBuilder
         }
 
         return $values;
+    }
+
+    // -------------------------
+    // CACHING
+    // -------------------------
+    public function remember(int $seconds)
+    {
+        $this->cacheTtl = $seconds;
+        return $this;
+    }
+
+    private function getCacheKey(): string
+    {
+        $sql = $this->toSql();
+        $bindings = serialize($this->bindings);
+        $with = serialize($this->withRelations);
+        return 'qry_' . md5($sql . $bindings . $with);
     }
 }

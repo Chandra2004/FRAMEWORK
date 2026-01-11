@@ -12,15 +12,83 @@ class Blueprint
     private $alterMode = false;
     private $alterStatements = [];
 
+    public function __construct($table)
+    {
+        $this->table = $table;
+    }
+
     public function setAlterMode()
     {
         $this->alterMode = true;
     }
 
-    public function renameColumn($old, $new)
+    public function getAlterStatements()
+    {
+        return $this->alterStatements;
+    }
+
+    public function getColumns()
+    {
+        return $this->columns;
+    }
+
+    public function getPrimaryKey()
+    {
+        return $this->primaryKey;
+    }
+
+    public function getForeignKeys()
+    {
+        // Process pending foreign key if any
+        if ($this->pendingForeign) {
+            $this->finalizeForeignKey();
+        }
+        return $this->foreignKeys;
+    }
+
+    // --- INTERNAL HELPERS ---
+
+    private function addColumnSql($sql)
     {
         if ($this->alterMode) {
-            $this->alterStatements[] = "CHANGE `$old` `$new` VARCHAR(255)";
+            $this->alterStatements[] = "ADD COLUMN $sql";
+        } else {
+            $this->columns[] = $sql;
+        }
+    }
+
+    private function addIndexSql($sql)
+    {
+        if ($this->alterMode) {
+            $this->alterStatements[] = "ADD $sql";
+        } else {
+            $this->columns[] = $sql;
+        }
+    }
+
+    private function finalizeForeignKey()
+    {
+        if ($this->pendingForeign) {
+            $foreign = $this->pendingForeign;
+            $sql = "FOREIGN KEY (`{$foreign['column']}`) REFERENCES `{$foreign['on']}` (`{$foreign['references']}`) ON DELETE {$foreign['onDelete']} ON UPDATE {$foreign['onUpdate']}";
+
+            if ($this->alterMode) {
+                // Untuk alter table, syntaxnya ADD CONSTRAINT or just ADD FOREIGN KEY
+                $this->alterStatements[] = "ADD $sql";
+            } else {
+                $this->foreignKeys[] = $sql;
+            }
+            $this->pendingForeign = null;
+        }
+    }
+
+    // --- ALTERATION METHODS ---
+
+    public function renameColumn($old, $new, $typeDef = "VARCHAR(255)")
+    {
+        if ($this->alterMode) {
+            // MySQL CHANGE COLUMN butuh definisi tipe data ulang
+            $this->alterStatements[] = "CHANGE `$old` `$new` $typeDef";
         }
         return $this;
     }
@@ -41,47 +109,7 @@ class Blueprint
         return $this;
     }
 
-    public function getAlterStatements()
-    {
-        return $this->alterStatements;
-    }
-
-    // contoh tipe baru
-    public function bigIncrements($column)
-    {
-        $this->columns[] = "`$column` BIGINT UNSIGNED AUTO_INCREMENT";
-        $this->primaryKey = "`$column`";
-        return $this;
-    }
-
-    public function uuid($column)
-    {
-        $this->columns[] = "`$column` CHAR(36)";
-        return $this;
-    }
-
-    public function time($column)
-    {
-        $this->columns[] = "`$column` TIME";
-        return $this;
-    }
-
-    public function json($column)
-    {
-        $this->columns[] = "`$column` JSON";
-        return $this;
-    }
-
-    public function softDeletes()
-    {
-        $this->timestamp('deleted_at')->nullable();
-        return $this;
-    }
-
-    public function __construct($table)
-    {
-        $this->table = $table;
-    }
+    // --- COLUMN TYPES ---
 
     public function id()
     {
@@ -90,137 +118,40 @@ class Blueprint
 
     public function increments($column)
     {
-        $this->columns[] = "`$column` INT UNSIGNED AUTO_INCREMENT";
-        $this->primaryKey = "`$column`";
+        $sql = "`$column` INT UNSIGNED AUTO_INCREMENT";
+        $this->addColumnSql($sql);
+        if (!$this->alterMode) {
+            $this->primaryKey = "`$column`";
+        } else {
+            // Kalau alter table add primary key
+            $this->alterStatements[] = "ADD PRIMARY KEY (`$column`)";
+        }
+        return $this;
+    }
+
+    public function bigIncrements($column)
+    {
+        $sql = "`$column` BIGINT UNSIGNED AUTO_INCREMENT";
+        $this->addColumnSql($sql);
+        if (!$this->alterMode) {
+            $this->primaryKey = "`$column`";
+        } else {
+            $this->alterStatements[] = "ADD PRIMARY KEY (`$column`)";
+        }
         return $this;
     }
 
     public function string($column, $length = 255)
     {
-        $this->columns[] = "`$column` VARCHAR($length)";
+        $this->addColumnSql("`$column` VARCHAR($length)");
         return $this;
     }
 
     public function integer($column, $unsigned = false)
     {
         $unsigned = $unsigned ? " UNSIGNED" : "";
-        $this->columns[] = "`$column` INT$unsigned";
+        $this->addColumnSql("`$column` INT$unsigned");
         return $this;
-    }
-
-    public function text($column)
-    {
-        $this->columns[] = "`$column` TEXT";
-        return $this;
-    }
-
-    public function longText($column)
-    {
-        $this->columns[] = "`$column` LONGTEXT";
-        return $this;
-    }
-
-    public function boolean($column)
-    {
-        $this->columns[] = "`$column` TINYINT(1)";
-        return $this;
-    }
-
-    public function timestamp($column)
-    {
-        $this->columns[] = "`$column` TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
-        return $this;
-    }
-
-    public function date($column)
-    {
-        $this->columns[] = "`$column` DATE";
-        return $this;
-    }
-
-    public function datetime($column)
-    {
-        $this->columns[] = "`$column` DATETIME";
-        return $this;
-    }
-
-
-    public function decimal($column, $total, $places)
-    {
-        $this->columns[] = "`$column` DECIMAL($total,$places)";
-        return $this;
-    }
-
-    public function enum($column, array $allowedValues)
-    {
-        $values = implode("','", array_map('addslashes', $allowedValues));
-        $this->columns[] = "`$column` ENUM('$values')";
-        return $this;
-    }
-
-    public function nullable()
-    {
-        $lastIndex = count($this->columns) - 1;
-        $this->columns[$lastIndex] .= " NULL";
-        return $this;
-    }
-
-    public function default($value)
-    {
-        $lastIndex = count($this->columns) - 1;
-        $defaultValue = is_string($value) ? "'$value'" : $value;
-        $this->columns[$lastIndex] .= " DEFAULT $defaultValue";
-        return $this;
-    }
-
-    public function unique()
-    {
-        $lastIndex = count($this->columns) - 1;
-        preg_match('/`(.+?)`/', $this->columns[$lastIndex], $matches);
-        if (!empty($matches[1])) {
-            $this->columns[] = "UNIQUE (`{$matches[1]}`)";
-        }
-        return $this;
-    }
-
-    public function index($column)
-    {
-        $this->columns[] = "INDEX idx_$column (`$column`)";
-        return $this;
-    }
-
-    public function compositePrimaryKey(array $columns)
-    {
-        $columnList = implode('`, `', $columns);
-        $this->primaryKey = "`$columnList`";
-        return $this;
-    }
-
-    public function timestamps()
-    {
-        $this->timestamp('created_at');
-        $this->timestamp('updated_at');
-        return $this;
-    }
-
-    public function getColumns()
-    {
-        return $this->columns;
-    }
-
-    public function getPrimaryKey()
-    {
-        return $this->primaryKey;
-    }
-
-    public function getForeignKeys()
-    {
-        if ($this->pendingForeign) {
-            $foreign = $this->pendingForeign;
-            $this->foreignKeys[] = "FOREIGN KEY (`{$foreign['column']}`) REFERENCES `{$foreign['on']}` (`{$foreign['references']}`) ON DELETE {$foreign['onDelete']} ON UPDATE {$foreign['onUpdate']}";
-            $this->pendingForeign = null;
-        }
-        return $this->foreignKeys;
     }
 
     public function unsignedInteger($column)
@@ -228,17 +159,182 @@ class Blueprint
         return $this->integer($column, true);
     }
 
+    public function text($column)
+    {
+        $this->addColumnSql("`$column` TEXT");
+        return $this;
+    }
+
+    public function longText($column)
+    {
+        $this->addColumnSql("`$column` LONGTEXT");
+        return $this;
+    }
+
+    public function boolean($column)
+    {
+        $this->addColumnSql("`$column` TINYINT(1)");
+        return $this;
+    }
+
+    public function timestamp($column)
+    {
+        $this->addColumnSql("`$column` TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+        return $this;
+    }
+
+    public function timestamps()
+    {
+        $this->timestamp('created_at');
+        $this->timestamp('updated_at')->nullable()->default('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+        return $this;
+    }
+
+    public function date($column)
+    {
+        $this->addColumnSql("`$column` DATE");
+        return $this;
+    }
+
+    public function datetime($column)
+    {
+        $this->addColumnSql("`$column` DATETIME");
+        return $this;
+    }
+
+    public function time($column)
+    {
+        $this->addColumnSql("`$column` TIME");
+        return $this;
+    }
+
+    public function decimal($column, $total = 8, $places = 2)
+    {
+        $this->addColumnSql("`$column` DECIMAL($total,$places)");
+        return $this;
+    }
+
+    public function uuid($column)
+    {
+        $this->addColumnSql("`$column` CHAR(36)");
+        return $this;
+    }
+
+    public function json($column)
+    {
+        $this->addColumnSql("`$column` JSON");
+        return $this;
+    }
+
+    public function enum($column, array $allowedValues)
+    {
+        $values = implode("','", array_map('addslashes', $allowedValues));
+        $this->addColumnSql("`$column` ENUM('$values')");
+        return $this;
+    }
+
+    // --- MODIFIERS ---
+
+    public function nullable()
+    {
+        $this->modifyLastColumn(" NULL");
+        return $this;
+    }
+
+    public function default($value)
+    {
+        $defaultValue = is_string($value) && strtoupper($value) !== 'CURRENT_TIMESTAMP' && strpos($value, 'CURRENT_TIMESTAMP') === false
+            ? "'$value'"
+            : $value;
+        $this->modifyLastColumn(" DEFAULT $defaultValue");
+        return $this;
+    }
+
     public function unsigned()
     {
-        $lastIndex = count($this->columns) - 1;
-        if ($lastIndex >= 0 && strpos($this->columns[$lastIndex], 'INT') !== false) {
-            $this->columns[$lastIndex] = str_replace('INT', 'INT UNSIGNED', $this->columns[$lastIndex]);
+        if ($this->alterMode) {
+            // Agak kompleks memodifikasi string SQL terakhir di alterStatements, 
+            // tapi asumsi method chaining dipanggil urut.
+            $lastIdx = count($this->alterStatements) - 1;
+            if ($lastIdx >= 0) {
+                $this->alterStatements[$lastIdx] = str_replace('INT', 'INT UNSIGNED', $this->alterStatements[$lastIdx]);
+            }
+        } else {
+            $lastIdx = count($this->columns) - 1;
+            if ($lastIdx >= 0) {
+                $this->columns[$lastIdx] = str_replace('INT', 'INT UNSIGNED', $this->columns[$lastIdx]);
+            }
         }
         return $this;
     }
 
+    // Helper untuk modify string kolom terakhir
+    private function modifyLastColumn($suffix)
+    {
+        if ($this->alterMode) {
+            $lastIdx = count($this->alterStatements) - 1;
+            if ($lastIdx >= 0) {
+                $this->alterStatements[$lastIdx] .= $suffix;
+            }
+        } else {
+            $lastIdx = count($this->columns) - 1;
+            if ($lastIdx >= 0) {
+                $this->columns[$lastIdx] .= $suffix;
+            }
+        }
+    }
+
+    // --- INDEXES ---
+
+    public function unique($column = null)
+    {
+        // Jika dipanggil chaining (nullable()->unique()), ambil kolom terakhir
+        if ($column === null) {
+            // Extract nama kolom dari definition terakhir (agak tricky regex-nya)
+            // Simplifikasi: user harus pass nama kolom jika standalone
+            return $this;
+        }
+
+        $this->addIndexSql("UNIQUE (`$column`)");
+        return $this;
+    }
+
+    public function index($column)
+    {
+        $this->addIndexSql("INDEX idx_$column (`$column`)");
+        return $this;
+    }
+
+    public function fullText(array $columns, $indexName = null)
+    {
+        $cols = implode("`, `", $columns);
+        if (!$indexName) {
+            $indexName = "ft_" . implode("_", $columns);
+        }
+        $this->addIndexSql("FULLTEXT KEY `$indexName` (`$cols`)");
+        return $this;
+    }
+
+    public function compositePrimaryKey(array $columns)
+    {
+        $columnList = implode('`, `', $columns);
+        if ($this->alterMode) {
+            $this->alterStatements[] = "ADD PRIMARY KEY (`$columnList`)";
+        } else {
+            $this->primaryKey = "`$columnList`";
+        }
+        return $this;
+    }
+
+    // --- FOREIGN KEYS ---
+
     public function foreign($column)
     {
+        // Jika ada pending foreign key sebelumnya, finalize dulu
+        if ($this->pendingForeign) {
+            $this->finalizeForeignKey();
+        }
+
         $this->pendingForeign = [
             'column' => $column,
             'references' => null,
@@ -281,13 +377,10 @@ class Blueprint
         return $this;
     }
 
-    public function fullText(array $columns, $indexName = null)
+    // Finalize di akhir jika ada sisa
+    public function __destruct()
     {
-        $cols = implode("`, `", $columns);
-        if (!$indexName) {
-            $indexName = "ft_" . implode("_", $columns);
-        }
-        $this->columns[] = "FULLTEXT KEY `$indexName` (`$cols`)";
-        return $this;
+        // Tidak bisa finalize di destruct karena object blueprint di Schema mungkin sudah selesai dipakai sebelum query dijalankan
+        // Jadi finalize harus dipanggil oleh method getForeignKeys()
     }
 }

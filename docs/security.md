@@ -1,59 +1,62 @@
-# SECURITY GUIDE
+# Security Features
 
-Keamanan bukan fitur tambahan, melainkan fondasi utama dari The-Framework.
+Security is a first-class citizen in The Framework. Kami menyediakan proteksi berlapis secara default.
 
-## 1. Web Application Firewall (WAF)
+## 1. Web Application Firewall (WAF) Middleware
 
-Middleware `WAFMiddleware` terpasang secara default untuk semua request HTTP. WAF ini memeriksa payload request (GET, POST, COOKIE) terhadap pola serangan umum:
+`TheFramework\Middleware\WAFMiddleware` melindungi aplikasi dari serangan umum:
 
-- **SQL Injection**: `UNION SELECT`, `DROP TABLE`, dll.
-- **XSS (Cross Site Scripting)**: `<script>`, `javascript:`, `onerror=`.
-- **Path Traversal**: `../`, `/etc/passwd`.
+- SQL Injection (SQLi) patterns.
+- Cross-Site Scripting (XSS) patterns.
+- Local File Inclusion (LFI).
+- User-Agent mencurigakan.
 
-Jika serangan terdeteksi, request langsung ditolak dengan status **403 Forbidden** sebelum menyentuh controller Anda.
+Gunakan middleware ini pada route publik Anda.
+
+```php
+Router::add('GET', '/', HomeController::class, 'index', [WAFMiddleware::class]);
+```
 
 ## 2. CSRF Protection
 
-Cross-Site Request Forgery dicegah menggunakan token yang divalidasi pada setiap request `POST`, `PUT`, `DELETE`.
+Cross-Site Request Forgery (CSRF) dicegah dengan token yang divalidasi pada setiap request POST/PUT/DELETE.
 
-- **Form Helper**: Gunakan directive `@csrf` di Blade view Anda.
-  ```html
-  <form method="POST">@csrf ...</form>
-  ```
-- **Ajax**: Token otomatis disisipkan di meta tag `csrf-token` dan header `X-CSRF-TOKEN`.
+1.  Pastikan `CsrfMiddleware` dipasang pada route yang mengubah state.
+2.  Di View (Blade), gunakan helper `@csrf` di dalam form HTML.
+
+```html
+<form method="POST" action="/update">
+  @csrf
+  <input type="text" name="name" />
+  <button type="submit">Save</button>
+</form>
+```
 
 ## 3. Secure Headers
 
-Response HTTP otomatis menyertakan header keamanan modern:
+Secara default, file `bootstrap/app.php` mengirimkan header HTTP keamanan standar industri:
 
-- `X-Frame-Options: DENY`: Mencegah Clickjacking (iframe embedding).
-- `X-Content-Type-Options: nosniff`: Mencegah MIME sniffing.
-- `Strict-Transport-Security (HSTS)`: Memaksa browser menggunakan HTTPS.
-- `Permissions-Policy`: Mematikan akses fitur sensitif browser (kamera, mic, lokasi) kecuali dibutuhkan.
+- `X-Frame-Options: DENY` (Anti Clickjacking)
+- `X-Content-Type-Options: nosniff` (Mencegah MIME sniffing)
+- `X-XSS-Protection: 1; mode=block`
+- `Strict-Transport-Security` (HSTS)
+- `Content-Security-Policy` (CSP) - _Perlu dikonfigurasi lebih lanjut sesuai kebutuhan aset Anda_.
 
-## 4. Upload Security (UploadHandler)
+## 4. Encryption
 
-Fitur upload file (`UploadHandler`) sangat ketat (Paranoid Mode):
+Framework menyediakan wrapper untuk library `defuse/php-encryption`.
 
-- **Randomized Filename**: File di-rename menggunakan `uniqid` untuk mencegah eksekusi file berbahaya dengan nama yang bisa ditebak.
-- **Extension & MIME Validation**: Memastikan file gambar benar-benar gambar (header content), bukan script PHP yang disamarkan.
-- **WebP Conversion**: Upload gambar otomatis dikonversi ke WebP, stripping metadata berbahaya (EXIF) yang mungkin tertanam.
+Konfigurasi Key di `.env`:
 
-## 5. Rate Limiting
+```ini
+ENCRYPTION_KEY=def00000...
+```
 
-Mencegah Brute Force dan DoS serangan ringan.
+Gunakan helper atau service untuk mengenkripsi data sensitif sebelum masuk database.
 
-- Config: `app/App/RateLimiter.php`
-- Default: 100 request per menit per IP (bisa disesuaikan).
-- Storage: Menggunakan File Cache yang cepat.
+## 5. Private File Uploads
 
----
+Folder `private-uploads/` di root proyek **TIDAK** dapat diakses langsung via browser (403 Forbidden oleh Web Server).
 
-## Best Practices untuk Developer
-
-1. **Gunakan Query Builder / Binding**: Jangan pernah melakukan raw query dengan konkatinasi string variabel input.
-
-   - ❌ `$db->query("SELECT * FROM users WHERE name = '$name'")`
-   - ✅ `$user->where('name', '=', $name)` (Parameter Binding otomatis)
-
-2. **Output Escaping**: Blade `{{ $variable }}` otomatis melakukan `htmlspecialchars`. Gunakan `{!! $variable !!}` HANYA jika Anda yakin data tersebut aman (HTML terpercaya).
+Untuk menyajikan file ini ke user yang terautentikasi, gunakan route khusus:
+`/file/{filename}` yang dikontrol oleh `FileController`. Controller ini akan memverifikasi hak akses user sebelum mengirimkan konten file menggunakan `readfile()`.

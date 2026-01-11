@@ -1,170 +1,179 @@
-# DATABASE & ORM GUIDE
+# Database & Models
 
-Framework ini memiliki Database Layer yang kuat namun ringan wrapper di atas `PDO Native`, memberikan kontrol penuh atas Query SQL (Raw) sekaligus kemudahan ala Query Builder (Eloquent-like).
+The Framework menyediakan layer database yang powerful namun ringan, menggabungkan fleksibilitas Query Builder dengan kenyamanan Active Record ala Eloquent.
 
-## Koneksi Database
+## Konfigurasi
 
-Konfigurasi database ada di file `.env`:
+Pastikan konfigurasi database di `.env` sudah sesuai:
 
 ```ini
+DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_DATABASE=mydatabase
-DB_USERNAME=root
-DB_PASSWORD=secret
+DB_PORT=3306
+DB_NAME=nama_database
+DB_USER=root
+DB_PASS=password
 ```
 
-Koneksi bersifat **Lazy Loading**: Koneksi ke database server TIDAK akan dibuat sampai query pertama dijalankan. Ini sangat menghemat resource.
+## Basic Usage (Query Builder)
 
-## Menggunakan Model
+Anda bisa menggunakan Query Builder secara langsung tanpa membaut Model class, namun disarankan menggunakan Model.
 
-Model menghubungkan kode OOP Anda dengan Tabel di database.
+```php
+use TheFramework\App\Database;
+use TheFramework\App\QueryBuilder;
 
-### 1. Membuat Model
+$db = Database::getInstance();
+$query = new QueryBuilder($db);
 
-Gunakan Artisan generator:
-
-```bash
-php artisan make:model Product
+$users = $query->table('users')
+    ->where('status', '=', 'active')
+    ->orderBy('created_at', 'desc')
+    ->get(); // Mengembalikan array of arrays
 ```
 
-Ini akan membuat file `app/Models/Product.php`.
+---
 
-### 2. Struktur Model
+## Models
 
-Secara default, model akan menebak nama tabel (skema `Snake Case Plural`, misal `Product` -> `products`).
+Model adalah representasi PHP dari tabel database Anda. Model disimpan di `app/Models/`.
+
+### Membuat Model
+
+Buat file baru misal `User.php` di `app/Models/`:
 
 ```php
 namespace TheFramework\Models;
 
 use TheFramework\App\Model;
 
-class Product extends Model
+class User extends Model
 {
-    // Override jika nama tabel beda
-    // protected $table = 'master_products';
+    protected $table = 'users'; // Opsional jika nama class = nama tabel (singular/plural handled)
+    protected $primaryKey = 'id';
 
-    // Override primary key (default 'id')
-    // protected $primaryKey = 'uuid';
+    // Kolom yang boleh diisi via create/update (Mass Assignment Protection)
+    protected $fillable = ['name', 'email', 'password', 'status'];
+
+    // Kolom yang disembunyikan saat toArray/JSON
+    protected $hidden = ['password'];
 }
 ```
 
-## CRUD Operation
+### Retrieving Data
 
 ```php
-// 1. Create
-$product = new Product();
-$product->insert([
-    'name' => 'Laptop Gaming',
-    'price' => 15000000
+// Ambil semua data
+$users = User::all();
+
+// Cari berdasarkan Primary Key
+$user = User::find(1);
+
+// Query Builder Chain
+$activeUsers = User::where('status', 'active')
+    ->orderBy('name', 'asc')
+    ->limit(10)
+    ->get();
+
+// Pagination
+$users = User::paginate(15); // 15 item per halaman
+```
+
+### Creating & Updating
+
+```php
+// Create
+$newUser = User::create([
+    'name' => 'Chandra',
+    'email' => 'chandra@example.com',
+    'password' => password_hash('secret', PASSWORD_BCRYPT)
 ]);
 
-// 2. Read (All)
-$products = $product->all();
+// Update
+User::where('id', 1)->update(['status' => 'inactive']);
 
-// 3. Read (Find by ID)
-$item = $product->find(1);
-
-// 4. Update
-$product->update(['price' => 14000000], 1); // ID 1
-
-// 5. Delete
-$product->delete(1);
+// Delete
+User::delete(1); // Delete by ID
+User::where('status', 'banned')->delete(); // Bulk Delete
 ```
 
-## Query Builder (Fluent Interface)
+---
 
-Anda bisa melakukan chaining method query yang kompleks:
+## Relationships
+
+Framework ini mendukung definisi relasi antar tabel untuk memudahkan pengambilan data terkait.
+
+### Mendefinisikan Relasi
 
 ```php
-$users = (new User())->query()
-    ->select('name', 'email')
-    ->where('active', '=', 1)
-    ->where('created_at', '>=', '2024-01-01')
-    ->orderBy('name', 'ASC')
-    ->limit(10)
-    ->get(); // Eksekusi dan return array
+class User extends Model {
+    public function posts() {
+        return $this->hasMany(Post::class, 'user_id');
+    }
+
+    public function profile() {
+        return $this->hasOne(Profile::class, 'user_id');
+    }
+}
+
+class Post extends Model {
+    public function user() {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+}
 ```
 
-Method tersedia:
+### Eager Loading (N+1 Problem Solution)
 
-- `where($col, $operator, $val)`
-- `orWhere(...)`
-- `whereIn($col, array)`
-- `join($table, $first, $operator, $second)`
-- `leftJoin(...)`
-- `groupBy(...)`
-- `having(...)`
-- `orderBy($col, $directon)`
-- `limit($int)`
-- `offset($int)`
-
-## Advanced Features
-
-### 1. Pessimistic Locking
-
-Untuk transaksi keuangan atau stok (Flash Sale), gunakan `lockForUpdate` untuk mencegah Race Condition.
+Gunakan `with()` untuk mengambil data relasi secara efisien (hanya 2 query SQL, bukan N+1).
 
 ```php
-$db->beginTransaction();
+$users = User::with(['posts', 'profile'])->get();
 
-// Select... FOR UPDATE
-$wallet = $this->query()->where('uid', '=', $uid)->lockForUpdate()->first();
-
-// Update saldo aman
-$this->update(['saldo' => $wallet['saldo'] - 100], $uid);
-
-$db->commit();
-```
-
-### 2. Transaction Management
-
-```php
-try {
-    $db->beginTransaction();
-    // ... multiple queries ...
-    $db->commit();
-} catch (\Throwable $e) {
-    $db->rollBack();
-    throw $e;
+foreach($users as $user) {
+    echo $user['name'];
+    // Data posts sudah tersedia, tidak ada query tambahan
+    foreach($user['posts'] as $post) {
+        echo $post['title'];
+    }
 }
 ```
 
 ---
 
-## Migrations
+## 🚀 Advanced Features
 
-Mengelola skema database via kode (Version Control untuk Database).
+### Automatic Query Caching
 
-```bash
-# Buat migration baru
-php artisan make:migration CreateOrdersTable
-
-# Jalankan migrasi
-php artisan migrate
-
-# Rollback langkah terakhir
-php artisan migrate:rollback
-```
-
-Contoh File Migrasi:
+Fitur baru di versi 4.0! Anda bisa men-cache hasil query database untuk performa maksimal.
 
 ```php
-Schema::create('orders', function($table) {
-    $table->id(); // Auto increment ID
-    $table->string('code')->unique();
-    $table->integer('total_amount');
-    $table->timestamps(); // created_at, updated_at
-});
+// Cache hasil query selama 1 jam (3600 detik)
+$stats = Transaction::where('status', 'success')
+    ->remember(3600)
+    ->count();
+
+// Cache list produk populer selama 10 menit
+$products = Product::where('is_popular', 1)
+    ->with(['category'])
+    ->remember(600)
+    ->get();
 ```
 
-## Seeding
+_Note: Cache akan otomatis dibuat unik berdasarkan SQL query dan binding parameternya._
 
-Mengisi database dengan data dummy untuk testing.
+### Pessimistic Locking
 
-```bash
-# Buat seeder
-php artisan make:seeder UserSeeder
+Untuk mencegah Race Condition pada sistem saldo/stok.
 
-# Jalankan seeder
-php artisan db:seed
+```php
+$db->beginTransaction();
+
+$product = Product::where('id', 1)
+    ->lockForUpdate() // Menambahkan FOR UPDATE
+    ->first();
+
+// Lakukan update stok aman...
+
+$db->commit();
 ```
