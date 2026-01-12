@@ -70,19 +70,46 @@ public function up()
 
 Anda dapat membuat virtual table (View) untuk menyederhanakan query kompleks.
 
+### 1. Menggunakan Artisan (New 🚀)
+
+Buat file migrasi view dengan cepat menggunakan command:
+
+```bash
+php artisan make:db-view active_users_view
+```
+
+### 2. Definisi View (Support ORM)
+
+Anda bisa menggunakan **Raw SQL** atau **Query Builder/Model** untuk mendefinisikan view. Framework akan otomatis mengonversi query object menjadi SQL.
+
 ```php
+use TheFramework\Models\User;
+use TheFramework\App\Schema;
+
 public function up()
 {
-    $query = "SELECT u.id, u.username, p.title
-              FROM users u
-              JOIN posts p ON u.id = p.user_id
-              WHERE u.role = 'editor'";
+    // OPSI A: Menggunakan Model/Query Builder (Recommended)
+    // Keuntungan: Syntax PHP, method chaining, pembacaan lebih mudah
+    $query = User::select(['id', 'username', 'email'])
+                ->where('status', 'active')
+                ->where('role', '!=', 'banned');
 
-    Schema::createView('editors_posts_view', $query);
+    // Framework otomatis convert ke SQL:
+    // CREATE VIEW `active_users_view` AS SELECT id, username, email FROM users WHERE status = 'active' ...
+    Schema::createView('active_users_view', $query);
+
+    // OPSI B: Menggunakan Raw SQL
+    $sql = "SELECT u.id, u.username, p.title
+            FROM users u
+            JOIN posts p ON u.id = p.user_id
+            WHERE u.role = 'editor'";
+
+    Schema::createView('editors_posts_view', $sql);
 }
 
 public function down()
 {
+    Schema::dropView('active_users_view');
     Schema::dropView('editors_posts_view');
 }
 ```

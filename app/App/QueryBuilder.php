@@ -473,4 +473,9 @@ class QueryBuilder
         $with = serialize($this->withRelations);
         return 'qry_' . md5($sql . $bindings . $with);
     }
+
+    public function getBindings()
+    {
+        return $this->bindings;
+    }
 }

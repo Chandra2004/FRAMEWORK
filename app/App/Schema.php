@@ -79,6 +79,34 @@ class Schema
     public static function createView($viewName, $query)
     {
         $db = Database::getInstance();
+
+        // Jika $query adalah QueryBuilder, kita perlu convert ke Raw SQL
+        if ($query instanceof \TheFramework\App\QueryBuilder) {
+            $sql = $query->toSql();
+            $bindings = $query->getBindings(); // Kita perlu expose method ini di QueryBuilder
+
+            // Interpolasi bindings ke dalam SQL
+            // PERINGATAN: Ini hanya simulasi sederhana untuk CREATE VIEW, 
+            // karena MySQL View tidak support prepared statement parameters dari PHP.
+            foreach ($bindings as $key => $value) {
+                // Tentukan type quoting
+                $value = is_string($value) ? $db->quote($value) : $value;
+                if (is_null($value))
+                    $value = 'NULL';
+
+                // Replace first occurrence (jika parameter ? order based)
+                // Atau jika named parameter (:param)
+                if (strpos($key, ':') === 0) {
+                    $sql = str_replace($key, $value, $sql);
+                } else {
+                    // Jika positional, ini agak tricky jika tidak urut, 
+                    // tapi QueryBuilder framework ini pakai Named Params (:where_0)
+                    // Jadi aman pakai str_replace key.
+                }
+            }
+            $query = $sql;
+        }
+
         $sql = "CREATE OR REPLACE VIEW `$viewName` AS $query";
         $db->query($sql);
         $db->execute();
