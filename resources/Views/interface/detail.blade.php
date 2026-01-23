@@ -8,7 +8,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    Back to Users
+                    {{ __('messages.back_to_users') }}
                 </a>
 
                 <!-- (Optional) Add User via Modal from here is redundant but kept for layout consistency if needed -->
@@ -18,7 +18,7 @@
             <div class="bg-gray-800/50 p-8 rounded-2xl border border-gray-700/50">
                 <div class="flex items-center justify-between mb-6">
                     <h1 class="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                        User Details
+                        {{ __('messages.user_details') }}
                     </h1>
                     <div class="flex gap-2">
                         <span class="bg-cyan-400/10 text-cyan-400 px-4 py-2 rounded-full text-sm">
@@ -34,12 +34,13 @@
                 <form id="updateUserForm" class="space-y-6" enctype="multipart/form-data">
                     <h3
                         class="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-6">
-                        Edit User
+                        {{ __('messages.edit_user') }}
                     </h3>
 
                     <!-- Name Input -->
                     <div class="relative group">
-                        <label for="name" class="block text-sm font-medium text-gray-400 mb-2">Name</label>
+                        <label for="name"
+                            class="block text-sm font-medium text-gray-400 mb-2">{{ __('messages.full_name') }}</label>
                         <div class="relative">
                             <div
                                 class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-cyan-400">
@@ -56,7 +57,8 @@
 
                     <!-- Email Input -->
                     <div class="relative group">
-                        <label for="email" class="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                        <label for="email"
+                            class="block text-sm font-medium text-gray-400 mb-2">{{ __('messages.email_address') }}</label>
                         <div class="relative">
                             <div
                                 class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-cyan-400">
@@ -73,8 +75,8 @@
 
                     <!-- Profile Picture Upload -->
                     <div class="relative group">
-                        <label for="profile_picture" class="block text-sm font-medium text-gray-400 mb-2">Profile
-                            Picture</label>
+                        <label for="profile_picture"
+                            class="block text-sm font-medium text-gray-400 mb-2">{{ __('messages.profile_picture') }}</label>
                         <div class="flex items-center justify-center w-full">
                             <label
                                 class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600/50 rounded-lg cursor-pointer bg-gray-700/50 hover:border-cyan-400/50 hover:bg-gray-700/70 transition-all">
@@ -85,7 +87,8 @@
                                             d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                     <p class="text-sm text-gray-400">
-                                        <span class="font-semibold text-cyan-400">Click to upload</span> or drag and drop
+                                        <span class="font-semibold text-cyan-400">{{ __('messages.upload_file') }}</span>
+                                        {{ __('messages.drag_drop') }}
                                     </p>
                                     <p class="text-xs text-gray-500 mt-1">PNG, JPG (MAX. 2MB)</p>
                                 </div>
@@ -106,22 +109,23 @@
                     <div class="flex items-center mt-4">
                         <input type="checkbox" name="delete_profile_picture" id="delete_profile_picture"
                             class="w-5 h-5 text-cyan-500 bg-gray-700 border-gray-600 rounded focus:ring-2 focus:ring-cyan-500 focus:outline-none">
-                        <label for="delete_profile_picture" class="ml-2 text-gray-400 text-sm">Delete profile
-                            picture</label>
+                        <label for="delete_profile_picture"
+                            class="ml-2 text-gray-400 text-sm">{{ __('messages.delete_profile_picture') }}</label>
                     </div>
 
                     <!-- Submit Button -->
                     <button type="submit" id="updateBtn"
                         class="w-full py-3.5 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-lg transition-all transform hover:scale-[1.02] shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 flex justify-center items-center">
-                        <span>Update User</span>
+                        <span>{{ __('messages.update_user') }}</span>
                         <svg class="w-4 h-4 ml-2 inline-block loading-hide-update" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                         </svg>
                         <!-- Loading Spinner -->
-                        <svg class="w-5 h-5 ml-2 animate-spin hidden loading-show-update" xmlns="http://www.w3.org/2000/svg"
-                            fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        <svg class="w-5 h-5 ml-2 animate-spin hidden loading-show-update"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                stroke-width="4">
                             </circle>
                             <path class="opacity-75" fill="currentColor"
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
@@ -146,13 +150,13 @@
                                             stroke-width="2"
                                             d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z" />
                                     </svg>
-                                    <span class="loading-hide-delete">Hapus User</span>
+                                    <span class="loading-hide-delete">{{ __('messages.delete_user') }}</span>
 
                                     <!-- Loading Spinner -->
                                     <svg class="w-5 h-5 animate-spin hidden loading-show-delete"
                                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                            stroke-width="4"></circle>
+                                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                            stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor"
                                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                         </path>
@@ -167,13 +171,13 @@
                         <div>
                             <ul>
                                 <li>
-                                    <p class="text-gray-400 text-sm mb-1">Account Created</p>
+                                    <p class="text-gray-400 text-sm mb-1">{{ __('messages.account_created') }}</p>
                                     <p class="text-gray-100 font-medium">
                                         {{ date('H:i d-m-Y', strtotime($user['created_at'])) }}
                                     </p>
                                 </li>
                                 <li>
-                                    <p class="text-gray-400 text-sm mb-1">Account Update</p>
+                                    <p class="text-gray-400 text-sm mb-1">{{ __('messages.account_updated') }}</p>
                                     <p class="text-gray-100 font-medium">
                                         {{ date('H:i d-m-Y', strtotime($user['updated_at'])) }}
                                     </p>
@@ -181,7 +185,7 @@
                             </ul>
                         </div>
                         <div>
-                            <p class="text-gray-400 text-sm mb-1">Profile Picture</p>
+                            <p class="text-gray-400 text-sm mb-1">{{ __('messages.profile_picture') }}</p>
                             @php
                                 $profileUrl = $user['profile_picture']
                                     ? url('/file/user-pictures/' . $user['profile_picture'])
@@ -204,9 +208,9 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="text-gray-100 font-medium mb-1">Security Note</h3>
+                            <h3 class="text-gray-100 font-medium mb-1">{{ __('messages.security_note') }}</h3>
                             <p class="text-gray-400 text-sm">
-                                Passwords are securely hashed using bcrypt algorithm and cannot be retrieved in plain text.
+                                {{ __('messages.security_note_desc') }}
                             </p>
                         </div>
                     </div>
@@ -227,13 +231,14 @@
             // Design Config based on notification.blade.php
             const iconBg = isSuccess ? 'bg-cyan-400/20' : 'bg-red-500/20';
             const iconColor = isSuccess ? 'text-cyan-400' : 'text-red-500';
-            const iconSvg = isSuccess
-                ? '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />'
-                : '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />';
+            const iconSvg = isSuccess ?
+                '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />' :
+                '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />';
 
             const toast = document.createElement('div');
             // Exact classes from notification.blade.php
-            toast.className = `flex items-center w-full max-w-xs p-4 mb-4 text-gray-300 bg-gray-900/90 backdrop-blur-lg border border-gray-800 rounded-lg shadow-sm transform transition-all duration-300 ease-in-out translate-y-4 opacity-0 pointer-events-auto`;
+            toast.className =
+                `flex items-center w-full max-w-xs p-4 mb-4 text-gray-300 bg-gray-900/90 backdrop-blur-lg border border-gray-800 rounded-lg shadow-sm transform transition-all duration-300 ease-in-out translate-y-4 opacity-0 pointer-events-auto`;
 
             toast.innerHTML = `
                         <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 ${iconColor} ${iconBg} rounded-lg">
@@ -272,14 +277,14 @@
         // --- FILE PREVIEW ---
         const fileInput = document.getElementById('profile_picture');
         if (fileInput) {
-            fileInput.addEventListener('change', function (e) {
+            fileInput.addEventListener('change', function(e) {
                 const file = this.files[0];
                 const imagePreview = document.getElementById('imagePreview');
                 const previewImage = document.getElementById('previewImage');
                 const fileNameDisplay = document.getElementById('fileName');
                 if (file) {
                     const reader = new FileReader();
-                    reader.onload = function (e) {
+                    reader.onload = function(e) {
                         previewImage.src = e.target.result;
                         imagePreview.classList.remove('hidden');
                         fileNameDisplay.textContent = file.name;
@@ -299,7 +304,7 @@
         // 1. UPDATE USER
         const updateForm = document.getElementById('updateUserForm');
         if (updateForm) {
-            updateForm.addEventListener('submit', async function (e) {
+            updateForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 // NO CONFIRM ALERT - DIRECT ACTION
@@ -341,7 +346,7 @@
                         // --- UPDATE DOM ELEMENTS REAL-TIME ---
                         if (result.data) {
                             const updatedUser = result.data;
-                            
+
                             // 1. Update Profile Image (Graceful Preloading)
                             if (updatedUser.profile_picture) {
                                 const baseImgUrl = `/file/user-pictures/${updatedUser.profile_picture}`;
@@ -351,30 +356,31 @@
                                 // Preload image first to avoid broken icon
                                 const tempImg = new Image();
                                 tempImg.src = fullImgUrl;
-                                
+
                                 // Visual Loading State
                                 const imgEl = document.getElementById('currentProfileImage');
                                 const linkEl = document.getElementById('currentProfileLink');
-                                if(imgEl) {
-                                    imgEl.classList.add('opacity-50', 'blur-sm', 'transition-all', 'duration-300');
+                                if (imgEl) {
+                                    imgEl.classList.add('opacity-50', 'blur-sm', 'transition-all',
+                                        'duration-300');
                                 }
 
                                 tempImg.onload = function() {
-                                    if(imgEl) {
+                                    if (imgEl) {
                                         imgEl.src = fullImgUrl;
                                         // Remove loading state
                                         setTimeout(() => {
                                             imgEl.classList.remove('opacity-50', 'blur-sm');
                                         }, 100);
-                                    } 
-                                    if(linkEl) linkEl.href = fullImgUrl;
+                                    }
+                                    if (linkEl) linkEl.href = fullImgUrl;
                                 };
-                                
+
                                 tempImg.onerror = function() {
                                     console.warn('Image not ready yet, retrying in 1s...');
                                     setTimeout(() => {
                                         // Retry update directly
-                                        if(imgEl) {
+                                        if (imgEl) {
                                             imgEl.src = fullImgUrl;
                                             imgEl.classList.remove('opacity-50', 'blur-sm');
                                         }
@@ -385,15 +391,16 @@
                                 const dummyUrl = `/file/dummy/dummy.webp`;
                                 const imgEl = document.getElementById('currentProfileImage');
                                 const linkEl = document.getElementById('currentProfileLink');
-                                if(imgEl) imgEl.src = dummyUrl;
-                                if(linkEl) linkEl.href = dummyUrl;
+                                if (imgEl) imgEl.src = dummyUrl;
+                                if (linkEl) linkEl.href = dummyUrl;
                             }
 
                             // 2. Update Name Display
                             const nameInput = document.getElementById('name');
-                            if(nameInput && nameInput.value !== updatedUser.name) nameInput.value = updatedUser.name;
+                            if (nameInput && nameInput.value !== updatedUser.name) nameInput.value = updatedUser
+                                .name;
                         }
-                        
+
                         // Clear file input preview
                         document.getElementById('profile_picture').value = '';
                         document.getElementById('imagePreview').classList.add('hidden');
@@ -419,7 +426,7 @@
         let deleteConfirmMode = false;
 
         if (deleteForm) {
-            deleteForm.addEventListener('submit', async function (e) {
+            deleteForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 // 2-Step Logic

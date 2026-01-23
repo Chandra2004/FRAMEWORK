@@ -8,11 +8,11 @@
             <div>
                 <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-3">
                     <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-600">
-                        User Management
+                        {{ __('messages.user_management') }}
                     </span>
                 </h1>
                 <p class="text-gray-400 text-lg max-w-2xl">
-                    Experience seamless control over your organization's members with our secure and real-time dashboard.
+                    {{ __('messages.user_management_desc') }}
                 </p>
             </div>
 
@@ -27,7 +27,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                             d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Add New Member
+                    {{ __('messages.add_new_member') }}
                 </span>
             </button>
         </div>
@@ -46,8 +46,9 @@
 
                     <!-- Avatar / Initials -->
                     <div class="relative shrink-0">
-                        @if(!empty($user['profile_picture']))
-                            <img src="{{ url('/file/user-pictures/' . $user['profile_picture']) }}" alt="{{ $user['name'] }}"
+                        @if (!empty($user['profile_picture']))
+                            <img src="{{ url('/file/user-pictures/' . $user['profile_picture']) }}"
+                                alt="{{ $user['name'] }}"
                                 class="w-16 h-16 rounded-full object-cover border-2 border-gray-700 group-hover:border-cyan-400 transition-colors shadow-md">
                         @else
                             <div
@@ -56,7 +57,8 @@
                             </div>
                         @endif
                         <!-- Status Indicator (Dummy Active) -->
-                        <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-gray-800 rounded-full"></div>
+                        <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-gray-800 rounded-full">
+                        </div>
                     </div>
 
                     <!-- Info -->
@@ -71,12 +73,13 @@
                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
                                 </path>
                             </svg>
-                            <span>Joined {{ date('M d, Y', strtotime($user['created_at'])) }}</span>
+                            <span>{{ __('messages.joined') }} {{ date('M d, Y', strtotime($user['created_at'])) }}</span>
                         </div>
                     </div>
 
                     <!-- Arrow Icon -->
-                    <div class="text-gray-600 group-hover:text-cyan-400 transition-colors transform group-hover:translate-x-1">
+                    <div
+                        class="text-gray-600 group-hover:text-cyan-400 transition-colors transform group-hover:translate-x-1">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
@@ -92,10 +95,10 @@
                                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-white mb-2">No Members Yet</h3>
-                    <p class="text-gray-400 mb-6 max-w-sm">Get started by adding the first member to your organization.</p>
-                    <button onclick="openModal()" class="text-cyan-400 font-semibold hover:text-cyan-300 hover:underline">Add
-                        First Member</button>
+                    <h3 class="text-xl font-semibold text-white mb-2">{{ __('messages.no_members') }}</h3>
+                    <p class="text-gray-400 mb-6 max-w-sm">{{ __('messages.no_members_desc') }}</p>
+                    <button onclick="openModal()"
+                        class="text-cyan-400 font-semibold hover:text-cyan-300 hover:underline">{{ __('messages.add_first_member') }}</button>
                 </div>
             @endforelse
         </div>
@@ -122,8 +125,8 @@
                     <div
                         class="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-5 flex items-center justify-between">
                         <div>
-                            <h3 class="text-xl font-bold text-white">Create New User</h3>
-                            <p class="text-sm text-gray-400 mt-1">Enter details to onboard a new member.</p>
+                            <h3 class="text-xl font-bold text-white">{{ __('messages.create_user') }}</h3>
+                            <p class="text-sm text-gray-400 mt-1">{{ __('messages.create_user_desc') }}</p>
                         </div>
                         <button type="button" onclick="closeModal()"
                             class="text-gray-400 hover:text-white transition-colors bg-gray-700/50 hover:bg-gray-700 rounded-lg p-2">
@@ -139,7 +142,8 @@
 
                         <!-- Name Field -->
                         <div>
-                            <label for="name" class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                            <label for="name"
+                                class="block text-sm font-medium text-gray-300 mb-2">{{ __('messages.full_name') }}</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-500">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -155,7 +159,8 @@
 
                         <!-- Email Field -->
                         <div>
-                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                            <label for="email"
+                                class="block text-sm font-medium text-gray-300 mb-2">{{ __('messages.email_address') }}</label>
                             <div class="relative">
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-500">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -171,7 +176,8 @@
 
                         <!-- File Upload Area -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Profile Picture</label>
+                            <label
+                                class="block text-sm font-medium text-gray-300 mb-2">{{ __('messages.profile_picture') }}</label>
                             <div class="mt-1 flex justify-center rounded-xl border-2 border-dashed border-gray-600 px-6 pt-5 pb-6 hover:border-cyan-500 hover:bg-gray-700/30 transition-all cursor-pointer"
                                 onclick="document.getElementById('profile_picture').click()">
                                 <div class="space-y-1 text-center">
@@ -192,9 +198,9 @@
                                         <div class="flex text-sm text-gray-400 justify-center mt-2">
                                             <span
                                                 class="relative cursor-pointer rounded-md font-medium text-cyan-500 hover:text-cyan-400 focus-within:outline-none">
-                                                <span>Upload a file</span>
+                                                <span>{{ __('messages.upload_file') }}</span>
                                             </span>
-                                            <p class="pl-1">or drag and drop</p>
+                                            <p class="pl-1">{{ __('messages.drag_drop') }}</p>
                                         </div>
                                         <p class="text-xs text-gray-500">PNG, JPG up to 2MB</p>
                                     </div>
@@ -207,15 +213,15 @@
                         <!-- Footer Actions -->
                         <div class="mt-8 flex gap-3">
                             <button type="button" onclick="closeModal()"
-                                class="w-full rounded-xl bg-gray-700 px-4 py-3 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-600 transition-all">Cancel</button>
+                                class="w-full rounded-xl bg-gray-700 px-4 py-3 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-600 transition-all">{{ __('messages.cancel') }}</button>
                             <button type="submit" id="submitBtn"
                                 class="w-full rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg hover:from-cyan-500 hover:to-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 transition-all flex justify-center items-center gap-2">
-                                <span>Save Member</span>
+                                <span>{{ __('messages.save_member') }}</span>
                                 <!-- Spinner -->
                                 <svg class="hidden w-5 h-5 text-white animate-spin loading-spinner"
                                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        stroke-width="4"></circle>
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                     </path>
@@ -271,7 +277,7 @@
         }
 
         // --- 2. FILE PREVIEW ---
-        document.getElementById('profile_picture').addEventListener('change', function (e) {
+        document.getElementById('profile_picture').addEventListener('change', function(e) {
             const file = e.target.files[0];
             const previewContainer = document.getElementById('previewContainer');
             const previewImage = document.getElementById('previewImage');
@@ -280,7 +286,7 @@
 
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function (e) {
+                reader.onload = function(e) {
                     previewImage.src = e.target.result;
                     fileName.textContent = file.name;
                     previewContainer.classList.remove('hidden');
@@ -298,13 +304,14 @@
             // Design Config based on notification.blade.php
             const iconBg = isSuccess ? 'bg-cyan-400/20' : 'bg-red-500/20';
             const iconColor = isSuccess ? 'text-cyan-400' : 'text-red-500';
-            const iconSvg = isSuccess
-                ? '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />'
-                : '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />';
+            const iconSvg = isSuccess ?
+                '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />' :
+                '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />';
 
             const toast = document.createElement('div');
             // Exact classes from notification.blade.php
-            toast.className = `flex items-center w-full max-w-xs p-4 mb-4 text-gray-300 bg-gray-900/90 backdrop-blur-lg border border-gray-800 rounded-lg shadow-sm transform transition-all duration-300 ease-in-out translate-y-4 opacity-0 pointer-events-auto`;
+            toast.className =
+                `flex items-center w-full max-w-xs p-4 mb-4 text-gray-300 bg-gray-900/90 backdrop-blur-lg border border-gray-800 rounded-lg shadow-sm transform transition-all duration-300 ease-in-out translate-y-4 opacity-0 pointer-events-auto`;
 
             toast.innerHTML = `
                     <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 ${iconColor} ${iconBg} rounded-lg">
@@ -342,7 +349,7 @@
 
         // --- 4. FORM HANDLER (Fetch Logic) ---
         const form = document.getElementById('createUserForm');
-        form.addEventListener('submit', async function (e) {
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const submitBtn = document.getElementById('submitBtn');
@@ -391,9 +398,9 @@
                         const emptyState = document.getElementById('emptyState');
                         if (emptyState) emptyState.remove();
 
-                        const profileImg = newUser.profile_picture
-                            ? `<img src="/file/user-pictures/${newUser.profile_picture}" class="w-16 h-16 rounded-full object-cover border-2 border-gray-700 group-hover:border-cyan-400 transition-colors shadow-md">`
-                            : `<div class="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-600 group-hover:border-cyan-400 flex items-center justify-center text-xl font-bold text-gray-300 group-hover:text-cyan-400 transition-all shadow-md">${newUser.name.charAt(0).toUpperCase()}</div>`;
+                        const profileImg = newUser.profile_picture ?
+                            `<img src="/file/user-pictures/${newUser.profile_picture}" class="w-16 h-16 rounded-full object-cover border-2 border-gray-700 group-hover:border-cyan-400 transition-colors shadow-md">` :
+                            `<div class="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-600 group-hover:border-cyan-400 flex items-center justify-center text-xl font-bold text-gray-300 group-hover:text-cyan-400 transition-all shadow-md">${newUser.name.charAt(0).toUpperCase()}</div>`;
 
                         const newCard = `
                                 <a href="/users/information/${newUser.uid}" class="group relative bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 hover:bg-gray-800/80 hover:border-cyan-500/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/10 flex items-center gap-5 overflow-hidden animate-fade-in-down">

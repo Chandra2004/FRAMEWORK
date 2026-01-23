@@ -99,3 +99,17 @@ if (!function_exists('dispatch')) {
         return \TheFramework\App\Queue::push($job, [], $queue);
     }
 }
+
+if (!function_exists('__')) {
+    function __($key, $replace = [], $locale = null)
+    {
+        return \TheFramework\App\Lang::get($key, $replace, $locale);
+    }
+}
+
+if (!function_exists('trans')) {
+    function trans($key, $replace = [], $locale = null)
+    {
+        return \TheFramework\App\Lang::get($key, $replace, $locale);
+    }
+}

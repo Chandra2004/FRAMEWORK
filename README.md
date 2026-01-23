@@ -18,6 +18,9 @@
   - 🔒 **CSRF Protection** otomatis pada setiap form.
   - ✨ **Secure Headers** (HSTS, CSP, XSS-Protection) out-of-the-box.
   - 🔑 **Encryption Service** menggunakan Defuse PHP Encryption.
+- **Localization Ready:**
+  - 🌍 **Multi-Language Support** (i18n) dengan Session persistence.
+  - 🔄 **Easy Switcher** via query parameter.
 - **Modern Database Layer:**
   - ⚡ **Query Builder** yang ekspresif & fluent.
   - 💾 **Automatic Query Caching** (`->remember(3600)`).
@@ -89,13 +92,28 @@ php artisan make:test           # Menjalankan Test
 
 ## 📖 Dokumentasi
 
-Dokumentasi lengkap tersedia di folder `docs/`. Berikut panduan cepat untuk memulai:
+Dokumentasi lengkap dan mendalam tersedia di folder `docs/`.
 
-- [Routing &amp; Controllers](docs/routing.md)
-- [Database &amp; Models](docs/database.md) - _Termasuk Query Builder & Relationships_
-- [Migrations &amp; Schema](docs/migrations.md) - _Termasuk Views & Indexing_
-- [Security Features](docs/security.md)
-- [Views (Blade)](docs/views.md)
+### 📚 Daftar Dokumentasi:
+
+- **Getting Started:**
+  - [Directory Structure](docs/structure.md) 📂
+  - [Core Architecture](docs/architecture.md) ⚙️
+  - [Global Helpers](docs/helpers.md) 🛠️
+
+- **Core Features:**
+  - [Routing & Controllers](docs/routing.md)
+  - [Database & Models](docs/database.md) (`Query Builder`, `ORM`)
+  - [Migrations & Schema](docs/migrations.md)
+  - [Views & Templating](docs/views.md) (`Blade Engine`)
+
+- **Security & Localization:**
+  - [Security Features](docs/security.md) (`WAF`, `CSRF`, `Encryption`)
+  - [Multi-Language (Localization)](docs/localization.md) 🌍
+
+- **Advanced:**
+  - [Artisan Console](docs/artisan.md)
+  - [Performance Tuning](docs/performance.md)
 
 ## 🤝 Kontribusi
 

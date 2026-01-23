@@ -80,6 +80,28 @@
                 </div>
 
                 <div class="hidden md:flex items-center space-x-8">
+                    <!-- Language Switcher -->
+                    <div class="relative group h-full flex items-center">
+                        <button
+                            class="flex items-center text-gray-400 hover:text-cyan-400 transition-all font-medium gap-1 py-4">
+                            <span class="uppercase">{{ \TheFramework\App\Lang::getLocale() }}</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div class="absolute top-10 right-0 pt-4 w-32 hidden group-hover:block z-50">
+                            <div class="bg-gray-800 rounded-lg shadow-xl border border-gray-700 overflow-hidden">
+                                <a href="?lang=en"
+                                    class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">English
+                                    🇺🇸</a>
+                                <a href="?lang=id"
+                                    class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">Indonesia
+                                    🇮🇩</a>
+                            </div>
+                        </div>
+                    </div>
+
                     <a href="https://github.com/Chandra2004/THE-FRAMEWORK" target="_blank" rel="noopener noreferrer"
                         class="text-gray-400 hover:text-cyan-400 transition-all font-medium flex items-center"
                         aria-label="GitHub Repository">
@@ -105,13 +127,13 @@
                     © 2024 THE FRAMEWORK •
                     <a href="https://www.instagram.com/chandratriantomo.2077/" target="_blank" rel="noopener noreferrer"
                         class="hover:text-cyan-400 transition-all">
-                        Crafted by Chandra Tri A
+                        {{ __('messages.crafted_by') }} Chandra Tri A
                     </a>
                 </p>
                 <div class="mt-2 flex justify-center space-x-4">
                     <a href="https://github.com/Chandra2004/THE-FRAMEWORK" target="_blank" rel="noopener noreferrer"
                         class="hover:text-cyan-400 transition-all" aria-label="GitHub Repository">
-                        Source Code
+                        {{ __('messages.source_code') }}
                     </a>
                 </div>
             </div>

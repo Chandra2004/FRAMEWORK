@@ -5,14 +5,13 @@
         <header class="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" role="banner">
             <div class="text-center">
                 <h1 class="text-5xl font-bold text-gray-100 mb-6 leading-tight">
-                    Build Scalable Web Apps
+                    {{ __('messages.hero_title') }}
                     <span class="block mt-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                        With Modern PHP Framework
+                        {{ __('messages.hero_subtitle') }}
                     </span>
                 </h1>
                 <p class="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
-                    THE FRAMEWORK offers developers an elegant toolkit featuring database migrations, REST API support,
-                    and enterprise-grade security in a lightweight package.
+                    {{ __('messages.hero_description') }}
                 </p>
 
                 <!-- CTA Button -->
@@ -26,7 +25,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Start Building
+                        {{ __('messages.start_building') }}
                     </a>
                 </div>
             </div>
@@ -46,8 +45,8 @@
                                 d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-100 mb-3">Lightning Performance</h3>
-                    <p class="text-gray-400 px-4">Optimized stack with Opcache integration and smart routing system</p>
+                    <h3 class="text-xl font-semibold text-gray-100 mb-3">{{ __('messages.features_performance') }}</h3>
+                    <p class="text-gray-400 px-4">{{ __('messages.features_performance_desc') }}</p>
                 </article>
 
                 <!-- Feature 2 -->
@@ -59,8 +58,8 @@
                                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-100 mb-3">Secure Architecture</h3>
-                    <p class="text-gray-400 px-4">Built-in protection against SQLi, XSS, and CSRF vulnerabilities</p>
+                    <h3 class="text-xl font-semibold text-gray-100 mb-3">{{ __('messages.features_secure') }}</h3>
+                    <p class="text-gray-400 px-4">{{ __('messages.features_secure_desc') }}</p>
                 </article>
 
                 <!-- Feature 3 -->
@@ -72,8 +71,8 @@
                                 d="M4 6h16M4 12h16m-7 6h7" />
                         </svg>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-100 mb-3">REST API Ready</h3>
-                    <p class="text-gray-400 px-4">Built-in JWT authentication and API versioning support</p>
+                    <h3 class="text-xl font-semibold text-gray-100 mb-3">{{ __('messages.features_api') }}</h3>
+                    <p class="text-gray-400 px-4">{{ __('messages.features_api_desc') }}</p>
                 </article>
             </div>
         </section>
@@ -91,8 +90,8 @@
                             </svg>
                         </div>
                         <div class="text-center">
-                            <p class="text-cyan-400 font-medium">Database Connected</p>
-                            <p class="text-gray-400 text-sm">MySQL Server 8.0+ Ready</p>
+                            <p class="text-cyan-400 font-medium">{{ __('messages.db_connected') }}</p>
+                            <p class="text-gray-400 text-sm">{{ __('messages.db_ready') }}</p>
                         </div>
                     @else
                         <div class="w-9 h-9 bg-red-400/10 rounded-full flex items-center justify-center">
@@ -102,8 +101,8 @@
                             </svg>
                         </div>
                         <div class="text-center">
-                            <p class="text-red-400 font-medium">Connection Error</p>
-                            <p class="text-gray-400 text-sm">Check MySQL Configuration</p>
+                            <p class="text-red-400 font-medium">{{ __('messages.db_error') }}</p>
+                            <p class="text-gray-400 text-sm">{{ __('messages.db_check') }}</p>
                         </div>
                     @endif
                 </div>

@@ -6,20 +6,22 @@ use TheFramework\App\Router;
 use TheFramework\Middleware\ApiAuthMiddleware;
 use TheFramework\Middleware\WAFMiddleware;
 use TheFramework\Middleware\CsrfMiddleware;
+use TheFramework\Middleware\LanguageMiddleware;
 
 // CONTROLLER
 use TheFramework\Http\Controllers\HomeController;
 use TheFramework\Http\Controllers\ApiHomeController;
 
-Router::add('GET', '/', HomeController::class, 'Welcome', [WAFMiddleware::class]);
-Router::add('GET', '/users', HomeController::class, 'Users', [WAFMiddleware::class]);
+Router::add('GET', '/', HomeController::class, 'Welcome', [WAFMiddleware::class, LanguageMiddleware::class]);
+Router::add('GET', '/users', HomeController::class, 'Users', [WAFMiddleware::class, LanguageMiddleware::class]);
 
 Router::group(
     [
         'prefix' => '/users',
         'middleware' => [
             CsrfMiddleware::class,
-            WAFMiddleware::class
+            WAFMiddleware::class,
+            LanguageMiddleware::class
         ]
     ],
     function () {
@@ -34,7 +36,8 @@ Router::group(
     [
         'prefix' => '/api',
         'middleware' => [
-            ApiAuthMiddleware::class
+            ApiAuthMiddleware::class,
+            LanguageMiddleware::class
         ]
     ],
     function () {
