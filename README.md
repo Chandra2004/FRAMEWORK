@@ -98,6 +98,7 @@ Dokumentasi lengkap dan mendalam tersedia di folder `docs/`.
 
 - **Getting Started:**
   - [Directory Structure](docs/structure.md) 📂
+  - [Deployment & Web Migration](docs/deployment.md) 🚀 **(Wajib Baca untuk Hosting!)**
   - [Core Architecture](docs/architecture.md) ⚙️
   - [Global Helpers](docs/helpers.md) 🛠️
 

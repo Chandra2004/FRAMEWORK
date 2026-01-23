@@ -1,0 +1,49 @@
+name: Deploy to InfinityFree
+
+on:
+  push:
+    branches:
+      - main # Ganti dengan branch utama kamu jika beda (misal: "master")
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
+
+      - name: ⚡ Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3" # Sesuaikan dengan versi PHP di InfinityFree kamu
+          extensions: mbstring, intl, pdo, pdo_mysql
+
+      - name: 📦 Install Dependencies
+        run: composer install --no-dev --optimize-autoloader --prefer-dist
+
+      - name: 🔐 Create .env file
+        run: |
+          echo "APP_ENV=production" >> .env
+          echo "APP_DEBUG=false" >> .env
+          echo "ALLOW_WEB_MIGRATION=${{ secrets.ALLOW_WEB_MIGRATION || 'false' }}" >> .env
+          echo "APP_URL=${{ secrets.APP_URL }}" >> .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+
+      - name: 📂 Sync files to InfinityFree
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: htdocs/ # Upload ke folder htdocs
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/tests/**
+            **/node_modules/**
