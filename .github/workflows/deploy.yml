@@ -52,8 +52,8 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: htdocs/ # Upload ke folder htdocs
-          # timeout: 600000 # 10 menit timeout
-          # dangerous-clean-slate: true # WAJIB TRUE SEKALI INI untuk hapus folder 'Views' (Kapital) lama
+          timeout: 600000 # 10 menit timeout
+          dangerous-clean-slate: true # WAJIB TRUE: Hapus semua file di server dan upload ulang
           # Exclude file sampah agar tidak memenuhi hosting
           exclude: |
             **/.git*
