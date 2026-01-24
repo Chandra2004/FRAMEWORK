@@ -16,6 +16,26 @@ use TheFramework\Services\UserService;
 SessionManager::startSecureSession();
 Config::loadEnv();
 
+// --- 📁 AUTO-INITIALIZE STORAGE STRUCTURE 📁 ---
+if (Config::get('APP_ENV') !== 'testing') {
+    $storageRoot = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
+    $requiredDirs = [
+        $storageRoot . '/storage/logs',
+        $storageRoot . '/storage/session',
+        $storageRoot . '/storage/framework/views',
+        $storageRoot . '/storage/framework/cache',
+        $storageRoot . '/storage/app/public'
+    ];
+
+    foreach ($requiredDirs as $dir) {
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+            // Create helper .gitignore inside if we want to be super safe (optional)
+            // file_put_contents($dir . '/.gitignore', "*\n!.gitignore");
+        }
+    }
+}
+
 // --- 🌟 ALL-IN ERROR HANDLING SYSTEM 🌟 ---
 // HANYA AKTIF JIKA BUKAN TESTING
 if (Config::get('APP_ENV') !== 'testing') {

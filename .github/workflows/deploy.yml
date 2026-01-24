@@ -52,6 +52,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: htdocs/ # Upload ke folder htdocs
+          timeout: 600000 # Tambahkan timeout 10 menit untuk stabilitas
           # Exclude file sampah agar tidak memenuhi hosting
           exclude: |
             **/.git*
@@ -64,3 +65,4 @@ jobs:
             **/README.md
             **/QA_AUDIT.md
             **/.cursorrules
+            storage/**
