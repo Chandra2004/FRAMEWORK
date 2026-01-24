@@ -10,6 +10,26 @@ composer.phar
 # Storage & Cache (Ignore contents but keep directory structure)
 /storage/*
 !/storage/.gitignore
+!/storage/app/
+!/storage/app/.gitignore
+!/storage/app/public/
+!/storage/app/public/.gitignore
+!/storage/framework/
+!/storage/framework/.gitignore
+!/storage/framework/cache/
+!/storage/framework/cache/.gitignore
+!/storage/framework/views/
+!/storage/framework/views/.gitignore
+!/storage/logs/
+!/storage/logs/.gitignore
+!/storage/session/
+!/storage/session/.gitignore
+
+# Ignore any content inside whitelisted folders
+/storage/app/*
+!/storage/app/.gitignore
+/storage/app/public/*
+!/storage/app/public/.gitignore
 /storage/framework/*
 !/storage/framework/.gitignore
 /storage/framework/cache/*
@@ -20,10 +40,6 @@ composer.phar
 !/storage/logs/.gitignore
 /storage/session/*
 !/storage/session/.gitignore
-/storage/app/*
-!/storage/app/.gitignore
-/storage/app/public/*
-!/storage/app/public/.gitignore
 
 # User Uploads (Ignore file uploads)
 /private-uploads/*
