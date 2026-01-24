@@ -1,91 +1,94 @@
-# VALIDATION SYSTEM
+# ✅ Validation
 
-Validator di The-Framework didesain agar mirip dengan Laravel, sehingga mudah dipelajari.
+Memvalidasi input pengguna adalah langkah wajib sebelum memproses data. Framework ini menyediakan validator yang simple namun robust.
 
-## Fitur Utama
+---
 
-- **Auto Redirect**: Jika validasi `Request` gagal, otomatis redirect kembali ke form sebelumnya dengan error message & old input.
-- **Rule Lengkap**: Tersedia berbagai rule validasi penting.
-- **Security Check**: Termasuk validasi file upload yang aman.
+## 📋 Daftar Isi
 
-## Cara Menggunakan
+1.  [Validasi Dasar](#validasi-dasar)
+2.  [Menampilkan Error](#menampilkan-error)
+3.  [Daftar Rules Lengkap](#daftar-rules-lengkap)
+4.  [Custom Validation Message](#custom-validation-message)
 
-### 1. Via Controller (Recommended)
+---
 
-```php
-public function store(Request $request)
-{
-    // Validate akan mengembalikan array data yang sudah divalidasi
-    $validated = $request->validate([
-        'username' => 'required|min:5|unique:users,username',
-        'email'    => 'required|email|unique:users,email',
-        'password' => 'required|min:8|confirmed', // cek password_confirmation
-        'age'      => 'required|numeric|min:17',
-        'terms'    => 'required|accepted'
-    ]);
+## Validasi Dasar
 
-    // Jika sampai di baris ini, berarti validasi berhasil (Lanjut simpan ke DB)
-    User::create($validated);
-}
-```
-
-### 2. Manual (Tanpa Request)
+Biasanya dilakukan di Controller sebelum menyimpan data.
 
 ```php
-use TheFramework\App\Validator;
+use TheFramework\Helpers\Validator;
+use TheFramework\Helpers\Helper;
 
-$validator = new Validator();
-$isValid = $validator->validate($data, $rules);
+public function store() {
+    $input = Helper::request()->all();
 
-if (!$isValid) {
-    $errors = $validator->errors();
+    $rules = [
+        'username' => 'required|min:5|max:20|alpha_dash',
+        'email'    => 'required|email',
+        'password' => 'required|min:8',
+        'age'      => 'numeric|min_value:17'
+    ];
+
+    $errors = Validator::validate($input, $rules);
+
+    if (!empty($errors)) {
+        // Gagal! Kembalikan ke form dengan error
+        Helper::set_flash('errors', $errors);
+        Helper::set_flash('old', $input); // Agar input tidak hilang
+        Helper::redirect('/register');
+        return;
+    }
+
+    // Sukses! Lanjut simpan database...
 }
 ```
 
 ---
 
-## Daftar Rule Tersedia
+## Menampilkan Error
 
-| Rule               | Deskripsi                                        | Contoh                            |
-| :----------------- | :----------------------------------------------- | :-------------------------------- |
-| `required`         | Field wajib diisi.                               | `'name' => 'required'`            |
-| `numeric`          | Harus berupa angka.                              | `'age' => 'numeric'`              |
-| `min:value`        | Minimal karakter (string) atau nilai (angka).    | `'password' => 'min:8'`           |
-| `max:value`        | Maksimal karakter/nilai.                         | `'bio' => 'max:255'`              |
-| `email`            | Format email valid.                              | `'email' => 'email'`              |
-| `unique:table,col` | Cek ke database apakah data unik.                | `'email' => 'unique:users,email'` |
-| `confirmed`        | Field harus cocok dengan `{field}_confirmation`. | `'password' => 'confirmed'`       |
-| `date`             | Harus format tanggal yang valid.                 | `'dob' => 'date'`                 |
-| `boolean`          | Harus true, false, 1, 0.                         | `'is_active' => 'boolean'`        |
-| `alpha`            | Hanya huruf.                                     | `'name' => 'alpha'`               |
-| `alpha_num`        | Huruf dan Angka.                                 | `'username' => 'alpha_num'`       |
-| `file`             | Input harus berupa upload file.                  | `'avatar' => 'file'`              |
-| `mimes:jpg,png`    | Validasi ekstensi file.                          | `'foto' => 'mimes:jpg,png,webp'`  |
-
----
-
-## Menampilkan Error di View
-
-Validation error otomatis tersimpan di Session flash data `validation_errors`.
-Gunakan helper global `error()` atau cek session manual.
+Di View (`resources/views/register.php`), tampilkan pesan error di bawah input.
 
 ```html
-<!-- Contoh Form Blade -->
-<form method="POST" action="/register">
-  @csrf
+<!-- Input Username -->
+<input type="text" name="username" value="<?= Helper::old('username') ?>" />
 
-  <label>Username</label>
-  <input type="text" name="username" value="{{ old('username') }}" />
-  @if(isset($errors['username']))
-  <span class="text-red-500">{{ $errors['username'] }}</span>
-  @endif
+<?php if ($err = Helper::validation_errors('username')): ?>
+<div class="text-danger"><?= $err ?></div>
+<?php endif; ?>
+```
 
-  <label>Password</label>
-  <input type="password" name="password" />
+---
 
-  <label>Confirm Password</label>
-  <input type="password" name="password_confirmation" />
+## Daftar Rules Lengkap
 
-  <button type="submit">Register</button>
-</form>
+| Rule               | Deskripsi                                                          |
+| :----------------- | :----------------------------------------------------------------- |
+| `required`         | Field tidak boleh kosong.                                          |
+| `email`            | Harus format email valid.                                          |
+| `numeric`          | Harus berupa angka.                                                |
+| `string`           | Harus berupa string text.                                          |
+| `alpha`            | Hanya huruf (a-z).                                                 |
+| `alpha_num`        | Huruf dan angka.                                                   |
+| `alpha_dash`       | Huruf, angka, dash, underscore.                                    |
+| `min:x`            | Minimal x karakter (string) atau nilai x (jika numeric).           |
+| `max:x`            | Maksimal x karakter.                                               |
+| `same:field`       | Nilai harus sama dengan field lain (cocok untuk confirm password). |
+| `unique:table,col` | Cek database apakah nilai sudah ada (misal email unik).            |
+
+---
+
+## Custom Validation Message
+
+Anda bisa mengubah pesan error default (Bahasa Inggris) menjadi bahasa Anda sendiri.
+
+```php
+$messages = [
+    'username.required' => 'Nama pengguna wajib diisi, Bos!',
+    'email.email' => 'Format email salah tuh.'
+];
+
+$errors = Validator::validate($input, $rules, $messages);
 ```

@@ -1,62 +1,108 @@
-# Security Features
+# 🛡️ Keamanan (Security)
 
-Security is a first-class citizen in The Framework. Kami menyediakan proteksi berlapis secara default.
+Keamanan adalah aspek paling krusial. Framework ini mengimplementasikan best practice modern untuk melindungi aplikasi dari kerentanan umum (OWASP Top 10).
 
-## 1. Web Application Firewall (WAF) Middleware
+---
 
-`TheFramework\Middleware\WAFMiddleware` melindungi aplikasi dari serangan umum:
+## 📋 Daftar Isi
 
-- SQL Injection (SQLi) patterns.
-- Cross-Site Scripting (XSS) patterns.
-- Local File Inclusion (LFI).
-- User-Agent mencurigakan.
+1.  [CSRF Protection](#csrf-protection)
+2.  [XSS Protection](#xss-protection)
+3.  [SQL Injection](#sql-injection)
+4.  [Enkripsi Data](#enkripsi-data)
+5.  [Secure Headers](#secure-headers)
 
-Gunakan middleware ini pada route publik Anda.
+---
 
-```php
-Router::add('GET', '/', HomeController::class, 'index', [WAFMiddleware::class]);
-```
+## CSRF Protection
 
-## 2. CSRF Protection
+**Cross-Site Request Forgery** adalah serangan yang memaksa pengguna yang sudah login untuk melakukan aksi yang tidak diinginkan.
 
-Cross-Site Request Forgery (CSRF) dicegah dengan token yang divalidasi pada setiap request POST/PUT/DELETE.
+Framework memblokir ini menggunakan **CSRF Token**.
 
-1.  Pastikan `CsrfMiddleware` dipasang pada route yang mengubah state.
-2.  Di View (Blade), gunakan helper `@csrf` di dalam form HTML.
+### Cara Kerja
+
+Setiap sesi pengguna digenerate token acak. Token ini harus dikirimkan setiap kali melakukan request `POST`, `PUT`, atau `DELETE`.
+
+### Implementasi di Form
+
+Gunakan helper `csrf_field()` atau input manual.
 
 ```html
-<form method="POST" action="/update">
-  @csrf
-  <input type="text" name="name" />
-  <button type="submit">Save</button>
+<form method="POST" action="/profile">
+  <input
+    type="hidden"
+    name="_token"
+    value="<?= \TheFramework\Helpers\Helper::generateCsrfToken() ?>"
+  />
+
+  <!-- Input lainnya -->
+  <button type="submit">Simpan</button>
 </form>
 ```
 
-## 3. Secure Headers
+Middleware `TheFramework\Middleware\CsrfMiddleware` akan otomatis mencegat request yang tokennya salah atau kadaluarsa.
 
-Secara default, file `bootstrap/app.php` mengirimkan header HTTP keamanan standar industri:
+---
 
-- `X-Frame-Options: DENY` (Anti Clickjacking)
-- `X-Content-Type-Options: nosniff` (Mencegah MIME sniffing)
-- `X-XSS-Protection: 1; mode=block`
-- `Strict-Transport-Security` (HSTS)
-- `Content-Security-Policy` (CSP) - _Perlu dikonfigurasi lebih lanjut sesuai kebutuhan aset Anda_.
+## XSS Protection
 
-## 4. Encryption
+**Cross-Site Scripting** terjadi saat aplikasi menampilkan input pengguna mentah-mentah ke browser.
 
-Framework menyediakan wrapper untuk library `defuse/php-encryption`.
+### Pencegahan
 
-Konfigurasi Key di `.env`:
+Selalu gunakan fungsi escaping saat mencetak variabel. Framework menyediakan helper `e()`.
 
-```ini
-ENCRYPTION_KEY=def00000...
+```php
+// ❌ TIDAK AMAN: <script>alert('hack')</script> akan jalan!
+echo $userInput;
+
+// ✅ AMAN: Output menjadi &lt;script&gt;...
+echo Helper::e($userInput);
 ```
 
-Gunakan helper atau service untuk mengenkripsi data sensitif sebelum masuk database.
+Jika Anda menggunakan syntax view `<?= $var ?>`, pastikan Anda MEMBUNGKUSNYA dengan `e()` jika itu input dari user luar.
 
-## 5. Private File Uploads
+---
 
-Folder `private-uploads/` di root proyek **TIDAK** dapat diakses langsung via browser (403 Forbidden oleh Web Server).
+## SQL Injection
 
-Untuk menyajikan file ini ke user yang terautentikasi, gunakan route khusus:
-`/file/{filename}` yang dikontrol oleh `FileController`. Controller ini akan memverifikasi hak akses user sebelum mengirimkan konten file menggunakan `readfile()`.
+Framework menggunakan **PDO Prepared Statements** untuk semua operasi database (baik lewat Model maupun Query Builder).
+
+Ini artinya: Query SQL dan Data dipisahkan. Database server memperlakukan input pengguna murni sebagai data, bukan perintah SQL yang bisa dieksekusi.
+
+```php
+// ✅ AMAN (Prepared):
+Database::query("SELECT * FROM users WHERE email = ?", [$email]);
+
+// ❌ JANGAN PERNAH LAKUKAN INI!:
+Database::query("SELECT * FROM users WHERE email = '$email'");
+```
+
+---
+
+## Enkripsi Data
+
+Framework menyediakan layanan enkripsi OpenSSL (AES-256-CBC) untuk menyimpan data sensitif.
+
+Pastikan `APP_KEY` di `.env` sudah diisi (via `php artisan setup`) karena key ini digunakan sebagai salt enkripsi.
+
+```php
+use TheFramework\Helpers\Crypter;
+
+// Enkripsi
+$rahasia = Crypter::encrypt('Nomor KTP Saya');
+
+// Dekripsi
+$asli = Crypter::decrypt($rahasia);
+```
+
+---
+
+## Secure Headers
+
+Secara default, respon HTTP dari framework menyertakan header keamanan untuk memitigasi serangan browser:
+
+- `X-Content-Type-Options: nosniff` (Mencegah sniffing MIME type).
+- `X-Frame-Options: SAMEORIGIN` (Mencegah Clickjacking/Iframe embedding).
+- `X-XSS-Protection: 1; mode=block` (Mengaktifkan filter XSS browser lama).

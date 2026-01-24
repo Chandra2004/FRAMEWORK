@@ -1,175 +1,237 @@
-# Tutorial: Membangun Blog Sederhana
+# 📝 Tutorial: Membangun Blog Sederhana
 
-Panduan ini akan memandu Anda mengenal **The Framework** dengan cara mempraktikkan langsung pembuatan aplikasi Blog sederhana (CRUD Postingan).
-
-**Estimasi Waktu:** 10-15 Menit.
+Tutorial ini akan memandu Anda membuat aplikasi Blog fungsional (CRUD) menggunakan The Framework v4.0. Anda akan belajar cara menggunakan Migrasi, Model, Controller, View, dan Validasi.
 
 ---
 
-## 1. Persiapan Database
+## 📋 Daftar Isi
 
-Pastikan Anda sudah mengonfigurasi `.env` dengan database Anda dan menjalankannya.
+1.  [Persiapan Proyek](#persiapan-proyek)
+2.  [Membuat Database & Migrasi](#membuat-database--migrasi)
+3.  [Membuat Model](#membuat-model)
+4.  [Membuat Controller & Rute](#membuat-controller--rute)
+5.  [Membuat View (Tampilan)](#membuat-view-tampilan)
+6.  [Menyimpan Data (Create)](#menyimpan-data-create)
+7.  [Kesimpulan](#kesimpulan)
+
+---
+
+## Persiapan Proyek
+
+Pastikan Anda sudah menginstal framework dan menjalankan server lokal.
 
 ```bash
-php artisan migrate
-```
-
-Jika Anda belum punya file `.env`, jalankan `php artisan setup`.
-
----
-
-## 2. Membuat Model & Migrasi
-
-Kita akan membuat entitas `Post` (Artikel). Gunakan Artisan untuk membuat Model sekaligus file Migrasinya (flag `-m`).
-
-```bash
-php artisan make:model Post -m
-```
-
-### Edit File Migrasi
-
-Buka file migrasi baru di `database/migrations/YYYY_MM_DD_xxxxxx_CreatePostsTable.php`. Tambahkan kolom `title` dan `content`.
-
-```php
-public function up()
-{
-    Schema::create('posts', function ($table) {
-        $table->id();
-        $table->string('title');
-        $table->text('content'); // Isi artikel
-        $table->timestamps();
-    });
-}
-```
-
-Jalankan migrasi agar tabel terbuat di database:
-
-```bash
-php artisan migrate
-```
-
-### Edit Model
-
-Buka `app/Models/Post.php` dan izinkan kolom `title` dan `content` untuk diisi massal (`$fillable`).
-
-```php
-class Post extends Model
-{
-    protected $table = 'posts';
-
-    protected $fillable = [
-        'title',
-        'content'
-    ];
-}
-```
-
----
-
-## 3. Membuat Controller
-
-Kita akan membuat Controller untuk menangani logika Blog. Gunakan flag `-r` untuk membuat Resource Controller (otomatis method index, create, store, dll).
-
-```bash
-php artisan make:controller PostController -r --model=Post
-```
-
-File `app/Http/Controllers/PostController.php` telah dibuat.
-
-### Edit Method `index()`
-
-Mari tampilkan daftar postingan.
-
-```php
-public function index()
-{
-    // Ambil semua data postingan dari database (urut terbaru)
-    // Note: Jika belum ada method latest(), pakai Post::all() dulu atau query builder
-    $posts = Post::all();
-
-    return View::render('posts.index', [
-        'posts' => $posts,
-        'title' => 'Blog Saya'
-    ]);
-}
-```
-
----
-
-## 4. Membuat View
-
-Buat folder baru `resources/views/posts` dan file `index.blade.php`.
-
-```html
-<!-- resources/views/posts/index.blade.php -->
-@extends('template.layout') @section('main-content')
-<div class="max-w-4xl mx-auto py-12 px-4">
-  <div class="flex justify-between items-center mb-8">
-    <h1 class="text-3xl font-bold text-gray-100">Blog Saya</h1>
-    <a
-      href="{{ url('posts/create') }}"
-      class="bg-blue-600 px-4 py-2 rounded text-white"
-      >Buat Postingan</a
-    >
-  </div>
-
-  <div class="grid gap-6">
-    @foreach($posts as $post)
-    <article
-      class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700"
-    >
-      <h2 class="text-xl font-bold text-cyan-400 mb-2">{{ $post['title'] }}</h2>
-      <p class="text-gray-300 mb-4">
-        {{ substr($post['content'], 0, 100) }}...
-      </p>
-      <div class="text-sm text-gray-500">
-        Diposting pada: {{ $post['created_at'] }}
-      </div>
-    </article>
-    @endforeach @if(empty($posts))
-    <p class="text-gray-400 text-center">Belum ada postingan.</p>
-    @endif
-  </div>
-</div>
-@endsection
-```
-
----
-
-## 5. Mendaftarkan Route
-
-Buka `routes/web.php` dan daftarkan controller kita.
-
-```php
-use TheFramework\Http\Controllers\PostController;
-
-// Route Resource otomatis mendaftarkan:
-// GET /posts (index), POST /posts (store), etc.
-Router::resource('posts', PostController::class);
-```
-
----
-
-## 6. Uji Coba
-
-Jalankan server:
-
-```bash
+composer install
+php artisan setup
 php artisan serve
 ```
 
-Buka browser di `http://localhost:8080/posts`.
-Selamat! Anda telah memiliki halaman Blog dinamis yang mengambil data dari database.
+Buka `http://localhost:8080`.
 
 ---
 
-### Langkah Selanjutnya?
+## Membuat Database & Migrasi
 
-Coba lengkapi fitur **Create** (Buat Postingan):
+Kita butuh tabel `posts` untuk menyimpan artikel.
 
-1. Isi method `create` di Controller untuk render form.
-2. Buat view `posts/create.blade.php`.
-3. Isi method `store` di Controller untuk simpan data (`Post::create($_POST)`).
-4. Redirect kembali ke index.
+1.  Buat file migrasi:
 
-Happy Coding! 🚀
+    ```bash
+    php artisan make:migration CreatePostsTable
+    ```
+
+2.  Buka file migrasi baru di `database/migrations/`. Edit method `up()`:
+
+    ```php
+    public function up() {
+        Schema::create('posts', function($table) {
+            $table->id();
+            $table->string('title', 255);
+            $table->text('content');
+            $table->string('author', 100);
+            $table->timestamps();
+        });
+    }
+    ```
+
+3.  Jalankan migrasi:
+    ```bash
+    php artisan migrate
+    ```
+
+---
+
+## Membuat Model
+
+Buat Model untuk berinteraksi dengan tabel `posts`.
+
+```bash
+php artisan make:model Post
+```
+
+File: `app/Models/Post.php`
+
+```php
+<?php
+namespace App\Models;
+use TheFramework\Database\Model;
+
+class Post extends Model {
+    protected $table = 'posts';
+    // Kolom yang boleh diisi (Mass Assignment)
+    protected $fillable = ['title', 'content', 'author'];
+}
+```
+
+---
+
+## Membuat Controller & Rute
+
+Kita butuh controller untuk logika.
+
+```bash
+php artisan make:controller BlogController
+```
+
+File: `app/Controllers/BlogController.php`
+
+```php
+<?php
+namespace App\Controllers;
+use TheFramework\Core\View;
+use App\Models\Post;
+
+class BlogController {
+    // Tampilkan semua postingan
+    public function index() {
+        $posts = Post::orderBy('created_at', 'DESC')->get();
+        return View::render('blog/index', ['posts' => $posts]);
+    }
+
+    // Tampilkan form buat baru
+    public function create() {
+        return View::render('blog/create');
+    }
+}
+```
+
+Daftarkan rute di `routes/web.php`:
+
+```php
+use App\Controllers\BlogController;
+
+Router::add('GET', '/blog', 'BlogController@index');
+Router::add('GET', '/blog/create', 'BlogController@create');
+Router::add('POST', '/blog/store', 'BlogController@store');
+```
+
+---
+
+## Membuat View (Tampilan)
+
+Buat folder `resources/views/blog/`.
+
+### 1. Halaman Index (`blog/index.php`)
+
+```html
+<h1>Daftar Artikel</h1>
+<a href="/blog/create">Tulis Artikel Baru</a>
+
+<hr />
+
+<?php foreach ($posts as $post): ?>
+<article>
+  <h2><?= Helper::e($post->title) ?></h2>
+  <small>Oleh: <?= Helper::e($post->author) ?></small>
+  <p><?= substr(Helper::e($post->content), 0, 100) ?>...</p>
+</article>
+<?php endforeach; ?>
+```
+
+### 2. Halaman Create (`blog/create.php`)
+
+```html
+<h1>Tulis Artikel</h1>
+
+<!-- Tampilkan Pesan Error (Validasi) -->
+<?php if ($errors = Helper::session_get('errors')): ?>
+<div style="color: red;">Ada input yang salah!</div>
+<?php endif; ?>
+
+<form action="/blog/store" method="POST">
+  <!-- Token Wajib -->
+  <input
+    type="hidden"
+    name="_token"
+    value="<?= Helper::generateCsrfToken() ?>"
+  />
+
+  <div>
+    <label>Judul</label><br />
+    <input type="text" name="title" required />
+  </div>
+
+  <div>
+    <label>Konten</label><br />
+    <textarea name="content" rows="5" required></textarea>
+  </div>
+
+  <div>
+    <label>Penulis</label><br />
+    <input type="text" name="author" required />
+  </div>
+
+  <button type="submit">Terbitkan</button>
+</form>
+```
+
+---
+
+## Menyimpan Data (Create)
+
+Tambahkan method `store` di `BlogController.php`.
+
+```php
+use TheFramework\Helpers\Helper;
+use TheFramework\Helpers\Validator;
+
+public function store() {
+    $input = Helper::request()->all();
+
+    // 1. Validasi
+    $errors = Validator::validate($input, [
+        'title'   => 'required|min:5',
+        'content' => 'required',
+        'author'  => 'required'
+    ]);
+
+    if (!empty($errors)) {
+        Helper::set_flash('errors', $errors);
+        Helper::redirect('/blog/create');
+        return;
+    }
+
+    // 2. Simpan ke Database
+    Post::create([
+        'title'   => $input['title'],
+        'content' => $input['content'],
+        'author'  => $input['author']
+    ]);
+
+    // 3. Redirect
+    Helper::set_flash('success', 'Artikel berhasil diterbitkan!');
+    Helper::redirect('/blog');
+}
+```
+
+---
+
+## Kesimpulan
+
+Selamat! Anda baru saja membangun fitur blog lengkap dengan database, validasi, dan keamanan (CSRF) menggunakan The Framework.
+
+Langkah selanjutnya:
+
+- Tambahkan fitur **Edit** dan **Delete**.
+- Tambahkan autentikasi (Login Admin).
+- Percantik tampilan dengan CSS framework (Bootstrap/Tailwind).

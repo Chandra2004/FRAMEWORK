@@ -2,126 +2,157 @@
 
 <img src="private-uploads/public/favicon.ico" alt="The Framework Logo" width="100">
 
-# The Framework
+# The Framework v4.0.0
 
-**The Framework** adalah PHP Framework modern yang ringan, aman, dan berkinerja tinggi. Dibangun dengan arsitektur MVC (Model-View-Controller) yang solid, framework ini dirancang untuk pengembangan aplikasi web yang cepat tanpa mengorbankan keamanan atau fleksibilitas.
+**Modern, Secure, and Hosting-Friendly PHP Framework**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D%208.3-8892BF.svg)](https://php.net/)
+[![Status](https://img.shields.io/badge/status-stable-green.svg)]()
+[![Version](https://img.shields.io/badge/version-4.0.0-orange.svg)]()
+
+<p align="center">
+  <b>The Framework</b> adalah solusi Native PHP modern yang dirancang untuk kecepatan, keamanan, dan kemudahan deployment di semua jenis hosting (termasuk Shared Hosting Gratisan). Dibangun dengan arsitektur MVC yang solid namun tetap ringan.
+</p>
 
 </div>
 
-## 🚀 Fitur Unggulan
+---
 
-- **Security First Core:**
-  - 🛡️ **WAF (Web Application Firewall)** Terintegrasi.
-  - 🔒 **CSRF Protection** otomatis pada setiap form.
-  - ✨ **Secure Headers** (HSTS, CSP, XSS-Protection) out-of-the-box.
-  - 🔑 **Encryption Service** menggunakan Defuse PHP Encryption.
-- **Localization Ready:**
-  - 🌍 **Multi-Language Support** (i18n) dengan Session persistence.
-  - 🔄 **Easy Switcher** via query parameter.
-- **Modern Database Layer:**
-  - ⚡ **Query Builder** yang ekspresif & fluent.
-  - 💾 **Automatic Query Caching** (`->remember(3600)`).
-  - 🔄 **Migration & Seeding** support (termasuk Alter Table & Views).
-  - 🤝 **Eloquent-like Relationships** (hasOne, hasMany, belongsTo).
-- **Developer Experience:**
-  - 🎨 **Blade Templating Engine** (powered by Illuminate/View).
-  - 🛣️ **Expressive Routing** dengan dukungan Grouping & Middleware.
-  - 📦 **Dependency Injection Container**.
-  - 📂 **Private File Serving** untuk dokumen sensitif.
+## 📖 Dokumentasi & Panduan
 
-## 📋 Persyaratan Sistem
+Dokumentasi lengkap tersedia di folder `docs/`. Silakan baca panduan berikut untuk memahami cara kerja framework:
 
-Pastikan server Anda memenuhi persyaratan berikut sebelum menginstal:
+- **Mulai Cepat**:
+  - [🏗️ Struktur Folder](docs/structure.md)
+  - [🚀 Deployment & Hosting](docs/deployment.md) (Wajib baca untuk pengguna hosting gratis!)
+  - [🛠️ Artisan Command Line](docs/artisan.md)
 
-- **PHP**: >= 8.3
-- **Composer**: Versi terbaru
-- **Extension PHP Wajib**:
-  - `pdo_mysql` (atau driver database lain)
-  - `mbstring`
-  - `openssl`
-  - `xml`
-  - `ctype`
-  - `json`
+- **Fitur Utama**:
+  - [🛣️ Routing](docs/routing.md)
+  - [🗄️ Database & Query Builder](docs/database.md)
+  - [🏗️ Migrations](docs/migrations.md)
+  - [🎨 Views & Templating](docs/views.md)
+  - [🛡️ Security (CSRF, XSS)](docs/security.md)
 
-## 🛠️ Instalasi
+- **Topik Lanjut**:
+  - [🌐 Environment Config](docs/environment.md)
+  - [🛠️ Helper Functions](docs/helpers.md)
+  - [🚀 Performance & Caching](docs/performance.md)
+  - [🧪 Testing](docs/testing.md)
 
-1. **Clone Repository:**
+---
 
-   ```bash
-   git clone https://github.com/chandra2004/the-framework.git
-   cd the-framework
-   ```
+## 🚀 Fitur Unggulan (Version 4.0)
 
-2. **Install Dependencies:**
+### 🛡️ Security First
 
-   ```bash
-   composer install
-   composer clear-cache
-   composer dump-autoload
-   ```
+- **WAF Terintegrasi**: Web Application Firewall bawaan untuk menangkal serangan umum.
+- **CSRF Protection**: Otomatis aktif pada setiap form request.
+- **Secure Headers**: HSTS, CSP, XSS-Protection out-of-the-box.
+- **Encryption Service**: Menggunakan Defuse PHP Encryption standard industri.
 
-3. **Konfigurasi Environment:**
-   Framework ini menyediakan perintah otomatis untuk setup environment:
+### 🌐 Hosting Friendly (Killer Feature!)
 
-   ```bash
-   php artisan setup
-   ```
+Satu-satunya framework yang peduli nasib pengguna Shared Hosting tanpa SSH.
 
-   Perintah ini akan menyalin `.env.example` ke `.env` dan membuat `APP_KEY` baru.
+- **Web Command Center**: Jalankan migrasi, seeder, dan maintenance lewat browser.
+- **Smart Log Viewer**: Baca error log langsung di web tanpa perlu FTP.
+- **Auto-Discovery Seeder**: Upload file seeder, sistem akan menemukannya otomatis.
 
-4. **Jalankan Aplikasi:**
-   Framework ini dirancang untuk berjalan di Apache/Nginx, namun untuk development bisa menggunakan built-in server:
+### ⚡ Developer Experience
 
-   ```bash
-   php artisan serve
-   ```
+- **Expressive Routing**: Syntax mirip Laravel, mendukung Regex & Parameters.
+- **Artisan CLI**: Console command lengkap untuk generate code & maintenance.
+- **Blade-like Engine**: Templating engine ringan tapi powerful.
+- **Database Query Builder**: Fluent interface untuk database operations.
 
-## 🛠️ Perintah Artisan
+---
 
-Framework ini dilengkapi dengan CLI tool `artisan` untuk mempercepat development.
+## 📚 Dokumentasi Lengkap
+
+### 1. Instalasi & Setup
+
+**Via Git:**
 
 ```bash
-php artisan list                # Menampilkan semua perintah
-php artisan make:controller     # Membuat Controller
-php artisan make:model          # Membuat Model
-php artisan make:migration      # Membuat Migration Table
-php artisan make:db-view        # Membuat Migration View (NEW 🚀)
-php artisan make:test           # Menjalankan Test
+git clone https://github.com/chandra2004/the-framework.git
+cd the-framework
+
+composer install
+composer dump-autoload
+composer clear-cache
+
+php artisan setup
+php artisan serve
 ```
 
-## 📖 Dokumentasi
+**Konfigurasi Environment:**
+File `.env` otomatis dibuat oleh `php artisan setup`. Pastikan Anda mengisi:
 
-Dokumentasi lengkap dan mendalam tersedia di folder `docs/`.
+- `DB_NAME`, `DB_USER`, `DB_PASS` (Koneksi Database)
+- `APP_KEY` (Otomatis digenerate untuk enkripsi)
 
-### 📚 Daftar Dokumentasi:
+### 2. Artisan Command Line (CLI)
 
-- **Getting Started:**
-  - [Directory Structure](docs/structure.md) 📂
-  - [Deployment & Web Migration](docs/deployment.md) 🚀 **(Wajib Baca untuk Hosting!)**
-  - [Core Architecture](docs/architecture.md) ⚙️
-  - [Global Helpers](docs/helpers.md) 🛠️
+Gunakan perintah ini di terminal lokal atau VPS:
 
-- **Core Features:**
-  - [Routing & Controllers](docs/routing.md)
-  - [Database & Models](docs/database.md) (`Query Builder`, `ORM`)
-  - [Migrations & Schema](docs/migrations.md)
-  - [Views & Templating](docs/views.md) (`Blade Engine`)
+| Perintah                             | Fungsi                                   |
+| :----------------------------------- | :--------------------------------------- |
+| `php artisan serve`                  | Menjalankan local server di port 8080.   |
+| `php artisan make:controller [Name]` | Membuat Controller baru.                 |
+| `php artisan make:model [Name]`      | Membuat Model database baru.             |
+| `php artisan migrate`                | Menjalankan migrasi database.            |
+| `php artisan db:seed`                | Menjalankan seeder (urut waktu).         |
+| `php artisan route:list`             | Melihat semua daftar URL yang terdaftar. |
+| `php artisan optimize`               | Membersihkan cache aplikasi & OpCache.   |
 
-- **Security & Localization:**
-  - [Security Features](docs/security.md) (`WAF`, `CSRF`, `Encryption`)
-  - [Multi-Language (Localization)](docs/localization.md) 🌍
+### 3. Web Command Center (Untuk Shared Hosting)
 
-- **Advanced:**
-  - [Artisan Console](docs/artisan.md)
-  - [Performance Tuning](docs/performance.md)
+Jika server Anda tidak punya akses SSH (Terminal), aktifkan fitur ini di `.env`:
+`ALLOW_WEB_MIGRATION=true`
 
-## 🤝 Kontribusi
+Lalu akses URL berikut di browser Anda:
 
-Kontribusi sangat diterima! Silakan fork repository ini dan buat Pull Request untuk perbaikan bug atau fitur baru.
+| Fitur            | URL Endpoint                    | Deskripsi                       |
+| :--------------- | :------------------------------ | :------------------------------ |
+| **Migrate DB**   | `/_system/migrate?key=APP_KEY`  | Update struktur database.       |
+| **Seed DB**      | `/_system/seed?key=APP_KEY`     | Isi data dummy otomatis.        |
+| **Log Viewer**   | `/_system/logs?key=APP_KEY`     | Lihat error log aplikasi.       |
+| **Optimize**     | `/_system/optimize?key=APP_KEY` | Reset cache agar update tampil. |
+| **Route List**   | `/_system/routes?key=APP_KEY`   | Cek daftar URL yang aktif.      |
+| **Health Check** | `/_system/health?key=APP_KEY`   | Cek permission folder storage.  |
 
-## 📄 Lisensi
+> **Catatan:** `key` adalah nilai `APP_KEY` dari file `.env` Anda.
 
-Open-sourced software licensed under the [MIT license](LICENSE).
+---
+
+## 📂 Struktur Folder
+
+```
+The-Framework/
+├── app/
+│   ├── Console/      # Perintah Artisan Custom
+│   ├── Controllers/  # Logika Aplikasi
+│   ├── Models/       # Interaksi Database
+│   └── Helpers/      # Fungsi Bantuan Global
+├── database/
+│   ├── migrations/   # File Struktur Database
+│   └── seeders/      # File Data Dumy
+├── public/           # Entry Point (index.php, css, js)
+├── resources/
+│   └── views/        # Template HTML
+├── routes/
+│   ├── web.php       # Rute Aplikasi Utama
+│   └── system.php    # Rute Web Utilities
+└── storage/          # Logs, Cache, Uploads
+```
+
+---
+
+## ❤️ Kontribusi & Lisensi
+
+Framework ini dikembangkan dengan ❤️ oleh **Chandra Tri Antomo**.
+Dilisensikan di bawah **MIT License**. Silakan gunakan, modifikasi, dan distribusikan secara bebas.
+
+**Happy Coding!** 🚀

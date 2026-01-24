@@ -1,78 +1,58 @@
-# Localization (Multi-Language Support)
+# 🌍 Localization (Multi-Bahasa)
 
-The Framework menyediakan fitur **Internationalization (i18n)** yang memudahkan Anda membuat aplikasi dalam berbagai bahasa.
+Fitur lokalisasi memudahkan Anda membuat aplikasi yang mendukung berbagai bahasa (misal: Indonesia & Inggris).
 
-## 🌟 Fitur Utama
+## Konfigurasi
 
-- **Auto Detection**: Mendeteksi bahasa dari Query Parameter (`?lang=id`) atau Session.
-- **Key-Based Translation**: Menggunakan kunci (misal `messages.welcome`) untuk mengambil teks.
-- **Placeholder Replacement**: Mendukung penggantian variabel dinamis (misal `:name`).
-- **Fallback Locale**: Otomatis kembali ke bahasa default (Inggris) jika terjemahan tidak ditemukan.
+Atur bahasa default di `.env`.
 
-## 📂 Struktur File
-
-File bahasa disimpan di direktori `resources/lang`.
-
-```bash
-resources/
-└── lang/
-    ├── en/
-    │   └── messages.php  (Bahasa Inggris)
-    └── id/
-        └── messages.php  (Bahasa Indonesia)
+```env
+APP_LOCALE=id
+APP_LOCALE_FALLBACK=en
 ```
 
-### Contoh File Bahasa (`resources/lang/en/messages.php`)
+## File Bahasa
+
+Simpan string terjemahan file di folder `resources/lang/{kode_bahasa}/messages.php`.
+
+**Contoh: `resources/lang/id/messages.php`**
 
 ```php
-<?php
-
 return [
-    'welcome' => 'Welcome to our application',
-    'greeting' => 'Hello, :name!',
+    'welcome' => 'Selamat Datang',
+    'goodbye' => 'Sampai Jumpa',
+    'login'   => [
+        'title'   => 'Halaman Masuk',
+        'button'  => 'Masuk Sekarang'
+    ]
 ];
 ```
 
-## 🛠️ Cara Penggunaan
-
-### 1. Di View (Blade)
-
-Gunakan helper `__()` atau `trans()` untuk menampilkan teks.
-
-```html
-<h1>{{ __('messages.welcome') }}</h1>
-
-<!-- Dengan Parameter -->
-<p>{{ __('messages.greeting', ['name' => 'Chandra']) }}</p>
-```
-
-### 2. Di Controller / PHP Code
+**Contoh: `resources/lang/en/messages.php`**
 
 ```php
-$message = __('messages.welcome');
-
-// Atau menggunakan facade class
-use TheFramework\App\Lang;
-
-$message = Lang::get('messages.welcome');
+return [
+    'welcome' => 'Welcome',
+    'goodbye' => 'Goodbye'
+];
 ```
 
-## 🔄 Mengganti Bahasa (Language Switcher)
+## Mengambil Terjemahan
 
-Framework otomatis menangani penggantian bahasa melalui middleware. Anda cukup membuat link dengan parameter `lang`.
+Gunakan helper `__('key')`.
 
-```html
-<a href="?lang=en">English 🇺🇸</a> <a href="?lang=id">Indonesia 🇮🇩</a>
+```php
+echo __('messages.welcome');
+// Output (jika APP_LOCALE=id): Selamat Datang
 ```
 
-Setelah diklik, preferensi bahasa akan disimpan di **Session** user, sehingga mereka tidak perlu memilih ulang di halaman berikutnya.
+### Parameter Dinamis (Placeholders)
 
-## ⚙️ Middleware
+Anda bisa menyisipkan variabel ke dalam string terjemahan.
 
-System ini didukung oleh `TheFramework\Middleware\LanguageMiddleware`. Middleware ini:
+File Lang: `'greeting' => 'Halo, :name!'`
 
-1.  Mengecek input `$_GET['lang']`.
-2.  Menyimpan pilihan ke `$_SESSION['app_locale']`.
-3.  Mengatur locale global aplikasi via `Lang::setLocale()`.
-
-Pastikan middleware ini terdaftar di `routes/web.php` (biasanya sudah default).
+```php
+echo __('messages.greeting', ['name' => 'Chandra']);
+// Output: Halo, Chandra!
+```

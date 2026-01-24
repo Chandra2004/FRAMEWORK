@@ -39,11 +39,23 @@ class SetupCommand implements CommandInterface
 
         // ENCRYPTION_KEY block removed (unused dependency)
 
-        if (!preg_match('/APP_KEY=(.+)/', $env)) {
-            $appKey = base64_encode(random_bytes(32));
-            $env .= "\nAPP_KEY=base64:$appKey";
+        // Cek apakah APP_KEY sudah terisi
+        if (preg_match('/^APP_KEY=base64:.+/m', $env)) {
+            // Sudah ada key valid, skip
+        } else {
+            // Generate Key Baru
+            $key = 'base64:' . base64_encode(random_bytes(32));
+
+            if (preg_match('/^APP_KEY=/m', $env)) {
+                // Replace existing empty key
+                $env = preg_replace('/^APP_KEY=.*/m', "APP_KEY={$key}", $env);
+            } else {
+                // Append new key
+                $env .= "\nAPP_KEY={$key}";
+            }
+
             file_put_contents('.env', $env);
-            echo "\033[38;5;28m★ SUCCESS  APP_KEY dibuat\033[0m\n";
+            echo "\033[38;5;28m★ SUCCESS  APP_KEY berhasil di-generate [{$key}]\033[0m\n";
         }
 
         shell_exec('composer dump-autoload');

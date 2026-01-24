@@ -18,6 +18,14 @@ function showHeader()
     echo color("═════ BY Chandra Tri Antomo ═════", "38;5;39") . PHP_EOL . PHP_EOL;
 }
 
+// Load Routes (Agar command route:list bisa membacanya)
+if (file_exists(__DIR__ . '/routes/web.php')) {
+    require_once __DIR__ . '/routes/web.php';
+}
+if (file_exists(__DIR__ . '/routes/system.php')) {
+    require_once __DIR__ . '/routes/system.php';
+}
+
 // Load all commands dynamically
 $commandsDir = __DIR__ . '/app/Console/Commands/';
 $commandFiles = glob($commandsDir . '*.php');
@@ -51,12 +59,29 @@ if ($commandName === 'list') {
     showHeader();
     echo color("Penggunaan:", "38;5;39") . " php artisan [perintah]\n\n";
     echo color("Perintah yang tersedia:", "38;5;39") . "\n";
-    echo str_repeat("─", 60) . "\n";
+
     ksort($commands); // Sort commands alphabetically
+
+    // Grouping
+    $groups = [];
     foreach ($commands as $name => $cmd) {
-        echo "  " . color(str_pad($name, 25), "38;5;28") . $cmd->getDescription() . "\n";
+        $parts = explode(':', $name);
+        $group = count($parts) > 1 ? $parts[0] : 'General';
+        $groups[$group][$name] = $cmd;
     }
-    echo str_repeat("─", 60) . "\n";
+
+    // Sort Groups (General first if you want, or alphabetical)
+    ksort($groups);
+
+    foreach ($groups as $groupName => $groupCommands) {
+        // Tampilkan Header Group
+        echo color($groupName, "1;33") . "\n";
+
+        foreach ($groupCommands as $name => $cmd) {
+            echo "  " . color(str_pad($name, 25), "38;5;28") . $cmd->getDescription() . "\n";
+        }
+        echo "\n"; // Spacer antar group
+    }
     exit;
 }
 

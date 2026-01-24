@@ -1,176 +1,118 @@
 # 🚀 Deployment & Maintenance Guide
 
-Panduan ini mencakup cara men-deploy aplikasi **The Framework**, mengelola database, dan menggunakan fitur keamanan pada berbagai jenis hosting.
+Panduan lengkap untuk men-deploy, merawat, dan mengamankan aplikasi **The Framework** di berbagai lingkungan hosting.
 
 ---
 
 ## 📋 Daftar Isi
 
 1.  [Skenario Hosting](#1-skenario-hosting)
-2.  [Paket Premium (VPS / Cloud Server)](#2-paket-premium-vps--cloud-server-ssh-access)
-3.  [Paket Gratis / Shared Hosting (InfinityFree, cPanel)](#3-paket-gratis--shared-hosting-tanpa-ssh)
-4.  [Web Utilities & Migration Tools](#4-web-utilities--migration-tools)
-    - [Cara Menggunakan](#cara-menggunakan)
-    - [Fitur Keamanan (ON/OFF Switch)](#fitur-keamanan-onoff-switch-penting)
-5.  [Database Seeding](#5-database-seeding)
+2.  [Panduan GitHub Actions (CI/CD)](#2-panduan-github-actions-cicd)
+    - [Setup Secrets (Wajib!)](#setup-repository-secrets)
+3.  [Maintenance: Paket Gratis (No SSH)](#3-maintenance-paket-gratis-shared-hosting--infinityfree)
+    - [Web Utilities](#web-utilities-pengganti-terminal)
+    - [Keamanan (On/Off Switch)](#fitur-keamanan-onoff-switch)
+4.  [Maintenance: Paket Premium (VPS/SSH)](#4-maintenance-paket-premium-vps--cloud-server)
+5.  [Troubleshooting Umum](#5-troubleshooting)
 
 ---
 
 ## 1. Skenario Hosting
 
-Pilih panduan berdasarkan jenis server yang Anda gunakan:
-
-| Fitur               | Paket Premium (VPS/Cloud)        | Paket Hemat/Gratis (Shared Hosting)                |
-| :------------------ | :------------------------------- | :------------------------------------------------- |
-| **Contoh Provider** | AWS, DigitalOcean, Biznet Gio    | InfinityFree, Niagahoster (Paket Bayi), 000Webhost |
-| **Akses SSH**       | ✅ Ada                           | ❌ Tidak Ada                                       |
-| **Instalasi**       | via Terminal (`git clone`)       | via FTP / CI/CD                                    |
-| **Migration/Seed**  | via Command Line (`php artisan`) | via **Web Utilities** atau Import SQL Manual       |
-
----
-
-## 2. Paket Premium (VPS / Cloud Server) - SSH Access
-
-Jika Anda memiliki akses terminal (SSH), ini adalah cara standar dan paling disarankan.
-
-1.  **Connect ke Server**:
-    ```bash
-    ssh user@ip-address
-    ```
-2.  **Clone Repository**:
-    ```bash
-    git clone https://github.com/username/repo-name.git .
-    ```
-3.  **Install Dependencies**:
-    ```bash
-    composer install --optimize-autoloader --no-dev
-    ```
-4.  **Setup Environment**:
-    ```bash
-    cp .env.example .env
-    nano .env # Edit data database dan APP_URL
-    ```
-5.  **Migrate & Seed Database**:
-    ```bash
-    # Jalankan migrasi dan seeder langsung dari terminal
-    php artisan migrate
-    php artisan db:seed
-    ```
+| Fitur               | Paket Premium (VPS/Cloud)     | Paket Hemat/Gratis (Shared Hosting)   |
+| :------------------ | :---------------------------- | :------------------------------------ |
+| **Contoh Provider** | AWS, DigitalOcean, Biznet Gio | InfinityFree, Niagahoster, 000Webhost |
+| **Akses Terminal**  | ✅ Full SSH Access            | ❌ Tidak Ada (Hanya FTP/Web)          |
+| **Metode Deploy**   | `git pull` manual via SSH     | Otomatis via **GitHub Actions** (FTP) |
+| **Migrasi DB**      | `php artisan migrate`         | URL: `/_system/migrate`               |
+| **Seeding DB**      | `php artisan db:seed`         | URL: `/_system/seed`                  |
 
 ---
 
-## 3. Paket Gratis / Shared Hosting (Tanpa SSH)
+## 2. Panduan GitHub Actions (CI/CD)
 
-Pada hosting seperti **InfinityFree**, Anda tidak bisa menjalankan perintah `php artisan`. Kita mengatasinya dengan **CI/CD Pipeline** dan **Web Utilities**.
+Framework ini menggunakan GitHub Actions (`.github/workflows/deploy.yml`) untuk mengirim kode secara otomatis ke hosting gratisan via FTP. Agar berjalan lancar, Anda **WAJIB** mengatur Secrets.
 
-### A. Setup CI/CD (Otomatisasi Deployment)
+### Setup Repository Secrets
 
-Aplikasi ini sudah dilengkapi `.github/workflows/deploy.yml` yang akan otomatis mengupload file via FTP setiap kali Anda push ke GitHub.
+Masuk ke **GitHub Repo > Settings > Secrets and variables > Actions**. Tambahkan key berikut:
 
-1.  Buka Repository GitHub Anda > **Settings** > **Secrets and variables** > **Actions**.
-2.  Tambahkan Repository Secrets berikut:
-    - `FTP_SERVER`: (Contoh: `ftpupload.net`)
-    - `FTP_USERNAME`: (Username FTP/Cpanel Anda)
-    - `FTP_PASSWORD`: (Password FTP Anda)
-    - `APP_URL`: (Contoh: `http://namasitus.infinityfreeapp.com`)
-    - `DB_HOST`: (Contoh: `sql123.infinityfree.com`)
-    - `DB_NAME`, `DB_USER`, `DB_PASS`: (Sesuai detail database di panel hosting)
-    - `ALLOW_WEB_MIGRATION`: `true` (Lihat bagian Keamanan di bawah)
+| Nama Secret             | Deskripsi / Contoh Isi                                                                             |
+| :---------------------- | :------------------------------------------------------------------------------------------------- |
+| **FTP_SERVER**          | Alamat server FTP (contoh: `ftpupload.net`)                                                        |
+| **FTP_USERNAME**        | Username hosting akun (contoh: `if0_382xxxxx`) - _Bukan login akun utama!_                         |
+| **FTP_PASSWORD**        | Password hosting akun - _Bukan password login akun utama!_                                         |
+| **APP_URL**             | URL website Anda (contoh: `http://myapp.rf.gd`)                                                    |
+| **APP_KEY**             | **PENTING!** Copy dari `.env` lokal (`base64:xxx...`). Gunakan `php artisan setup` untuk generate. |
+| **DB_HOST**             | Host database (contoh: `sql311.infinityfree.com`)                                                  |
+| **DB_NAME**             | Nama database (contoh: `if0_382_myapp`)                                                            |
+| **DB_USER**             | Username database (biasanya sama dengan FTP Username)                                              |
+| **DB_PASS**             | Password database (biasanya sama dengan FTP Password)                                              |
+| **DB_PORT**             | `3306`                                                                                             |
+| **ALLOW_WEB_MIGRATION** | `true` (untuk menyalakan web tools) atau `false` (untuk mematikan)                                 |
 
-### B. Deployment Pertama
-
-Saat Anda melakukan `git push`, GitHub Actions akan:
-
-1.  Menginstall library PHP (Composer).
-2.  Membuat file `.env` otomatis di server menggunakan Secrets di atas.
-3.  Mengupload semua file ke folder `htdocs`.
+> **⚠️ Catatan:** Jika `APP_KEY` tidak diset di Secrets, aplikasi akan error "Invalid Security Key" karena `.env` di server akan kosong kuncinya.
 
 ---
 
-## 4. Web Utilities & Migration Tools
+## 3. Maintenance: Paket Gratis (Shared Hosting / InfinityFree)
 
-Karena tidak ada SSH di Shared Hosting, kami menyediakan **Web-Based Tools** untuk melakukan maintenance dasar seperti migrasi database dan membersihkan cache.
+Karena tidak ada terminal hitam (SSH), kita gunakan **Web Utilities** yang sudah disiapkan di `routes/system.php`.
 
-### Prasyarat
+### Web Utilities (Pengganti Terminal)
 
-Untuk keamanan, akses ke tools ini dilindungi dua lapis:
+Akses URL ini di browser. Pastikan `key=` cocok dengan `APP_KEY` Anda.
 
-1.  **APP_KEY**: URL harus menyertakan `key` yang sesuai dengan `APP_KEY` di `.env`.
-2.  **Feature Toggle**: Fitur harus diaktifkan via variabel `ALLOW_WEB_MIGRATION`.
+Format: `https://domain-anda.com/_system/{perintah}?key={APP_KEY_ANDA}`
 
-### Cara Menggunakan
+| Tugas                | Perintah Artisan (Asli)    | URL Web Utility (Pengganti)                  |
+| :------------------- | :------------------------- | :------------------------------------------- |
+| **Migrate Database** | `php artisan migrate`      | `/_system/migrate`                           |
+| **Isi Data Awal**    | `php artisan db:seed`      | `/_system/seed`                              |
+| **Optimize System**  | `php artisan optimize`     | `/_system/optimize` (Clear cache + OpCache)  |
+| **Lihat Log Error**  | `tail -f storage/logs/..`  | `/_system/logs` (50 error terakhir)          |
+| **Cek Rute**         | `php artisan route:list`   | `/_system/routes`                            |
+| **Cek Kesehatan**    | -                          | `/_system/health` (Permission & Disk Space)  |
+| **Test Koneksi**     | -                          | `/_system/test-connection` (DB & Mail Check) |
+| **Info Server**      | `php -i`                   | `/_system/phpinfo`                           |
+| **Symlink Storage**  | `php artisan storage:link` | `/_system/storage-link`                      |
+| **Cek Status**       | `php -v`                   | `/_system/status`                            |
 
-Format URL:
-`https://website-anda.com/_system/{command}?key={APP_KEY_ANDA}`
+### Fitur Keamanan (On/Off Switch)
 
-| Perintah         | URL Endpoint            | Fungsi                                                                            |
-| :--------------- | :---------------------- | :-------------------------------------------------------------------------------- |
-| **Migrate DB**   | `/_system/migrate`      | Menjalankan file migrasi database (`database/migrations/*.php`).                  |
-| **Seed DB**      | `/_system/seed`         | Menjalankan `DatabaseSeeder` untuk mengisi data awal.                             |
-| **Clear Cache**  | `/_system/clear-cache`  | Menghapus view cache dan log (solusi jika tampilan tidak berubah setelah update). |
-| **Storage Link** | `/_system/storage-link` | Membuat symlink agar file upload bisa diakses publik (server tertentu).           |
-| **Status**       | `/_system/status`       | Cek versi PHP dan ekstensi yang aktif.                                            |
+Meninggalkan fitur ini dalam keadaan menyala selamanya adalah berbahaya!
 
-**Contoh Penggunaan:**
-Jika `APP_KEY` Anda adalah `base64:XYZ123...`, maka buka di browser:
-`https://website-anda.com/_system/migrate?key=base64:XYZ123...`
-
----
-
-### 🛡️ Fitur Keamanan (ON/OFF Switch) [PENTING]
-
-Meninggalkan akses database via web dalam keadaan terbuka adalah berbahaya. Gunakan fitur **ON/OFF Switch** via GitHub Secrets untuk mengamankannya.
-
-#### Langkah 1: MODE ON (Maintenance Mode)
-
-Saat Anda baru saja deploy fitur baru dan butuh migrasi database:
-
-1.  Buka **GitHub Settings > Secrets > Actions**.
-2.  Ubah/Buat secret `ALLOW_WEB_MIGRATION` dengan nilai `true`.
-3.  Jalankan ulang deployment (Re-run jobs di tab Actions atau push perubahan kecil).
-    - _Efek: Tool bisa diakses via browser._
-
-#### Langkah 2: Lakukan Tugas
-
-Buka browser, akses URL `/_system/migrate` untuk mengupdate struktur database Anda.
-
-#### Langkah 3: MODE OFF (Production/Safe Mode)
-
-Setelah selesai maintenance:
-
-1.  Buka **GitHub Settings > Secrets > Actions**.
-2.  Ubah `ALLOW_WEB_MIGRATION` menjadi `false` (atau hapus secret-nya).
-3.  Jalankan ulang deployment.
-    - _Efek: Endpoint `/\_system/_` akan mati total. Hacker tidak bisa menyentuhnya meskipun tahu kuncinya.\*
+1.  **Saat Maintenance:** Set Secret `ALLOW_WEB_MIGRATION` = `true`. Re-run Deploy.
+2.  **Lakukan Tugas:** Buka URL migrate/seed di browser.
+3.  **Selesai:** Set Secret `ALLOW_WEB_MIGRATION` = `false`. Re-run Deploy.
+    - _Ini akan mematikan total akses ke `/_system/`._
 
 ---
 
-## 5. Database Seeding
+## 4. Maintenance: Paket Premium (VPS / Cloud Server)
 
-**Seeding** (mengisi data awal/dummy) sedikit berbeda tergantung paket hosting Anda.
+Jika Anda punya SSH, lupakan cara di atas. Gunakan cara profesional via terminal terminal:
 
-### A. Di Paket Premium (VPS)
+1.  **Masuk Server:** `ssh user@ip-address`
+2.  **Masuk Folder:** `cd /var/www/html`
+3.  **Update Kode:** `git pull origin main`
+4.  **Install Lib:** `composer install --no-dev`
+5.  **Migrasi:** `php artisan migrate`
+6.  **Seeding:** `php artisan db:seed` (Hanya awal)
+7.  **Clear Cache:** `php artisan view:clear`
 
-Cukup jalankan perintah:
+---
 
-```bash
-php artisan db:seed
-```
+## 5. Troubleshooting
 
-### B. Di Paket Gratis (InfinityFree/Shared)
+**Q: "Invalid Security Key" saat akses Web Utility?**
+A: Pastikan Secret `APP_KEY` di GitHub sudah diisi (copy dari `.env` lokal). Dan pastikan `key=base64:....` di URL browser sudah benar (harus di-URL Encode jika ada simbol aneh, tapi biasanya copy-paste browser aman).
 
-Karena alasan keamanan dan batas waktu eksekusi (timeout) pada hosting gratis, **Web Seeder tidak disediakan secara default**. Seeding data dalam jumlah besar via browser seringkali gagal di tengah jalan (Time Limit).
+**Q: Seeder error "Class not found"?**
+A: Pastikan nama file seeder Anda sudah standar: `Seeder_TIMESTAMP_Nama.php`. Jangan ubah-ubah nama class manual. Gunakan `php artisan make:seeder Nama` untuk membuat file yang valid.
 
-**Cara Alternatif Terbaik:**
+**Q: Error "Timezone" saat seeding?**
+A: Aplikasi ini butuh `DB_TIMEZONE` di `.env`. Pastikan sudah terisi (misal: ` Asia/Jakarta` atau `+07:00`).
 
-1.  **Seed Lokal**:
-    Jalankan seeding di komputer lokal Anda:
-    ```bash
-    php artisan migrate:fresh --seed
-    ```
-2.  **Export Data**:
-    Buka Database Manager lokal (phpMyAdmin / DBeaver / HeidSQL). Export tabel yang datanya ingin Anda upload (misal: tabel `users`, `roles`, atau data referensi lainnya) ke format **SQL** (Insert statement).
-3.  **Import ke Hosting**:
-    Buka **phpMyAdmin** di InfinityFree (atau cPanel hosting Anda). Pilih database, lalu menu **Import**, dan upload file SQL yang tadi diexport.
-
-> **Tips:** Cara ini jauh lebih aman dan akurat daripada mencoba menjalankan script seeder berat via browser di hosting gratisan.
+**Q: Halaman putih / 500 Error di InfinityFree?**
+A: Cek `display_errors` di hosting biasanya mati. Coba akses `/_system/status` untuk cek error log, atau nyalakan `APP_DEBUG=true` sementara di GitHub Secrets.

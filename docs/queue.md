@@ -1,72 +1,84 @@
-# Queue System (Sistem Antrian)
+# 🔄 Queue (Antrian Job)
 
-Queue system memungkinkan Anda untuk memproses tugas-tugas berat di latar belakang agar tidak memperiambat user (contoh: kirim email, generate laporan PDF, resize gambar).
+Queue memindahkan tugas berat yang memakan waktu (seperti mengirim email, memproses video, laporan PDF) ke latar belakang (background process). Ini membuat respon aplikasi ke user menjadi sangat cepat.
 
-## 1. Setup
+---
 
-Pastikan Anda sudah menjalankan migrasi database untuk membuat tabel `jobs`.
+## 📋 Daftar Isi
 
-```bash
-php artisan migrate
+1.  [Konfigurasi](#konfigurasi)
+2.  [Membuat Job](#membuat-job)
+3.  [Dispatch Job](#dispatch-job)
+4.  [Menjalankan Worker](#menjalankan-worker)
+
+---
+
+## Konfigurasi
+
+Framework menggunakan driver **Database**. Pastikan tabel `jobs` sudah dibuat (via migrasi bawaan framework).
+
+```env
+QUEUE_CONNECTION=database
 ```
 
-## 2. Membuat Job
+---
 
-Gunakan perintah artisan untuk membuat class Job baru:
+## Membuat Job
+
+Gunakan artisan untuk membuat class Job baru.
 
 ```bash
 php artisan make:job SendEmailJob
 ```
 
-File baru akan dibuat di `app/Jobs/SendEmailJob.php`.
-
-## 3. Menulis Logic Job
-
-Buka file job tersebut dan isi method `handle()`:
+File akan terbuat di `app/Jobs/SendEmailJob.php`.
 
 ```php
-namespace TheFramework\Jobs;
+class SendEmailJob {
+    protected $data;
 
-use TheFramework\App\Job;
+    public function __construct($data) {
+        $this->data = $data;
+    }
 
-class SendEmailJob extends Job
-{
-    public function handle()
-    {
-        // Ambil data yang dikirim
-        $email = $this->getData('email');
-        $name = $this->getData('name');
-
-        // Logic kirim email (pura-pura)
-        // Mail::to($email)->send(...);
-        file_put_contents(BASE_PATH . '/storage/logs/email.log', "Email terkirim ke $name ($email)\n", FILE_APPEND);
+    public function handle() {
+        // Logika kirim email di sini
+        mail($this->data['email'], 'Subject', 'Isi Pesan');
     }
 }
 ```
 
-## 4. Mengirim Job ke Antrian (Dispatch)
+---
 
-Di Controller atau di mana saja, gunakan global helper `dispatch()`:
+## Dispatch Job
+
+Panggil Job dari Controller. Kode di bawah ini akan langsung selesai (return) tanpa menunggu email terkirim.
 
 ```php
-use TheFramework\Jobs\SendEmailJob;
+use App\Jobs\SendEmailJob;
 
-// ...
+public function register() {
+    // ... simpan user ...
 
-$job = new SendEmailJob([
-    'email' => 'user@example.com',
-    'name' => 'Budi'
-]);
+    // Masukkan job kirim email ke antrian
+    dispatch(new SendEmailJob(['email' => 'user@test.com']));
 
-dispatch($job); // Masuk antrian default
+    echo "Registrasi Sukses! Email akan dikirim sebentar lagi.";
+}
 ```
 
-## 5. Menjalankan Worker
+---
 
-Untuk memproses antrian, jalankan worker di terminal terpisah:
+## Menjalankan Worker
+
+Worker adalah proses yang "memakan" job dari database dan menjalankannya.
+
+Di terminal server Anda:
 
 ```bash
 php artisan queue:work
 ```
 
-Worker akan terus berjalan (looping) dan memproses job yang masuk secara real-time. Jika gagal, job akan dicoba ulang (retry) maksimal 3 kali.
+### Deployment di Shared Hosting
+
+Karena Anda tidak bisa menjalankan perintah `queue:work` yang berjalan selamanya (daemon), gunakan **Cron Job** yang menjalankan perintah `queue:work --stop-when-empty` setiap menit untuk memproses antrian yang menumpuk.

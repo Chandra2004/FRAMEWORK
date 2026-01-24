@@ -1,179 +1,275 @@
-# Database & Models
+# 🗄️ Database & Query Builder
 
-The Framework menyediakan layer database yang powerful namun ringan, menggabungkan fleksibilitas Query Builder dengan kenyamanan Active Record ala Eloquent.
+The Framework menyediakan akses database yang aman dan ekspresif menggunakan PDO Wrapper dan Query Builder. Mendukung MySQL/MariaDB.
+
+---
+
+## 📋 Daftar Isi
+
+1.  [Konfigurasi](#konfigurasi)
+2.  [Menjalankan Raw SQL](#menjalankan-raw-sql)
+3.  [Query Builder (Fluent)](#query-builder-fluent)
+4.  [Database Transactions](#database-transactions)
+5.  [Model (Active Record)](#model-active-record)
+
+---
 
 ## Konfigurasi
 
-Pastikan konfigurasi database di `.env` sudah sesuai:
+Pastikan `.env` sudah diisi dengan benar.
 
-```ini
+```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_NAME=nama_database
+DB_NAME=the_framework_db
 DB_USER=root
-DB_PASS=password
-```
-
-## Basic Usage (Query Builder)
-
-Anda bisa menggunakan Query Builder secara langsung tanpa membaut Model class, namun disarankan menggunakan Model.
-
-```php
-use TheFramework\App\Database;
-use TheFramework\App\QueryBuilder;
-
-$db = Database::getInstance();
-$query = new QueryBuilder($db);
-
-$users = $query->table('users')
-    ->where('status', '=', 'active')
-    ->orderBy('created_at', 'desc')
-    ->get(); // Mengembalikan array of arrays
+DB_PASS=secret
+DB_TIMEZONE=+07:00
 ```
 
 ---
 
-## Models
+## Menjalankan Raw SQL
 
-Model adalah representasi PHP dari tabel database Anda. Model disimpan di `app/Models/`.
-
-### Membuat Model
-
-Buat file baru misal `User.php` di `app/Models/`:
+Untuk query yang sangat kompleks, Anda bisa mengeksekusi SQL mentah secara aman (Prepared Statement).
 
 ```php
-namespace TheFramework\Models;
+use TheFramework\App\Database;
 
-use TheFramework\App\Model;
+// Select
+$users = Database::query("SELECT * FROM users WHERE active = ?", [1]);
 
-class User extends Model
-{
-    protected $table = 'users'; // Opsional jika nama class = nama tabel (singular/plural handled)
-    protected $primaryKey = 'id';
-
-    // Kolom yang boleh diisi via create/update (Mass Assignment Protection)
-    protected $fillable = ['name', 'email', 'password', 'status'];
-
-    // Kolom yang disembunyikan saat toArray/JSON
-    protected $hidden = ['password'];
-}
+// Insert/Update/Delete
+Database::execute("UPDATE users SET active = ? WHERE id = ?", [0, 5]);
 ```
 
-### Retrieving Data
+---
+
+## Query Builder & Model
+
+Di framework ini, cara utama berinteraksi dengan database adalah melalui **Model**. Anda jarang perlu memanggil `QueryBuilder` secara manual, kecuali untuk query kompleks yang tidak terkait model tertentu.
+
+### Insert Data (Create)
+
+Menggunakan Model (Disarankan):
+
+```php
+use TheFramework\Models\User;
+
+// Cara 1: Create (Otomatis handle timestamp & fillable)
+$user = User::create([
+    'email' => 'john@example.com',
+    'votes' => 0
+]);
+
+// Cara 2: Insert Manual (Raw)
+User::insert([
+    'email' => 'john@example.com',
+    'votes' => 0
+]);
+```
+
+### Mengupdate Data (Update)
+
+```php
+// Update berdasarkan Primary Key
+User::update(['votes' => 10], 1);
+
+// Update dengan Kondisi (Where)
+User::where('email', 'john@example.com')->update(['active' => 1]);
+```
+
+### Menghapus Data (Delete)
+
+```php
+// Hapus berdasarkan ID
+User::delete(1);
+
+// Hapus dengan kondisi
+User::where('votes', '<', 5)->delete();
+```
+
+### Mengambil Data (Read)
 
 ```php
 // Ambil semua data
 $users = User::all();
 
-// Cari berdasarkan Primary Key
+// Ambil berdasarkan ID
 $user = User::find(1);
 
-// Query Builder Chain
-$activeUsers = User::where('status', 'active')
-    ->orderBy('name', 'asc')
-    ->limit(10)
-    ->get();
-
-// Pagination
-$users = User::paginate(15); // 15 item per halaman
-```
-
-### Creating & Updating
-
-```php
-// Create
-$newUser = User::create([
-    'name' => 'Chandra',
-    'email' => 'chandra@example.com',
-    'password' => password_hash('secret', PASSWORD_BCRYPT)
-]);
-
-// Update
-User::where('id', 1)->update(['status' => 'inactive']);
-
-// Delete
-User::delete(1); // Delete by ID
-User::where('status', 'banned')->delete(); // Bulk Delete
+// Query Fluent (Chainable)
+$admins = User::where('role', 'admin')
+              ->orderBy('created_at', 'DESC')
+              ->get();
 ```
 
 ---
 
-## Relationships
+## Query Builder (Low Level)
 
-Framework ini mendukung definisi relasi antar tabel untuk memudahkan pengambilan data terkait.
+Jika Anda ingin melakukan query tanpa Model (misal ke tabel pivot atau report), Anda bisa mengaksesnya via helper `Database`.
 
-### Mendefinisikan Relasi
+```php
+use TheFramework\Database\QueryBuilder;
+
+QueryBuilder::table('logs')->insert(['action' => 'login']);
+```
+
+---
+
+## Database Transactions
+
+Memastikan sekumpulan operasi database berhasil semua atau gagal semua (Atomic).
+
+```php
+try {
+    Database::beginTransaction();
+
+    // Operasi 1: Potong saldo
+    User::where('id', 1)->decrement('balance', 5000);
+
+    // Operasi 2: Tambah riwayat
+    Transaction::create(['amount' => 5000]);
+
+    Database::commit(); // Simpan perubahan
+} catch (\Exception $e) {
+    Database::rollback(); // Batalkan semua jika ada error
+}
+```
+
+---
+
+## Model (Active Record)
+
+Model adalah cara berinteraksi dengan tabel layaknya sebuah Objek.
+
+Extends class `TheFramework\Database\Model`.
 
 ```php
 class User extends Model {
-    public function posts() {
-        return $this->hasMany(Post::class, 'user_id');
-    }
-
-    public function profile() {
-        return $this->hasOne(Profile::class, 'user_id');
-    }
-}
-
-class Post extends Model {
-    public function user() {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+    protected $table = 'users'; // Nama tabel (opsional, auto-plural)
+    protected $primaryKey = 'id';
 }
 ```
 
-### Eager Loading (N+1 Problem Solution)
+### Penggunaan Model
 
-Gunakan `with()` untuk mengambil data relasi secara efisien (hanya 2 query SQL, bukan N+1).
+Sama seperti Query Builder, tapi lebih ringkas.
 
 ```php
-$users = User::with(['posts', 'profile'])->get();
+// Ambil semua
+$all = User::all();
 
-foreach($users as $user) {
-    echo $user['name'];
-    // Data posts sudah tersedia, tidak ada query tambahan
-    foreach($user['posts'] as $post) {
-        echo $post['title'];
-    }
+// Find by Primary Key
+$user = User::find(1);
+
+// Static call ke Query Builder
+$active = User::where('active', 1)->get();
+```
+
+---
+
+## Hubungan Antar Model (ORM Relationships)
+
+Framework ini mendukung relasi antar tabel yang ekspresif, mirip Eloquent di Laravel.
+
+### 1. One to One (Satu ke Satu)
+
+Contoh: Satu `User` memiliki satu `Phone`.
+
+Di Model `User`:
+
+```php
+public function phone() {
+    return $this->hasOne(Phone::class, 'user_id', 'id');
+}
+```
+
+Di Model `Phone`:
+
+```php
+public function user() {
+    return $this->belongsTo(User::class, 'user_id', 'id');
+}
+```
+
+### 2. One to Many (Satu ke Banyak)
+
+Contoh: Satu `Post` memiliki banyak `Comment`.
+
+Di Model `Post`:
+
+```php
+public function comments() {
+    return $this->hasMany(Comment::class, 'post_id', 'id');
+}
+```
+
+Di Model `Comment` (Inverse):
+
+```php
+public function post() {
+    return $this->belongsTo(Post::class, 'post_id', 'id');
+}
+```
+
+### 3. Many to Many (Banyak ke Banyak)
+
+Contoh: `User` memiliki banyak `Role`, dan `Role` dimiliki banyak `User`.
+Membutuhkan tabel pivot (misal: `role_user`).
+
+Di Model `User`:
+
+```php
+public function roles() {
+    return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id');
 }
 ```
 
 ---
 
-## 🚀 Advanced Features
+## Mengakses Relasi
 
-### Automatic Query Caching
-
-Fitur baru di versi 4.0! Anda bisa men-cache hasil query database untuk performa maksimal.
+Saat Anda memanggil relasi sebagai properti dinamis, framework otomatis menjalakan querynya.
 
 ```php
-// Cache hasil query selama 1 jam (3600 detik)
-$stats = Transaction::where('status', 'success')
-    ->remember(3600)
-    ->count();
+$post = Post::find(1);
 
-// Cache list produk populer selama 10 menit
-$products = Product::where('is_popular', 1)
-    ->with(['category'])
-    ->remember(600)
-    ->get();
+// Otomatis query "SELECT * FROM comments WHERE post_id = 1"
+$comments = $post->comments;
+
+foreach ($comments as $comment) {
+    echo $comment->body;
+}
 ```
 
-_Note: Cache akan otomatis dibuat unik berdasarkan SQL query dan binding parameternya._
+---
 
-### Pessimistic Locking
+## Eager Loading (N+1 Problem Solver)
 
-Untuk mencegah Race Condition pada sistem saldo/stok.
+Jika Anda meloop 100 Post dan mengakses `$post->author`, framework akan menjalankan 100 query tambahan. Ini lambat!
+
+Gunakan `with()` untuk memuat data di awal (hanya 2 query total: 1 untuk post, 1 untuk semua author).
 
 ```php
-$db->beginTransaction();
+// Buruk (N+1 Query)
+$posts = Post::all();
+foreach ($posts as $post) {
+    echo $post->author->name;
+}
 
-$product = Product::where('id', 1)
-    ->lockForUpdate() // Menambahkan FOR UPDATE
-    ->first();
+// Bagus (Eager Loading)
+$posts = Post::with(['author', 'comments'])->get();
+foreach ($posts as $post) {
+    echo $post->author->name; // Tidak ada query tambahan di sini
+}
+```
 
-// Lakukan update stok aman...
+Anda bahkan bisa melakukan Eager Loading bersarang (Nested):
 
-$db->commit();
+```php
+// Ambil Post beserta Author-nya, DAN Profile dari Author tersebut
+$posts = Post::with(['author.profile'])->get();
 ```

@@ -1,96 +1,124 @@
-# Routing
+# 🛣️ Routing
 
-Routing adalah pintu gerbang aplikasi Anda. Semua definisi route terdapat di `routes/web.php`.
+Routing adalah peta jalan aplikasi Anda. Ia mengatur URL mana yang akan memicu Controller mana.
 
-## Basic Routing
+---
 
-Gunakan `Router::add()` untuk mendefinisikan route.
+## 📋 Daftar Isi
+
+1.  [Dasar Routing](#dasar-routing)
+2.  [Parameter Rute](#parameter-rute)
+3.  [Named Routes](#named-routes)
+4.  [Grouping & Prefix](#grouping--prefix)
+5.  [Middleware pada Route](#middleware-pada-route)
+6.  [Method Spoofing (Form PUT/DELETE)](#method-spoofing)
+
+---
+
+## Dasar Routing
+
+Definisikan rute di `routes/web.php`.
+
+### Basic Verbs
+
+The Framework mendukung semua verb HTTP standar.
 
 ```php
 use TheFramework\App\Router;
-use TheFramework\Http\Controllers\HomeController;
 
-// Basic GET route
-Router::add('GET', '/home', HomeController::class, 'index');
-
-// Route dengan Parameter
-Router::add('GET', '/user/{id}', HomeController::class, 'showUser');
-
-// Route dengan multiple parameters
-Router::add('GET', '/post/{postId}/comment/{commentId}', PostController::class, 'showComment');
+Router::add('GET', '/home', 'HomeController@index');
+Router::add('POST', '/post/store', 'PostController@store');
+Router::add('PUT', '/post/update', 'PostController@update');
+Router::add('DELETE', '/post/delete', 'PostController@destroy');
 ```
 
-## Route Groups
+### Menggunakan Closure (Fungsi Langsung)
 
-Grouping memudahkan Anda menerapkan prefix URL atau Middleware ke banyak route sekaligus.
+Untuk halaman statis sederhana, Anda tidak wajib membuat controller.
 
 ```php
-Router::group([
-    'prefix' => '/admin',
-    'middleware' => [AuthMiddleware::class]
-], function () {
+Router::add('GET', '/about', function() {
+    return View::render('about');
+});
+```
+
+---
+
+## Parameter Rute
+
+Anda sering perlu menangkap ID dari URL (misal `/user/5`).
+
+### Parameter Wajib `{param}`
+
+```php
+// URL: /user/5
+Router::add('GET', '/user/{id}', 'UserController@show');
+```
+
+Di Controller, parameter ini otomatis di-mappping ke argumen method:
+
+```php
+public function show($id) {
+    echo "User ID: " . $id;
+}
+```
+
+### Parameter Ganda
+
+```php
+// URL: /post/10/comments/50
+Router::add('GET', '/post/{postId}/comments/{commentId}', function($postId, $commentId) {
+    // ...
+});
+```
+
+> **Info Teknis:** `{id}` diparsing menjadi RegEx `(?P<id>[^/]+)` yang berarti "string apapun kecuali garis miring".
+
+---
+
+## Grouping & Prefix
+
+Mengelompokkan rute yang mirip membuat kode lebih rapi.
+
+```php
+Router::group(['prefix' => '/admin', 'middleware' => ['AuthMiddleware']], function() {
 
     // URL: /admin/dashboard
-    Router::add('GET', '/dashboard', AdminController::class, 'dashboard');
+    Router::add('GET', '/dashboard', 'AdminController@dashboard');
 
     // URL: /admin/users
-    Router::add('GET', '/users', AdminController::class, 'users');
+    Router::add('GET', '/users', 'AdminController@users');
 
 });
 ```
 
-## Middleware
+---
 
-Middleware dieksekusi sebelum controller. Cocok untuk autentikasi, proteksi CSRF, atau logging.
+## Middleware pada Route
 
-### Menggunakan Middleware
-
-Anda bisa memasang middleware per-route atau per-grup.
+Anda bisa memasang middleware (filter) pada rute spesifik.
 
 ```php
-Router::add('POST', '/profile', UserController::class, 'update', [
-    CsrfMiddleware::class,
-    AuthMiddleware::class
-]);
+Router::add('GET', '/profile', 'UserController@profile', ['AuthMiddleware']);
 ```
 
-### Membuat Middleware
+Rute ini hanya bisa diakses jika `AuthMiddleware` meloloskan request.
 
-Buat class di `app/Middleware/` yang memiliki method `before()`.
+---
 
-```php
-namespace TheFramework\Middleware;
+## Method Spoofing
 
-class CheckAge
-{
-    public function before()
-    {
-        if ($_SESSION['age'] < 18) {
-            header('Location: /restriction');
-            exit;
-        }
-    }
-}
+Browser HTML Form hanya mendukung `GET` dan `POST`. Untuk melakukan `PUT` atau `DELETE`, gunakan teknik _Method Spoofing_.
+
+Dalam form `resources/views/edit.php`:
+
+```html
+<form action="/users/update/1" method="POST">
+  <!-- Tambahkan input hidden ini -->
+  <input type="hidden" name="_method" value="PUT" />
+
+  <button type="submit">Update</button>
+</form>
 ```
 
-## Resource Routing
-
-Untuk mempercepat pembuatan CRUD, gunakan `Router::resource`.
-
-```php
-// Otomatis membuat route index, create, store, show, edit, update, destroy
-Router::resource('/products', ProductController::class);
-```
-
-Default Mapping:
-
-- GET `/products` -> index
-- GET `/products/create` -> create
-- POST `/products` -> store
-- GET `/products/{id}` -> show
-- ... dst
-
-## Route Caching
-
-Untuk performa production, framework mendukung route caching.
-Pastikan untuk menjalankan perintah cache route (jika tersedia script build) saat deploy untuk menghindari parsing Route file setiap request.
+Framework akan membaca `_method` dan memperlakukannya sebagai request `PUT`.

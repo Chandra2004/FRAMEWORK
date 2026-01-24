@@ -1,121 +1,59 @@
-# Migrations & Schema
+# 🏗️ Migrations & Schema Builder
 
-Migration adalah version control untuk database Anda, memungkinkan tim untuk mendefinisikan dan membagikan skema database aplikasi.
+Migrasi adalah cara terbaik mengelola perubahan struktur database. Anggap saja sebagai _version control_ (seperti Git) untuk tabel database Anda.
 
-## Membuat Migration
+## Struktur File Migrasi
 
-Buat file class baru di folder `database/migrations/`. Format penamaan bebas, tapi disarankan menggunakan timestamp agar urut (misal `2025_01_01_CreateUsersTable.php`).
+File migrasi yang dibuat oleh `php artisan make:migration` memiliki dua method utama:
 
-Class harus meng-extend `TheFramework\App\Database\Migration`.
+- `up()`: Eksekusi perubahan (misal: buat tabel).
+- `down()`: Batalkan perubahan (misal: hapus tabel).
 
 ```php
-use TheFramework\App\Database\Migration;
-use TheFramework\App\Schema;
-use TheFramework\App\Blueprint;
+use TheFramework\Database\Schema;
 
-class CreateUsersTable extends Migration
-{
-    public function up()
-    {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id(); // Auto-increment ID
+class Migration_CreateUsersTable {
+    public function up() {
+        Schema::create('users', function($table) {
+            $table->id();
             $table->string('username', 100);
-            $table->string('email')->unique(); // Unique Index
-            $table->string('password');
-            $table->enum('role', ['admin', 'user'])->default('user');
-            $table->text('bio')->nullable();
-            $table->timestamps(); // create_at, updated_at
-
-            // Indexing manual
-            $table->index('username');
+            $table->timestamps();
         });
     }
 
-    public function down()
-    {
+    public function down() {
         Schema::dropIfExists('users');
     }
 }
 ```
 
-## Available Column Types
+## Schema Builder Method
 
-| Method                           | SQL Type                                  |
-| -------------------------------- | ----------------------------------------- |
-| `$table->id()`                   | `INT UNSIGNED AUTO_INCREMENT PRIMARY KEY` |
-| `$table->string('name', length)` | `VARCHAR`                                 |
-| `$table->text('body')`           | `TEXT`                                    |
-| `$table->integer('age')`         | `INT`                                     |
-| `$table->boolean('is_active')`   | `TINYINT(1)`                              |
-| `$table->date('dob')`            | `DATE`                                    |
-| `$table->timestamp('added_on')`  | `TIMESTAMP`                               |
-| `$table->json('options')`        | `JSON`                                    |
-| `$table->enum('col', ['a','b'])` | `ENUM`                                    |
+Class `Schema` mendukung berbagai tipe kolom MySQL:
 
-## Modifikasi Tabel (Alter Table)
+| Method                             | Syntax SQL yang Dihasilkan                             |
+| :--------------------------------- | :----------------------------------------------------- |
+| `$table->id()`                     | `id INT AUTO_INCREMENT PRIMARY KEY`                    |
+| `$table->string('col', length)`    | `col VARCHAR(length)`                                  |
+| `$table->text('body')`             | `body TEXT`                                            |
+| `$table->integer('count')`         | `count INT`                                            |
+| `$table->bigInteger('amount')`     | `amount BIGINT`                                        |
+| `$table->float('price')`           | `price FLOAT`                                          |
+| `$table->double('precise')`        | `precise DOUBLE`                                       |
+| `$table->boolean('active')`        | `active TINYINT(1)`                                    |
+| `$table->date('birthday')`         | `birthday DATE`                                        |
+| `$table->dateTime('published_at')` | `published_at DATETIME`                                |
+| `$table->timestamps()`             | Membuat kolom `created_at` dan `updated_at` (DATETIME) |
 
-Gunakan `Schema::table` untuk mengubah tabel yang sudah ada. Fitur ini sangat berguna untuk update aplikasi di production.
+### Modifiers
 
-```php
-public function up()
-{
-    Schema::table('users', function (Blueprint $table) {
-        $table->string('phone_number', 20)->nullable()->after('email'); // Tambah kolom
-        $table->index('phone_number'); // Tambah Index baru
-    });
-}
-```
+Anda tidak bisa menggunakan modifier _fluent_ (seperti `->nullable()`) di versi Framework 4.0 ini. Sebagai gantinya, argumen tambahan digunakan pada beberapa fungsi tertentu atau Anda perlu melakukan query SQL manual (`Schema::execute`) untuk constraint yang sangat spesifik.
 
-## Database Views
+Namun, untuk kebutuhan standar (CRUD), method di atas sudah sangat mencukupi.
 
-Anda dapat membuat virtual table (View) untuk menyederhanakan query kompleks.
-
-### 1. Menggunakan Artisan (New 🚀)
-
-Buat file migrasi view dengan cepat menggunakan command:
-
-```bash
-php artisan make:db-view active_users_view
-```
-
-### 2. Definisi View (Support ORM)
-
-Anda bisa menggunakan **Raw SQL** atau **Query Builder/Model** untuk mendefinisikan view. Framework akan otomatis mengonversi query object menjadi SQL.
+### Menghapus Tabel
 
 ```php
-use TheFramework\Models\User;
-use TheFramework\App\Schema;
-
-public function up()
-{
-    // OPSI A: Menggunakan Model/Query Builder (Recommended)
-    // Keuntungan: Syntax PHP, method chaining, pembacaan lebih mudah
-    $query = User::select(['id', 'username', 'email'])
-                ->where('status', 'active')
-                ->where('role', '!=', 'banned');
-
-    // Framework otomatis convert ke SQL:
-    // CREATE VIEW `active_users_view` AS SELECT id, username, email FROM users WHERE status = 'active' ...
-    Schema::createView('active_users_view', $query);
-
-    // OPSI B: Menggunakan Raw SQL
-    $sql = "SELECT u.id, u.username, p.title
-            FROM users u
-            JOIN posts p ON u.id = p.user_id
-            WHERE u.role = 'editor'";
-
-    Schema::createView('editors_posts_view', $sql);
-}
-
-public function down()
-{
-    Schema::dropView('active_users_view');
-    Schema::dropView('editors_posts_view');
-}
+Schema::drop('nama_tabel');
+Schema::dropIfExists('nama_tabel');
 ```
-
-## Menjalankan Migration
-
-Gunakan script `artisan` (jika sudah tersedia) atau buat script PHP sederhana untuk mengeksekusi method `up()` pada file migrasi Anda.
-
-_Catatan: Saat ini eksekutor migrasi (Migrator) berjalan manual atau via endpoint dev yang Anda buat, pastikan untuk memanggil method `up` dari class migrasi yang diinginkan._

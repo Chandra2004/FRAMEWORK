@@ -1,78 +1,136 @@
-# Views & Blade Template
+# 🎨 Views & Templating
 
-The Framework menggunakan mesin templating **Blade** (diadaptasi dari Laravel/Illuminate) untuk memisahkan logic aplikasi dari presentasi HTML.
+Framework ini menggunakan engine templating berbasis **Native PHP** yang telah ditingkatkan dengan helper function agar serasa seperti Blade di Laravel. Sederhana, tapi sangat cepat karena tidak butuh kompilasi berat.
 
-## Lokasi View
+---
 
-Semua file view disimpan di `resources/views/`.
+## 📋 Daftar Isi
 
-## Basic Usage
+1.  [Membuat & Merender View](#membuat--merender-view)
+2.  [Mengirim Data ke View](#mengirim-data-ke-view)
+3.  [Syntax View (Cheatsheet)](#syntax-view-cheatsheet)
+4.  [Layouts & Inheritance (Moderen)](#layouts--inheritance-moderen)
+5.  [Partial Views (Include)](#partial-views-include)
 
-Di controller Anda, return view menggunakan helper global `view()` atau class `View`.
+---
+
+## Membuat & Merender View
+
+Simpan file view di folder `resources/views/`. Gunakan ekstensi `.php`.
+
+**Contoh: `resources/views/welcome.php`**
+
+Di Controller:
 
 ```php
-use TheFramework\App\View;
+use TheFramework\Core\View;
 
 public function index() {
-    $data = ['name' => 'Chandra'];
-    return View::render('home', $data);
+    return View::render('welcome');
 }
 ```
 
-File: `resources/views/home.blade.php`
+---
 
-## Blade Syntax
+## Mengirim Data ke View
 
-### Echoing Data
+Data array asosiatif akan diekstrak menjadi variabel PHP.
 
-```html
-<h1>Hello, {{ $name }}</h1>
-<p>Current Time: {{ time() }}</p>
+```php
+// Controller
+View::render('dashboard', [
+    'username' => 'Chandra',
+    'total_sales' => 5000000
+]);
 ```
 
-_Note: `{{ }}` otomatis melakukan escaping `htmlspecialchars` untuk mencegah XSS._
-
-### Control Structures
-
 ```html
-@if (count($users) > 0)
-<ul>
-  @foreach ($users as $user)
-  <li>{{ $user['name'] }}</li>
-  @endforeach
-</ul>
-@else
-<p>No users found.</p>
-@endif
+<!-- dashboard.php -->
+<h1>Selamat Datang, <?= $username ?>!</h1>
+<p>Total Penjualan: <?= Helper::rupiah($total_sales) ?></p>
 ```
 
-### Layouts & Inheritance
+---
 
-Definisikan layout utama di `resources/views/layouts/app.blade.php`:
+## Syntax View (Cheatsheet)
+
+Framework v4.0 merekomendasikan penggunaan Native PHP Short Tag untuk performa terbaik.
+
+| Fitur        | Blade (Laravel) | The Framework (PHP Native)                                |
+| :----------- | :-------------- | :-------------------------------------------------------- |
+| **Echo**     | `{{ $var }}`    | `<?= $var ?>` (Otomatis XSS Safe jika pakai helper `e()`) |
+| **Raw**      | `{!! $var !!}`  | `<?= $var ?>`                                             |
+| **If**       | `@if(...)`      | `<?php if(...): ?>`                                       |
+| **Else**     | `@else`         | `<?php else: ?>`                                          |
+| **End If**   | `@endif`        | `<?php endif; ?>`                                         |
+| **Loop**     | `@foreach(...)` | `<?php foreach(...): ?>`                                  |
+| **End Loop** | `@endforeach`   | `<?php endforeach; ?>`                                    |
+
+> **Pro Tip:** Gunakan syntax `if ... : endif` (colon syntax) agar HTML Anda tetap terlihat rapi dan tidak penuh kurung kurawal.
+
+---
+
+## Layouts & Inheritance (Moderen)
+
+Alih-alih menggunakan warisan kelas yang rumit, kita menggunakan pola **"Composition"**.
+
+**1. Buat Master Layout (`resources/views/layouts/app.php`)**
 
 ```html
-<!-- layouts/app.blade.php -->
+<!DOCTYPE html>
 <html>
   <head>
-    <title>My App - @yield('title')</title>
+    <title><?= $title ?? 'The Framework' ?></title>
   </head>
   <body>
     <nav>...</nav>
 
-    <div class="container">@yield('content')</div>
+    <div class="container">
+      <!-- Slot Konten Utama -->
+      <?= $content ?>
+    </div>
+
+    <footer>...</footer>
   </body>
 </html>
 ```
 
-Gunakan di page lain:
+**2. Buat Halaman (`resources/views/home.php`)**
+Tidak perlu `@extends`. Cukup render konten, lalu bungkus dengan layout.
 
-```html
-<!-- dashboard.blade.php -->
-@extends('layouts.app') @section('title', 'Dashboard') @section('content')
-<h1>Welcome to Dashboard</h1>
-@endsection
+Tapi tunggu, cara paling elegan di PHP Native adalah pola "Header-Footer Include".
+
+**Pola Header-Footer (Disarankan):**
+
+`resources/views/home.php`
+
+```php
+<?php include view_path('layouts/header'); ?>
+
+    <h1>Halaman Home</h1>
+    <p>Halo dunia!</p>
+
+<?php include view_path('layouts/footer'); ?>
 ```
 
-## Cache View
+---
 
-Blade meng-compile view menjadi kode PHP native untuk performa. File hasil kompilasi disimpan di `storage/cache/views/`. Pastikan folder ini writable.
+## Partial Views (Include)
+
+Mencegah duplikasi kode (misal: Card Produk yang dipakai berulang).
+
+```php
+<!-- parent.php -->
+<div class="grid">
+    <?php foreach($products as $product): ?>
+        <?php View::partial('components/product-card', ['item' => $product]); ?>
+    <?php endforeach; ?>
+</div>
+```
+
+```html
+<!-- components/product-card.php -->
+<div class="card">
+  <h3><?= $item->name ?></h3>
+</div>
+```

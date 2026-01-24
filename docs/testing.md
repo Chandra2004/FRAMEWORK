@@ -1,56 +1,82 @@
-# UNIT & FEATURE TESTING
+# 🧪 Testing
 
-TheFramework menggunakan **PHPUnit** untuk automated testing.
-Testing suite ini memastikan bahwa core framework dan aplikasi Anda berjalan sesuai ekspektasi.
+Framework ini dibuat dengan pola pikir "Testable". Kami menggunakan PHPUnit sebagai runner testing utama.
 
-## Persiapan
+---
 
-Pastikan PHPUnit terinstall (otomatis via `composer install` jika di mode dev, tapi perlu extension zip enabled di PHP agar cepat).
+## 📋 Daftar Isi
 
-## Struktur Folder
+1.  [Konfigurasi PHPUnit](#konfigurasi-phpunit)
+2.  [Membuat Test Case](#membuat-test-case)
+3.  [Menjalankan Test](#menjalankan-test)
+4.  [Assertions Dasar](#assertions-dasar)
 
-- `tests/Unit`: Untuk tes logika class individual (isolated).
-- `tests/Feature`: Untuk tes integrasi request HTTP (endpoint).
+---
 
-## Menjalankan Test
+## Konfigurasi PHPUnit
 
-Cukup jalankan perintah berikut di terminal:
+File konfigurasi `phpunit.xml` ada di root folder. Anda bisa mengatur environment variabel khusus testing di sini (misal database in-memory SQLite).
 
-```bash
-composer test
+```xml
+<php>
+    <env name="APP_ENV" value="testing"/>
+    <env name="DB_CONNECTION" value="sqlite"/>
+    <env name="DB_DATABASE" value=":memory:"/>
+</php>
 ```
 
-Atau manual:
+---
 
-```bash
-vendor/bin/phpunit
-```
+## Membuat Test Case
 
-## Menulis Test Baru
+Buat file test baru di folder `tests/`.
 
-Buat file baru di folder `tests/Unit` atau `tests/Feature` dengan akhiran `Test.php`.
-
-**Contoh Feature Test (tes halaman):**
+**Contoh: `tests/ExampleTest.php`**
 
 ```php
-<?php
-namespace Tests\Feature;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
-class ProfileTest extends TestCase
+class ExampleTest extends TestCase
 {
-    public function test_profile_page_accessible()
+    public function test_basic_arithmetic()
     {
-        $response = $this->get('/profile');
-        $response->assertStatus(200);
-        $response->assertSee('My Profile');
+        $result = 1 + 1;
+        $this->assertEquals(2, $result);
+    }
+
+    public function test_string_contains()
+    {
+        $string = 'The Framework';
+        $this->assertStringContainsString('Framework', $string);
     }
 }
 ```
 
-**Helper HTTP Tersedia:**
+---
 
-- `$this->get($uri)`
-- `$this->post($uri, $data)`
+## Menjalankan Test
 
-Environment testing diatur di file `phpunit.xml`. Secara default menggunakan database SQLite in-memory agar testing sangat cepat tanpa menyentuh database asli.
+Gunakan wrapper artisan untuk tampilan yang lebih cantik:
+
+```bash
+php artisan test
+```
+
+Atau jalankan PHPUnit manual:
+
+```bash
+./vendor/bin/phpunit
+```
+
+---
+
+## Assertions Dasar
+
+PHPUnit menyediakan ratusan metode assertion. Ini yang paling sering dipakai:
+
+- `$this->assertTrue($condition)`
+- `$this->assertFalse($condition)`
+- `$this->assertEquals($expected, $actual)`
+- `$this->assertCount($count, $array)`
+- `$this->assertNull($variable)`
+- `$this->assertIsArray($variable)`

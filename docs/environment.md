@@ -1,65 +1,41 @@
-# CONFIGURATION & ENVIRONMENT
+# 🌐 Konfigurasi Environment
 
-The-Framework menggunakan library `vlucas/phpdotenv` untuk mengelola variabel environment, namun dilengkapi dengan layer caching khusus untuk performa maksimal.
+The Framework menggunakan library `vlucas/phpdotenv` untuk mengelola konfigurasi sensitif. Jangan pernah menyimpan password atau API Key langsung di dalam kode (`.php`). Simpanlah di `.env`.
 
-## File `.env`
+## File .env vs .env.example
 
-Semua konfigurasi sensitif harus disimpan di file `.env`. Jangan pernah commit file ini ke Git repository.
+- **`.env`**: File konfigurasi aktif di server/laptop Anda. **JANGAN DI-COMMIT KE GIT** karena berisi password rahasia.
+- **`.env.example`**: Template konfigurasi. File ini **HARUS DI-COMMIT** agar developer lain tahu variabel apa saja yang dibutuhkan.
 
-Contoh konfigurasi standar:
+## Daftar Variabel Penting
 
-```ini
-APP_NAME="The Framework"
-APP_ENV=local          # local, development, production
-APP_KEY=base64:...
-APP_DEBUG=true
-APP_URL=http://localhost:8080
+| Key                   | Deskripsi                                    | Contoh Nilai        |
+| :-------------------- | :------------------------------------------- | :------------------ |
+| `APP_ENV`             | Mode aplikasi (`local` atau `production`).   | `local`             |
+| `APP_DEBUG`           | Menampilkan error detail (`true` untuk dev). | `true`              |
+| `APP_KEY`             | Kunci enkripsi acak (Wajib diisi!).          | `base64:xYz...`     |
+| `APP_URL`             | URL dasar aplikasi.                          | `http://mysite.com` |
+| `DB_CONNECTION`       | Driver database (saat ini support `mysql`).  | `mysql`             |
+| `DB_HOST`             | Alamat server database.                      | `127.0.0.1`         |
+| `DB_PORT`             | Port database.                               | `3306`              |
+| `DB_DATABASE`         | Nama database.                               | `my_app`            |
+| `DB_USERNAME`         | Username database.                           | `root`              |
+| `DB_PASSWORD`         | Password database.                           | `secret`            |
+| `ALLOW_WEB_MIGRATION` | Switch ON/OFF fitur Web Command Center.      | `false`             |
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=framework_db
-DB_USERNAME=root
-DB_PASSWORD=
-```
+## Mengakses Konfigurasi
 
-## Mengakses Config
-
-Gunakan class helper `Config` untuk mengambil nilai environment.
+Anda bisa membaca nilai `.env` di mana saja dalam kode menggunakan Helper:
 
 ```php
 use TheFramework\App\Config;
 
-// Ambil value basic
-$mode = Config::get('APP_ENV');
+// Cara 1: Menggunakan $_ENV langsung
+$debug = $_ENV['APP_DEBUG'];
 
-// Ambil dengan default value jika tidak ada
-$apiKey = Config::get('API_KEY', 'default-key-123');
+// Cara 2: Menggunakan Helper Config (Disarankan)
+$appName = Config::get('APP_NAME');
+
+// Cara 3: Dengan nilai default jika kosong
+$timezone = Config::get('APP_TIMEZONE', 'Asia/Jakarta');
 ```
-
----
-
-## ⚡ Config Caching (Wajib untuk Production)
-
-Parsing file `.env` itu berat (lambat) karena melibatkan pembacaan file text dari disk di setiap request.
-
-Fitur **Config Caching** akan membaca `.env` sekali, lalu menyimpannya sebagai file PHP native di `storage/cache/config.php`.
-
-### Cara Menggunakan:
-
-1. Jalankan command:
-   ```bash
-   php artisan config:cache
-   ```
-2. Framework sekarang akan mem-bypass parsing `.env` dan langsung memuat array dari cache.
-3. **Peringatan:** Jika Anda mengubah isi `.env`, perubahan tidak akan terbaca sampai Anda menjalankan cache ulang atau clear.
-
-### Cara Menghapus Cache:
-
-Jika Anda dalam mode development dan sering gonta-ganti config, hapus cache:
-
-```bash
-php artisan config:clear
-```
-
-Atau cukup jangan jalankan cache command di local development.

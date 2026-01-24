@@ -1,89 +1,88 @@
-# HELPER FUNCTIONS
+# 🛠️ Helper Functions
 
-The-Framework menyediakan kumpulan fungsi global dan class helper untuk mempercepat development.
+Framework ini dilengkapi dengan kumpulan fungsi bantuan statis melalui class `TheFramework\Helpers\Helper`. Fungsi-fungsi ini dirancang untuk tugas umum seperti manipulasi string, keamanan, dan navigasi.
 
-## Global Functions
+## Cara Menggunakan
 
-Fungsi-fungsi ini dapat dipanggil di mana saja (Controller, View, Model).
-
-### `dd($variable)`
-
-Dump and Die. Menampilkan isi variabel dengan format rapi dan menghentikan eksekusi script. Sangat berguna untuk debugging.
-
-### `url($path)`
-
-Menghasilkan URL absolut aplikasi.
+Pastikan Anda meng-import class Helper di atas file PHP Anda:
 
 ```php
-url('/login') // Output: http://localhost:8080/login
+use TheFramework\Helpers\Helper;
 ```
 
-### `config($key, $default = null)`
+## Daftar Fungsi
 
-Mengambil konfigurasi dari environment.
+### 🔒 Keamanan & Auth
+
+`Helper::hash_password($password)`
+Melakukan hashing password dengan algoritma Bcrypt yang aman.
 
 ```php
-config('APP_NAME') // Output: The Framework
+$hash = Helper::hash_password('rahasia123');
 ```
 
-### `view($viewName, $data = [])`
-
-Merender tampilan Blade.
-
-```php
-return view('home', ['title' => 'Welcome']);
-```
-
-### `redirect($path)`
-
-Melakukan HTTP redirect.
+`Helper::verify_password($input, $hash)`
+Memverifikasi apakah input cocok dengan hash (untuk login).
 
 ```php
-redirect('/dashboard');
-```
-
----
-
-## Class Helpers
-
-### 1. UploadHandler
-
-Class kuat untuk menangani upload file dengan aman.
-
-```php
-use TheFramework\Config\UploadHandler;
-
-// Di Controller
-if ($request->hasFile('foto')) {
-    // Otomatis convert ke WebP, rename random, dan simpan di /private-uploads/user-pictures
-    $result = UploadHandler::handleUploadToWebP($request->file('foto'), '/user-pictures', 'avatar_');
-
-    if (UploadHandler::isError($result)) {
-        return UploadHandler::getErrorMessage($result);
-    }
-
-    $filename = $result; // String filename sukses
+if (Helper::verify_password($input, $user->password)) {
+    // Login Sukses
+    // Catatan: Jika $user adalah array, gunakan $user['password']
 }
 ```
 
-### 2. EmailHandler
+`Helper::sanitizeInput($input)`
+Membersihkan input dari tag HTML berbahaya (XSS Protection). Bisa menerima string atau array.
 
-Mengirim email via SMTP (PHPMailer wrapper).
+### 🌐 Navigasi & URL
 
-```php
-use TheFramework\Config\EmailHandler;
-
-$mail = new EmailHandler();
-$mail->sendEmail('user@example.com', 'Welcome!', '<h1>Hello World</h1>');
-```
-
-### 3. PaymentHandler
-
-Integrasi dasar Payment Gateway (Midtrans).
+`Helper::url($path)`
+Menghasilkan URL absolut berdasarkan `APP_URL`.
 
 ```php
-use TheFramework\Config\PaymentHandler;
-
-$payment = new PaymentHandler();
-$snapToken = $payment->createTransaction($orderId, $amount, $customerDetails);
+echo Helper::url('/users'); // Hasil: http://localhost:8080/users
 ```
+
+`Helper::redirect($path)`
+Mengalihkan pengguna ke halaman lain.
+
+```php
+Helper::redirect('/login');
+```
+
+`Helper::is_post()` & `Helper::is_get()`
+Mengecek metode request saat ini. Berguna di Controller.
+
+### 💾 Format Data
+
+`Helper::rupiah($angka)`
+Memformat angka menjadi format mata uang Rupiah.
+
+```php
+echo Helper::rupiah(50000); // Hasil: Rp 50.000
+```
+
+`Helper::uuid()`
+Membuat UUID versi 4 acak (identitas unik).
+
+```php
+$uid = Helper::uuid();
+```
+
+`Helper::updateAt()`
+Menghasilkan timestamp "Sekarang" sesuai Timezone di `.env`.
+
+```php
+'created_at' => Helper::updateAt()
+```
+
+`Helper::slugify($string)`
+Mengubah teks menjadi slug URL-friendly (`Hello World` -> `hello-world`).
+
+### 📝 Session & Flash Data
+
+`Helper::set_flash($key, $message)`
+Menyimpan pesan sementara di sesi (hilang setelah direfresh). Cocok untuk notifikasi "Sukses".
+
+`Helper::get_flash($key)`
+Mengambil dan menghapus pesan flash dari sesi.
