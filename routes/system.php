@@ -12,7 +12,6 @@ use TheFramework\App\Container;
  * 1. Feature Toggle Check
  * 2. IP Whitelist Validation
  * 3. Basic Auth (Optional but Recommended)
- * 4. APP_KEY Validation
  */
 function checkSystemKey()
 {
@@ -58,19 +57,6 @@ function checkSystemKey()
             header('HTTP/1.0 401 Unauthorized');
             die("⛔ AUTHENTICATION REQUIRED: Invalid credentials.");
         }
-    }
-
-    // === LAYER 4: APP_KEY Validation ===
-    $key = $_GET['key'] ?? null;
-    $appKey = $_ENV['APP_KEY'] ?? 'base64:default';
-
-    if (!$key || !hash_equals($appKey, $key)) {
-        \TheFramework\App\Logging::getLogger()->warning(
-            "System route access with invalid key",
-            ['ip' => $clientIp, 'uri' => $_SERVER['REQUEST_URI'] ?? '']
-        );
-        header('HTTP/1.0 403 Forbidden');
-        die("⛔ SYSTEM ERROR: Invalid Security Key.");
     }
 
     // Log successful access
@@ -264,27 +250,5 @@ Router::add('GET', '/_system/status', function () {
     }
 });
 
-// DEBUG: Check APP_KEY (Temporary - Remove after testing!)
-Router::add('GET', '/_system/debug-key', function () {
-    // Only check ALLOW_WEB_MIGRATION, skip other security layers for debugging
-    if (($_ENV['ALLOW_WEB_MIGRATION'] ?? 'false') !== 'true') {
-        die("⛔ FEATURE DISABLED");
-    }
 
-    header('Content-Type: text/plain');
-    echo "🔍 APP_KEY DEBUG\n";
-    echo "==============================\n\n";
-    echo "APP_KEY dari .env:\n";
-    echo $_ENV['APP_KEY'] ?? 'NOT SET';
-    echo "\n\n";
-    echo "Key dari URL:\n";
-    echo $_GET['key'] ?? 'NOT PROVIDED';
-    echo "\n\n";
-    echo "Are they equal?\n";
-    $envKey = $_ENV['APP_KEY'] ?? '';
-    $urlKey = $_GET['key'] ?? '';
-    echo ($envKey === $urlKey) ? "✅ YES (Match)" : "❌ NO (Different)";
-    echo "\n\nURL Decoded key:\n";
-    echo urldecode($urlKey);
-});
 
