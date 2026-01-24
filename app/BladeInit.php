@@ -14,15 +14,27 @@ use Illuminate\View\Compilers\BladeCompiler;
 class BladeInit
 {
     private static $blade;
+    private static $isInitializing = false;
 
     public static function init()
     {
-        if (!self::$blade) {
+        if (self::$blade) {
+            return self::$blade;
+        }
+
+        if (self::$isInitializing) {
+            // Prevent recursion if error occurs during initialization
+            return null;
+        }
+
+        self::$isInitializing = true;
+
+        try {
             $filesystem = new Filesystem();
             $resolver = new EngineResolver();
 
-            // Ensure cache directory exists
-            $cachePath = dirname(__DIR__) . '/storage/cache/views';
+            // Ensure cache directory exists (using consistent framework path)
+            $cachePath = dirname(__DIR__) . '/storage/framework/views';
             if (!is_dir($cachePath)) {
                 mkdir($cachePath, 0755, true);
             }
@@ -72,6 +84,8 @@ class BladeInit
                 $finder,
                 new Dispatcher()
             );
+        } finally {
+            self::$isInitializing = false;
         }
         return self::$blade;
     }

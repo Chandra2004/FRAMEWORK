@@ -51,15 +51,22 @@ class Handler
 
             // A. Database Exception
             if ($e instanceof DatabaseException || str_contains(get_class($e), 'PDOException')) {
-                View::render('errors.database', [
-                    'message' => $e->getMessage(),
-                    'env_values' => $_ENV,
-                    'request_info' => self::getRequestInfo(),
-                    'environment' => [
-                        'php_version' => PHP_VERSION,
-                        'app_env' => $env
-                    ]
-                ]);
+                try {
+                    View::render('errors.database', [
+                        'message' => $e->getMessage(),
+                        'env_values' => $_ENV,
+                        'request_info' => self::getRequestInfo(),
+                        'environment' => [
+                            'php_version' => PHP_VERSION,
+                            'app_env' => $env
+                        ]
+                    ]);
+                } catch (\Throwable $th) {
+                    echo "<h1>Database Error</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
+                    if ($env !== 'production') {
+                        echo "<pre>" . htmlspecialchars($th->getMessage()) . "</pre>";
+                    }
+                }
                 return;
             }
 
@@ -70,7 +77,11 @@ class Handler
                     403 => 'errors.403',
                     default => 'errors.500'
                 };
-                View::render($view);
+                try {
+                    View::render($view);
+                } catch (\Throwable $th) {
+                    echo "<h1>Error $status</h1><p>A fatal error occurred.</p>";
+                }
                 return;
             }
 
@@ -106,7 +117,16 @@ class Handler
                 ]
             ];
 
-            View::render('errors.exception', $data);
+            try {
+                View::render('errors.exception', $data);
+            } catch (\Throwable $th) {
+                echo "<h1>Exception Occurred</h1>";
+                echo "<strong>Message:</strong> " . htmlspecialchars($e->getMessage()) . "<br>";
+                echo "<strong>File:</strong> " . htmlspecialchars($e->getFile()) . ":" . $e->getLine();
+                if ($env !== 'production') {
+                    echo "<br><br><strong>Rendering Error:</strong> " . htmlspecialchars($th->getMessage());
+                }
+            }
         });
 
         // 3. Fatal Error (Shutdown Function)
@@ -139,7 +159,16 @@ class Handler
                     ]
                 ];
 
-                View::render('errors.fatal', $data);
+                try {
+                    View::render('errors.fatal', $data);
+                } catch (\Throwable $th) {
+                    echo "<h1>Fatal Error</h1>";
+                    echo "<strong>Message:</strong> " . htmlspecialchars($error['message']) . "<br>";
+                    echo "<strong>File:</strong> " . htmlspecialchars($error['file']) . ":" . $error['line'];
+                    if ($env !== 'production') {
+                        echo "<br><br><strong>Rendering Error:</strong> " . htmlspecialchars($th->getMessage());
+                    }
+                }
             }
         });
     }
