@@ -37,21 +37,86 @@ Framework ini menggunakan GitHub Actions (`.github/workflows/deploy.yml`) untuk 
 
 Masuk ke **GitHub Repo > Settings > Secrets and variables > Actions**. Tambahkan key berikut:
 
-| Nama Secret             | Deskripsi / Contoh Isi                                                                             |
-| :---------------------- | :------------------------------------------------------------------------------------------------- |
-| **FTP_SERVER**          | Alamat server FTP (contoh: `ftpupload.net`)                                                        |
-| **FTP_USERNAME**        | Username hosting akun (contoh: `if0_382xxxxx`) - _Bukan login akun utama!_                         |
-| **FTP_PASSWORD**        | Password hosting akun - _Bukan password login akun utama!_                                         |
-| **APP_URL**             | URL website Anda (contoh: `http://myapp.rf.gd`)                                                    |
-| **APP_KEY**             | **PENTING!** Copy dari `.env` lokal (`base64:xxx...`). Gunakan `php artisan setup` untuk generate. |
-| **DB_HOST**             | Host database (contoh: `sql311.infinityfree.com`)                                                  |
-| **DB_NAME**             | Nama database (contoh: `if0_382_myapp`)                                                            |
-| **DB_USER**             | Username database (biasanya sama dengan FTP Username)                                              |
-| **DB_PASS**             | Password database (biasanya sama dengan FTP Password)                                              |
-| **DB_PORT**             | `3306`                                                                                             |
-| **ALLOW_WEB_MIGRATION** | `true` (untuk menyalakan web tools) atau `false` (untuk mematikan)                                 |
+| Nama Secret                              | Deskripsi / Contoh Isi                                                                                                                                                                      |
+| :--------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **FTP_SERVER**                           | Alamat server FTP (contoh: `ftpupload.net`)                                                                                                                                                 |
+| **FTP_USERNAME**                         | Username hosting akun (contoh: `if0_382xxxxx`) - _Bukan login akun utama!_                                                                                                                  |
+| **FTP_PASSWORD**                         | Password hosting akun - _Bukan password login akun utama!_                                                                                                                                  |
+| **APP_URL**                              | URL website Anda (contoh: `http://myapp.rf.gd`)                                                                                                                                             |
+| **APP_KEY**                              | **PENTING!** Copy dari `.env` lokal (`base64:xxx...`). Gunakan `php artisan setup` untuk generate.                                                                                          |
+| **DB_HOST**                              | Host database (contoh: `sql311.infinityfree.com`)                                                                                                                                           |
+| **DB_NAME**                              | Nama database (contoh: `if0_382_myapp`)                                                                                                                                                     |
+| **DB_USER**                              | Username database (biasanya sama dengan FTP Username)                                                                                                                                       |
+| **DB_PASS**                              | Password database (biasanya sama dengan FTP Password)                                                                                                                                       |
+| **DB_PORT**                              | `3306`                                                                                                                                                                                      |
+| **ALLOW_WEB_MIGRATION**                  | `true` (untuk menyalakan web tools) atau `false` (untuk mematikan)                                                                                                                          |
+| **SYSTEM_ALLOWED_IPS** ⭐ **NEW v5.0.0** | **IP Whitelist** - Comma-separated list IP yang boleh akses `/_system/*`<br>Contoh: `182.8.66.200,103.x.x.x` atau `*` (semua IP - not recommended!)<br>Lihat IP Anda: https://api.ipify.org |
+| **SYSTEM_AUTH_USER** ⭐ **NEW v5.0.0**   | **Basic Auth Username** (Optional tapi recommended)<br>Contoh: `admin` - Browser akan popup login                                                                                           |
+| **SYSTEM_AUTH_PASS** ⭐ **NEW v5.0.0**   | **Basic Auth Password** (Optional tapi recommended)<br>Contoh: `MyStr0ng!P@ssw0rd#2026` - Minimal 12 karakter, kombinasi huruf/angka/simbol                                                 |
 
 > **⚠️ Catatan:** Jika `APP_KEY` tidak diset di Secrets, aplikasi akan error "Invalid Security Key" karena `.env` di server akan kosong kuncinya.
+
+### 🛡️ Web Command Center Security (v5.0.0) - 4-Layer Protection
+
+Framework v5.0.0 menggunakan **4-layer security** untuk melindungi Web Command Center (`/_system/*`):
+
+```
+REQUEST → Layer 1 → Layer 2 → Layer 3 → Layer 4 → ✅ ALLOWED
+          Toggle    IP Check  Auth      APP_KEY
+```
+
+**Penjelasan Setiap Layer:**
+
+| Layer                        | Config                                   | Fungsi                         | Contoh                     |
+| ---------------------------- | ---------------------------------------- | ------------------------------ | -------------------------- |
+| **1. Feature Toggle**        | `ALLOW_WEB_MIGRATION`                    | Enable/disable fitur           | `true` = ON, `false` = OFF |
+| **2. IP Whitelist**          | `SYSTEM_ALLOWED_IPS`                     | Hanya IP terdaftar boleh akses | `182.8.66.200,103.x.x.x`   |
+| **3. Basic Auth** (Optional) | `SYSTEM_AUTH_USER`<br>`SYSTEM_AUTH_PASS` | Username + Password login      | Browser popup kredensial   |
+| **4. APP_KEY**               | `?key=xxx` di URL                        | Secret key validation          | `?key=base64:abc...`       |
+
+**Contoh Real-World:**
+
+1. **Development (Lokal):**
+
+   ```env
+   ALLOW_WEB_MIGRATION=true
+   SYSTEM_ALLOWED_IPS=127.0.0.1,*
+   SYSTEM_AUTH_USER=
+   SYSTEM_AUTH_PASS=
+   ```
+
+2. **Production (Aman):**
+
+   ```env
+   ALLOW_WEB_MIGRATION=false  # Disable when not needed!
+   SYSTEM_ALLOWED_IPS=182.8.66.200  # Your IP only
+   SYSTEM_AUTH_USER=admin
+   SYSTEM_AUTH_PASS=SuperSecure!Pass2026
+   ```
+
+3. **Maintenance Mode:**
+   ```env
+   ALLOW_WEB_MIGRATION=true  # Enable sementara
+   SYSTEM_ALLOWED_IPS=182.8.66.200
+   SYSTEM_AUTH_USER=admin
+   SYSTEM_AUTH_PASS=SuperSecure!Pass2026
+   ```
+
+**Penjelasan SYSTEM_ALLOWED_IPS:**
+
+- Format: `IP1,IP2,IP3` (comma-separated)
+- `182.8.66.200` = IP publik Anda (dari ISP), bukan IP server
+- Cek IP Anda: https://api.ipify.org
+- `*` = Wildcard (allow ALL IPs) - **DANGER!** Gunakan hanya development
+- Contoh: `127.0.0.1,182.8.66.200,*` = localhost + IP Anda + semua IP lain
+
+**Penjelasan Basic Auth:**
+
+- `SYSTEM_AUTH_USER` = Username untuk login (contoh: `admin`)
+- `SYSTEM_AUTH_PASS` = Password untuk login (minimal 12 char, strong!)
+- Saat akses `/_system/migrate`, browser popup login
+- Masukkan username/password yang benar baru bisa akses
+- **Optional** tapi **HIGHLY RECOMMENDED** untuk production!
 
 ---
 
