@@ -58,8 +58,67 @@ class SetupCommand implements CommandInterface
             echo "\033[38;5;28m★ SUCCESS  APP_KEY berhasil di-generate [{$key}]\033[0m\n";
         }
 
+        // === v5.0.0: Web Command Center Security Setup ===
+        echo "\n\033[38;5;39m🔐 Web Command Center Security Setup (v5.0.0)\033[0m\n";
+        echo "\033[38;5;244mSetup Basic Authentication untuk melindungi /_system/* routes\033[0m\n";
+        echo "\033[38;5;244m(Tekan Enter untuk skip jika tidak ingin mengaktifkan)\033[0m\n\n";
+
+        // Username input
+        echo "\033[38;5;33mUsername untuk system admin\033[0m [default: admin]: ";
+        $username = trim(fgets(STDIN));
+        if (empty($username)) {
+            $username = 'admin';
+        }
+
+        // Password input dengan hidden characters
+        echo "\033[38;5;33mPassword untuk system admin\033[0m (min 8 char, strong recommended): ";
+
+        // Hide password input (works on Unix/Mac/Windows with some terminals)
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Windows: Best effort, might show characters
+            $password = trim(fgets(STDIN));
+        } else {
+            // Unix/Mac: Hide input
+            system('stty -echo');
+            $password = trim(fgets(STDIN));
+            system('stty echo');
+            echo "\n";
+        }
+
+        if (!empty($password)) {
+            // Validate password strength
+            if (strlen($password) < 8) {
+                echo "\033[38;5;124m⚠ WARNING  Password terlalu pendek! Minimal 8 karakter.\033[0m\n";
+                echo "\033[38;5;244mMelanjutkan tanpa setup Basic Auth...\033[0m\n";
+            } else {
+                // Hash password menggunakan bcrypt
+                $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+
+                // Update .env dengan username dan hashed password
+                if (preg_match('/^SYSTEM_AUTH_USER=/m', $env)) {
+                    $env = preg_replace('/^SYSTEM_AUTH_USER=.*/m', "SYSTEM_AUTH_USER={$username}", $env);
+                } else {
+                    $env .= "\nSYSTEM_AUTH_USER={$username}";
+                }
+
+                if (preg_match('/^SYSTEM_AUTH_PASS=/m', $env)) {
+                    $env = preg_replace('/^SYSTEM_AUTH_PASS=.*/m', "SYSTEM_AUTH_PASS={$hashedPassword}", $env);
+                } else {
+                    $env .= "\nSYSTEM_AUTH_PASS={$hashedPassword}";
+                }
+
+                file_put_contents('.env', $env);
+                echo "\033[38;5;28m★ SUCCESS  Basic Auth configured:\033[0m\n";
+                echo "  Username: \033[38;5;33m{$username}\033[0m\n";
+                echo "  Password: \033[38;5;244m[hashed with bcrypt]\033[0m\n";
+                echo "\033[38;5;244m  Hash: {$hashedPassword}\033[0m\n";
+            }
+        } else {
+            echo "\033[38;5;244m⊘ SKIPPED  Basic Auth tidak diaktifkan (bisa disetup manual di .env)\033[0m\n";
+        }
+
         shell_exec('composer dump-autoload');
-        echo "\033[38;5;28m★ SUCCESS  Autoload Composer diperbarui\033[0m\n";
+        echo "\n\033[38;5;28m★ SUCCESS  Autoload Composer diperbarui\033[0m\n";
         echo "\033[38;5;28m★ SUCCESS  Pengaturan selesai! Jalankan 'php artisan serve' untuk memulai\033[0m\n";
     }
 }

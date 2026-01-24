@@ -42,7 +42,16 @@ function checkSystemKey()
         $authPass = $_SERVER['PHP_AUTH_PW'] ?? '';
 
         $validUser = hash_equals($_ENV['SYSTEM_AUTH_USER'], $authUser);
-        $validPass = hash_equals($_ENV['SYSTEM_AUTH_PASS'], $authPass);
+
+        // Support both plain text (old) and bcrypt hashed (new v5.0.0) passwords
+        $storedPass = $_ENV['SYSTEM_AUTH_PASS'];
+        if (strpos($storedPass, '$2y$') === 0 || strpos($storedPass, '$2a$') === 0) {
+            // Bcrypt hash detected - use password_verify
+            $validPass = password_verify($authPass, $storedPass);
+        } else {
+            // Plain text password (backward compatibility)
+            $validPass = hash_equals($storedPass, $authPass);
+        }
 
         if (!$validUser || !$validPass) {
             header('WWW-Authenticate: Basic realm="System Administration Panel"');
