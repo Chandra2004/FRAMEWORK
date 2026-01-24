@@ -263,3 +263,28 @@ Router::add('GET', '/_system/status', function () {
         echo str_pad($ext, 15) . ": $status\n";
     }
 });
+
+// DEBUG: Check APP_KEY (Temporary - Remove after testing!)
+Router::add('GET', '/_system/debug-key', function () {
+    // Only check ALLOW_WEB_MIGRATION, skip other security layers for debugging
+    if (($_ENV['ALLOW_WEB_MIGRATION'] ?? 'false') !== 'true') {
+        die("⛔ FEATURE DISABLED");
+    }
+
+    header('Content-Type: text/plain');
+    echo "🔍 APP_KEY DEBUG\n";
+    echo "==============================\n\n";
+    echo "APP_KEY dari .env:\n";
+    echo $_ENV['APP_KEY'] ?? 'NOT SET';
+    echo "\n\n";
+    echo "Key dari URL:\n";
+    echo $_GET['key'] ?? 'NOT PROVIDED';
+    echo "\n\n";
+    echo "Are they equal?\n";
+    $envKey = $_ENV['APP_KEY'] ?? '';
+    $urlKey = $_GET['key'] ?? '';
+    echo ($envKey === $urlKey) ? "✅ YES (Match)" : "❌ NO (Different)";
+    echo "\n\nURL Decoded key:\n";
+    echo urldecode($urlKey);
+});
+
