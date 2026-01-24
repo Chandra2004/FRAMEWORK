@@ -30,13 +30,13 @@ error_reporting(E_ALL);
 
 // Hanya jalankan logic HTTP spesifik jika bukan CLI
 if (php_sapi_name() !== 'cli') {
-    header('X-Powered-By: TheFramework-v1');
-    header('X-Frame-Options: DENY');
-    header('X-Content-Type-Options: nosniff');
-    header('X-XSS-Protection: 1; mode=block');
-    header('Referrer-Policy: no-referrer-when-downgrade');
-    header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
-    header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+    // header('X-Powered-By: TheFramework-v1');
+    // header('X-Frame-Options: DENY');
+    // header('X-Content-Type-Options: nosniff');
+    // header('X-XSS-Protection: 1; mode=block');
+    // header('Referrer-Policy: no-referrer-when-downgrade');
+    // header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+    // header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
 
     // Rate Limiting Global
     // Menggunakan Helper::get_client_ip() untuk akurasi lebih baik (Proxy support)
