@@ -6,24 +6,19 @@ use TheFramework\App\Container;
 
 /**
  * Multi-Layer Security Check for System Routes
- * v5.0.0 Security Enhancement
- * 
- * Layers:
- * 1. Feature Toggle Check
- * 2. IP Whitelist Validation
- * 3. Basic Auth (Optional but Recommended)
+ * v5.1.0 Security Enhancement
  */
 function checkSystemKey()
 {
     // === LAYER 1: Feature Toggle ===
-    if (($_ENV['ALLOW_WEB_MIGRATION'] ?? 'false') !== 'true') {
+    if (\TheFramework\App\Config::get('ALLOW_WEB_MIGRATION') !== 'true') {
         header('HTTP/1.0 403 Forbidden');
         die("⛔ FEATURE DISABLED: Web migration tools are disabled in configuration.");
     }
 
     // === LAYER 2: IP Whitelist ===
     $clientIp = \TheFramework\Helpers\Helper::get_client_ip();
-    $allowedIps = $_ENV['SYSTEM_ALLOWED_IPS'] ?? '127.0.0.1';
+    $allowedIps = \TheFramework\App\Config::get('SYSTEM_ALLOWED_IPS', '127.0.0.1');
     $ipWhitelist = array_map('trim', explode(',', $allowedIps));
 
     if (!in_array($clientIp, $ipWhitelist) && !in_array('*', $ipWhitelist)) {
@@ -35,27 +30,37 @@ function checkSystemKey()
         die("⛔ ACCESS DENIED: Your IP ($clientIp) is not whitelisted for system access.");
     }
 
-    // === LAYER 3: Basic Auth (Optional) ===
-    if (!empty($_ENV['SYSTEM_AUTH_USER']) && !empty($_ENV['SYSTEM_AUTH_PASS'])) {
+    // === LAYER 3: Basic Auth (Required if configured) ===
+    $sysUser = \TheFramework\App\Config::get('SYSTEM_AUTH_USER');
+    $sysPass = \TheFramework\App\Config::get('SYSTEM_AUTH_PASS');
+
+    if (!empty($sysUser) && !empty($sysPass)) {
         $authUser = $_SERVER['PHP_AUTH_USER'] ?? '';
         $authPass = $_SERVER['PHP_AUTH_PW'] ?? '';
 
-        $validUser = hash_equals($_ENV['SYSTEM_AUTH_USER'], $authUser);
+        // FIX: Handle Apache/FastCGI where PHP_AUTH_USER might be missing
+        if (empty($authUser) && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+            if (preg_match('/Basic\s+(.*)$/i', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+                $decoded = base64_decode($matches[1]);
+                if (strpos($decoded, ':') !== false) {
+                    list($authUser, $authPass) = explode(':', $decoded, 2);
+                }
+            }
+        }
 
-        // Support both plain text (old) and bcrypt hashed (new v5.0.0) passwords
-        $storedPass = $_ENV['SYSTEM_AUTH_PASS'];
-        if (strpos($storedPass, '$2y$') === 0 || strpos($storedPass, '$2a$') === 0) {
-            // Bcrypt hash detected - use password_verify
-            $validPass = password_verify($authPass, $storedPass);
+        $validUser = hash_equals($sysUser, $authUser);
+
+        // Support both plain text and bcrypt
+        if (strpos($sysPass, '$2y$') === 0 || strpos($sysPass, '$2a$') === 0) {
+            $validPass = password_verify($authPass, $sysPass);
         } else {
-            // Plain text password (backward compatibility)
-            $validPass = hash_equals($storedPass, $authPass);
+            $validPass = hash_equals($sysPass, $authPass);
         }
 
         if (!$validUser || !$validPass) {
             header('WWW-Authenticate: Basic realm="System Administration Panel"');
             header('HTTP/1.0 401 Unauthorized');
-            die("⛔ AUTHENTICATION REQUIRED: Invalid credentials.");
+            die("⛔ AUTHENTICATION REQUIRED: Please login to access system tools.");
         }
     }
 
