@@ -8,12 +8,22 @@
 composer.phar
 
 # Storage & Cache (Ignore contents but keep directory structure)
-/storage/cache/*
-!/storage/cache/.gitignore
+/storage/*
+!/storage/.gitignore
+/storage/framework/*
+!/storage/framework/.gitignore
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
 /storage/logs/*
 !/storage/logs/.gitignore
 /storage/session/*
 !/storage/session/.gitignore
+/storage/app/*
+!/storage/app/.gitignore
+/storage/app/public/*
+!/storage/app/public/.gitignore
 
 # User Uploads (Ignore file uploads)
 /private-uploads/*

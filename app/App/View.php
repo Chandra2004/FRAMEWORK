@@ -26,12 +26,23 @@ class View
             }
         }
 
-        $defaultPath = dirname(__DIR__, 2) . '/resources/views/' . $view . '.php';
+        // Fallback for native PHP views (if Blade fails or is not used)
+        $viewPath = str_replace('.', '/', $view);
+        $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__, 2);
 
-        if (file_exists($defaultPath)) {
-            require $defaultPath;
-        } else {
-            throw new Exception("View not found: {$view}");
+        $fallbackPaths = [
+            $root . '/resources/views/' . $viewPath . '.blade.php',
+            $root . '/resources/views/' . $viewPath . '.php'
+        ];
+
+        foreach ($fallbackPaths as $path) {
+            if (file_exists($path)) {
+                require $path;
+                return;
+            }
         }
+
+        $errorDetail = "View [{$view}] not found. \nChecked paths:\n - " . implode("\n - ", $fallbackPaths);
+        throw new Exception($errorDetail);
     }
 }

@@ -34,7 +34,8 @@ class BladeInit
             $resolver = new EngineResolver();
 
             // Ensure cache directory exists (using consistent framework path)
-            $cachePath = dirname(__DIR__) . '/storage/framework/views';
+            $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
+            $cachePath = $root . '/storage/framework/views';
             if (!is_dir($cachePath)) {
                 mkdir($cachePath, 0755, true);
             }
@@ -74,8 +75,9 @@ class BladeInit
                 return new PhpEngine(new Filesystem);
             });
 
+            $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
             $viewPaths = [
-                dirname(__DIR__) . '/resources/views',
+                $root . '/resources/views',
             ];
             $finder = new FileViewFinder($filesystem, $viewPaths);
 
