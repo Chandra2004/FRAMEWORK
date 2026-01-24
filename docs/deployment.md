@@ -106,6 +106,7 @@ Format URL:
 | Perintah         | URL Endpoint            | Fungsi                                                                            |
 | :--------------- | :---------------------- | :-------------------------------------------------------------------------------- |
 | **Migrate DB**   | `/_system/migrate`      | Menjalankan file migrasi database (`database/migrations/*.php`).                  |
+| **Seed DB**      | `/_system/seed`         | Menjalankan `DatabaseSeeder` untuk mengisi data awal.                             |
 | **Clear Cache**  | `/_system/clear-cache`  | Menghapus view cache dan log (solusi jika tampilan tidak berubah setelah update). |
 | **Storage Link** | `/_system/storage-link` | Membuat symlink agar file upload bisa diakses publik (server tertentu).           |
 | **Status**       | `/_system/status`       | Cek versi PHP dan ekstensi yang aktif.                                            |

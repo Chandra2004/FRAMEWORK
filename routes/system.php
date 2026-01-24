@@ -83,6 +83,36 @@ Router::add('GET', '/_system/migrate', function () {
     }
 });
 
+// 2. SEED DATABASE (Web Seeder)
+Router::add('GET', '/_system/seed', function () {
+    checkSystemKey();
+    header('Content-Type: text/plain');
+    echo "🌱 SYSTEM DATABASE SEEDER\n==============================\n";
+
+    try {
+        if (!defined('BASE_PATH'))
+            define('BASE_PATH', dirname(__DIR__, 2));
+        $seederFile = BASE_PATH . '/database/seeders/DatabaseSeeder.php';
+
+        if (!file_exists($seederFile)) {
+            die("❌ DatabaseSeeder.php not found.");
+        }
+
+        require_once $seederFile;
+        $seeder = new \Database\Seeders\DatabaseSeeder();
+
+        // Cek apakah ada method run()
+        if (method_exists($seeder, 'run')) {
+            $seeder->run();
+            echo "✅ Database seeded successfully!";
+        } else {
+            echo "❌ Method 'run' not found in DatabaseSeeder.";
+        }
+    } catch (\Throwable $e) {
+        echo "\n❌ SEEDING ERROR: " . $e->getMessage();
+    }
+});
+
 // 2. CLEAR CACHE (Simulasi php artisan config:clear / view:clear)
 // Di shared hosting kita sering perlu hapus file cache manual
 Router::add('GET', '/_system/clear-cache', function () {

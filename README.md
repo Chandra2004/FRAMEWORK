@@ -59,6 +59,8 @@ Pastikan server Anda memenuhi persyaratan berikut sebelum menginstal:
 
    ```bash
    composer install
+   composer clear-cache
+   composer dump-autoload
    ```
 
 3. **Konfigurasi Environment:**
