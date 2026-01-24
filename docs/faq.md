@@ -128,7 +128,7 @@ Jika hosting Anda PHP 7.x, upgrade dulu atau ganti hosting.
 1. Upload files via FTP
 2. Create database via cPanel
 3. Edit .env dengan credentials database
-4. Akses: https://yoursite.com/_system/migrate?key=YOUR_APP_KEY
+4. Akses: https://yoursite.com/_system/migrate
 ```
 
 📖 [Web Command Center Guide](web-command-center.md)
@@ -182,12 +182,11 @@ DB_TIMEZONE=+00:00
 
 **A:** **YA**, jika dikonfigurasi benar (v5.0.0):
 
-**4-Layer Security:**
+**3-Layer Security:**
 
 1. Feature Toggle (`ALLOW_WEB_MIGRATION`)
 2. IP Whitelist (`SYSTEM_ALLOWED_IPS`)
-3. Basic Auth (optional)
-4. APP_KEY validation
+3. Basic Auth (required)
 
 **Best Practice:**
 

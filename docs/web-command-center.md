@@ -18,7 +18,7 @@ Mayoritas hosting gratis (InfinityFree, 000webhost, Hostinger Free) **tidak meny
 
 ## 🔐 Security (v5.0.0)
 
-Web Command Center dilindungi dengan **4-layer security**:
+Web Command Center dilindungi dengan **3-layer security**:
 
 ### Layer 1: Feature Toggle
 
@@ -36,19 +36,12 @@ SYSTEM_ALLOWED_IPS=127.0.0.1,203.45.67.89
 # Use '*' to allow all (NOT RECOMMENDED)
 ```
 
-### Layer 3: Basic Authentication (Optional)
+### Layer 3: Basic Authentication (Required)
 
 ```bash
 # .env
 SYSTEM_AUTH_USER=admin
-SYSTEM_AUTH_PASS=your_secure_password
-```
-
-### Layer 4: APP_KEY Validation
-
-```bash
-# Every request must include your APP_KEY
-?key=YOUR_APP_KEY
+SYSTEM_AUTH_PASS=$2y$12$.... # Use php artisan setup to generate
 ```
 
 ---
@@ -57,14 +50,14 @@ SYSTEM_AUTH_PASS=your_secure_password
 
 ### 1. Database Migration
 
-**URL:** `/_system/migrate?key=YOUR_APP_KEY`
+**URL:** `/_system/migrate`
 
 **Function:** Menjalankan semua migration files yang belum dieksekusi
 
 **Example:**
 
 ```
-https://yoursite.com/_system/migrate?key=base64:abcd1234...
+https://yoursite.com/_system/migrate
 ```
 
 **Response:**
@@ -82,14 +75,14 @@ https://yoursite.com/_system/migrate?key=base64:abcd1234...
 
 ### 2. Database Seeding
 
-**URL:** `/_system/seed?key=YOUR_APP_KEY`
+**URL:** `/_system/seed`
 
 **Function:** Menjalankan semua seeder files
 
 **Example:**
 
 ```
-https://yoursite.com/_system/seed?key=base64:abcd1234...
+https://yoursite.com/_system/seed
 ```
 
 **Response:**
@@ -107,7 +100,7 @@ https://yoursite.com/_system/seed?key=base64:abcd1234...
 
 ### 3. Clear Cache
 
-**URL:** `/_system/clear-cache?key=YOUR_APP_KEY`
+**URL:** `/_system/clear-cache`
 
 **Function:** Menghapus cache views dan framework cache
 
@@ -121,7 +114,7 @@ https://yoursite.com/_system/seed?key=base64:abcd1234...
 
 ### 4. System Status
 
-**URL:** `/_system/status?key=YOUR_APP_KEY`
+**URL:** `/_system/status`
 
 **Function:** Check PHP version, extensions, dan system info
 
@@ -161,7 +154,7 @@ SYSTEM_AUTH_PASS=
 
 ```bash
 # Open browser
-http://localhost:8080/_system/status?key=YOUR_APP_KEY
+http://localhost:8080/_system/status
 ```
 
 ---
@@ -192,13 +185,13 @@ https://api.ipify.org
 **Step 3:** Test with your IP whitelisted
 
 ```
-https://yoursite.com/_system/status?key=YOUR_APP_KEY
+https://yoursite.com/_system/status
 ```
 
 **Step 4:** If successful, run migration
 
 ```
-https://yoursite.com/_system/migrate?key=YOUR_APP_KEY
+https://yoursite.com/_system/migrate
 ```
 
 ---
@@ -210,8 +203,7 @@ https://yoursite.com/_system/migrate?key=YOUR_APP_KEY
 1. **Always use HTTPS** in production
 2. **Whitelist only your IP** (never use `*` in production)
 3. **Enable Basic Auth** for extra security
-4. **Change APP_KEY regularly**
-5. **Disable** after deployment complete:
+4. **Disable** after deployment complete:
    ```bash
    ALLOW_WEB_MIGRATION=false
    ```
@@ -219,7 +211,7 @@ https://yoursite.com/_system/migrate?key=YOUR_APP_KEY
 ### DON'Ts ❌
 
 1. ❌ Never commit `.env` to Git
-2. ❌ Never share your `APP_KEY` publicly
+2. ✅ Use `php artisan setup` to generate hashed passwords
 3. ❌ Never use `SYSTEM_ALLOWED_IPS=*` in production
 4. ❌ Never leave `ALLOW_WEB_MIGRATION=true` always on
 
@@ -245,16 +237,9 @@ Browser will ask for username/password. Enter:
 - Username: Value dari `SYSTEM_AUTH_USER`
 - Password: Value dari `SYSTEM_AUTH_PASS`
 
-### Error: "Invalid Security Key"
+### Error: "Invalid Security Key" (DEPRECATED in v5.0.0)
 
-**Solution:**
-
-1. Check your `APP_KEY` in `.env`
-2. Make sure URL includes `?key=YOUR_APP_KEY`
-3. Example:
-   ```
-   https://site.com/_system/status?key=base64:abc123...
-   ```
+**Note:** APP_KEY requirement was removed in v5.0.0 final release to simplify hosting setup. You only need Basic Auth and IP Whitelist now.
 
 ---
 
@@ -291,13 +276,13 @@ SYSTEM_ALLOWED_IPS=YOUR_HOME_IP
 **Step 4:** Run migration via browser
 
 ```
-https://yoursite.rf.gd/_system/migrate?key=YOUR_APP_KEY
+https://yoursite.rf.gd/_system/migrate
 ```
 
 **Step 5:** Run seeder
 
 ```
-https://yoursite.rf.gd/_system/seed?key=YOUR_APP_KEY
+https://yoursite.rf.gd/_system/seed
 ```
 
 **Step 6:** Disable Web Command Center
@@ -312,13 +297,13 @@ ALLOW_WEB_MIGRATION=false
 
 ## 📊 Comparison
 
-| Feature               | Traditional Laravel | The Framework WCC            |
-| --------------------- | ------------------- | ---------------------------- |
-| SSH Required          | ✅ Yes              | ❌ No                        |
-| Works on Free Hosting | ❌ No               | ✅ Yes                       |
-| Migration via Browser | ❌ No               | ✅ Yes                       |
-| Security Layers       | 1 (SSH key)         | 4 (Toggle + IP + Auth + Key) |
-| Setup Time            | 30+ min             | 5 min                        |
+| Feature               | Traditional Laravel | The Framework WCC      |
+| --------------------- | ------------------- | ---------------------- |
+| SSH Required          | ✅ Yes              | ❌ No                  |
+| Works on Free Hosting | ❌ No               | ✅ Yes                 |
+| Migration via Browser | ❌ No               | ✅ Yes                 |
+| Security Layers       | 1 (SSH key)         | 3 (Toggle + IP + Auth) |
+| Setup Time            | 30+ min             | 5 min                  |
 
 ---
 

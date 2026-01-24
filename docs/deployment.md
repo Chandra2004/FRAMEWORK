@@ -54,25 +54,22 @@ Masuk ke **GitHub Repo > Settings > Secrets and variables > Actions**. Tambahkan
 | **SYSTEM_AUTH_USER** ⭐ **NEW v5.0.0**   | **Basic Auth Username** (Optional tapi recommended)<br>Contoh: `admin` - Browser akan popup login                                                                                           |
 | **SYSTEM_AUTH_PASS** ⭐ **NEW v5.0.0**   | **Basic Auth Password** (Optional tapi recommended)<br>Contoh: `MyStr0ng!P@ssw0rd#2026` - Minimal 12 karakter, kombinasi huruf/angka/simbol                                                 |
 
-> **⚠️ Catatan:** Jika `APP_KEY` tidak diset di Secrets, aplikasi akan error "Invalid Security Key" karena `.env` di server akan kosong kuncinya.
+### 🛡️ Web Command Center Security (v5.0.0) - 3-Layer Protection
 
-### 🛡️ Web Command Center Security (v5.0.0) - 4-Layer Protection
-
-Framework v5.0.0 menggunakan **4-layer security** untuk melindungi Web Command Center (`/_system/*`):
+Framework v5.0.0 menggunakan **3-layer security** untuk melindungi Web Command Center (`/_system/*`):
 
 ```
-REQUEST → Layer 1 → Layer 2 → Layer 3 → Layer 4 → ✅ ALLOWED
-          Toggle    IP Check  Auth      APP_KEY
+REQUEST → Layer 1 → Layer 2 → Layer 3 → ✅ ALLOWED
+          Toggle    IP Check  Auth
 ```
 
 **Penjelasan Setiap Layer:**
 
-| Layer                        | Config                                   | Fungsi                         | Contoh                     |
-| ---------------------------- | ---------------------------------------- | ------------------------------ | -------------------------- |
-| **1. Feature Toggle**        | `ALLOW_WEB_MIGRATION`                    | Enable/disable fitur           | `true` = ON, `false` = OFF |
-| **2. IP Whitelist**          | `SYSTEM_ALLOWED_IPS`                     | Hanya IP terdaftar boleh akses | `182.8.66.200,103.x.x.x`   |
-| **3. Basic Auth** (Optional) | `SYSTEM_AUTH_USER`<br>`SYSTEM_AUTH_PASS` | Username + Password login      | Browser popup kredensial   |
-| **4. APP_KEY**               | `?key=xxx` di URL                        | Secret key validation          | `?key=base64:abc...`       |
+| Layer                         | Config                                   | Fungsi                         | Contoh                     |
+| ----------------------------- | ---------------------------------------- | ------------------------------ | -------------------------- |
+| **1. Feature Toggle**         | `ALLOW_WEB_MIGRATION`                    | Enable/disable fitur           | `true` = ON, `false` = OFF |
+| **2. IP Whitelist**           | `SYSTEM_ALLOWED_IPS`                     | Hanya IP terdaftar boleh akses | `182.8.66.200,103.x.x.x`   |
+| **3. Basic Auth** (Required!) | `SYSTEM_AUTH_USER`<br>`SYSTEM_AUTH_PASS` | Username + Password login      | Browser popup kredensial   |
 
 **Contoh Real-World:**
 
@@ -81,8 +78,8 @@ REQUEST → Layer 1 → Layer 2 → Layer 3 → Layer 4 → ✅ ALLOWED
    ```env
    ALLOW_WEB_MIGRATION=true
    SYSTEM_ALLOWED_IPS=127.0.0.1,*
-   SYSTEM_AUTH_USER=
-   SYSTEM_AUTH_PASS=
+   SYSTEM_AUTH_USER=admin
+   SYSTEM_AUTH_PASS=$2y$12$abc...  # Use 'php artisan setup'
    ```
 
 2. **Production (Aman):**
@@ -90,16 +87,16 @@ REQUEST → Layer 1 → Layer 2 → Layer 3 → Layer 4 → ✅ ALLOWED
    ```env
    ALLOW_WEB_MIGRATION=false  # Disable when not needed!
    SYSTEM_ALLOWED_IPS=182.8.66.200  # Your IP only
-   SYSTEM_AUTH_USER=admin
-   SYSTEM_AUTH_PASS=SuperSecure!Pass2026
+   SYSTEM_AUTH_USER=chandra
+   SYSTEM_AUTH_PASS=$2y$12$8Z0Snt...  # Bcrypt hash
    ```
 
 3. **Maintenance Mode:**
    ```env
    ALLOW_WEB_MIGRATION=true  # Enable sementara
    SYSTEM_ALLOWED_IPS=182.8.66.200
-   SYSTEM_AUTH_USER=admin
-   SYSTEM_AUTH_PASS=SuperSecure!Pass2026
+   SYSTEM_AUTH_USER=chandra
+   SYSTEM_AUTH_PASS=$2y$12$8Z0Snt...
    ```
 
 **Penjelasan SYSTEM_ALLOWED_IPS:**
@@ -113,10 +110,10 @@ REQUEST → Layer 1 → Layer 2 → Layer 3 → Layer 4 → ✅ ALLOWED
 **Penjelasan Basic Auth:**
 
 - `SYSTEM_AUTH_USER` = Username untuk login (contoh: `admin`)
-- `SYSTEM_AUTH_PASS` = Password untuk login (minimal 12 char, strong!)
+- `SYSTEM_AUTH_PASS` = Bcrypt hashed password (**REQUIRED!**)
+- **WAJIB setup via `php artisan setup`** untuk generate hash
 - Saat akses `/_system/migrate`, browser popup login
 - Masukkan username/password yang benar baru bisa akses
-- **Optional** tapi **HIGHLY RECOMMENDED** untuk production!
 
 ---
 
@@ -126,9 +123,9 @@ Karena tidak ada terminal hitam (SSH), kita gunakan **Web Utilities** yang sudah
 
 ### Web Utilities (Pengganti Terminal)
 
-Akses URL ini di browser. Pastikan `key=` cocok dengan `APP_KEY` Anda.
+Akses URL ini di browser. Browser akan meminta Basic Auth (Username & Password) sesuai yang diatur di `.env`.
 
-Format: `https://domain-anda.com/_system/{perintah}?key={APP_KEY_ANDA}`
+Format: `https://domain-anda.com/_system/{perintah}`
 
 | Tugas                | Perintah Artisan (Asli)    | URL Web Utility (Pengganti)                  |
 | :------------------- | :------------------------- | :------------------------------------------- |
@@ -171,7 +168,7 @@ Jika Anda punya SSH, lupakan cara di atas. Gunakan cara profesional via terminal
 ## 5. Troubleshooting
 
 **Q: "Invalid Security Key" saat akses Web Utility?**
-A: Pastikan Secret `APP_KEY` di GitHub sudah diisi (copy dari `.env` lokal). Dan pastikan `key=base64:....` di URL browser sudah benar (harus di-URL Encode jika ada simbol aneh, tapi biasanya copy-paste browser aman).
+A: Fitur ini sudah dihapus di v5.0.0 final release. Anda sekarang hanya butuh Basic Auth (Username & Password) dan IP Whitelist. Pastikan `SYSTEM_AUTH_USER` dan `SYSTEM_AUTH_PASS` (hash) sudah diatur dengan benar di `.env`.
 
 **Q: Seeder error "Class not found"?**
 A: Pastikan nama file seeder Anda sudah standar: `Seeder_TIMESTAMP_Nama.php`. Jangan ubah-ubah nama class manual. Gunakan `php artisan make:seeder Nama` untuk membuat file yang valid.

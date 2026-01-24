@@ -29,7 +29,7 @@ User::where('email', $email)->first(); // Lambat jika email tidak di-index
 
 Jika Anda menggunakan hosting tanpa SSH, gunakan fitur **Web Optimizer** secara berkala (terutama setelah update kode):
 
-URL: `/_system/optimize?key=APP_KEY`
+URL: `/_system/optimize`
 
 Ini akan:
 

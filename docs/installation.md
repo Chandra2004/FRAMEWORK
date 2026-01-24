@@ -210,7 +210,7 @@ server {
 4. **Run migration:**
 
    ```
-   https://yoursite.com/_system/migrate?key=YOUR_APP_KEY
+   https://yoursite.com/_system/migrate
    ```
 
 5. **Done!**

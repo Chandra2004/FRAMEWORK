@@ -117,9 +117,9 @@ X-Frame-Options, CSP, HSTS, XSS-Protection
 
 ```bash
 # No SSH? No problem! Use Web Command Center
-https://yoursite.com/_system/migrate?key=YOUR_APP_KEY
-https://yoursite.com/_system/seed?key=YOUR_APP_KEY
-https://yoursite.com/_system/logs?key=YOUR_APP_KEY
+https://yoursite.com/_system/migrate
+https://yoursite.com/_system/seed
+https://yoursite.com/_system/logs
 ```
 
 Perfect for:

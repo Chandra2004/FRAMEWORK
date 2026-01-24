@@ -214,7 +214,7 @@ Router::group(['middleware' => []], function() {
 
 ## 🌐 Web Command Center Security (NEW in v5.0.0)
 
-Version 5.0.0 implements **4-layer security** for system routes.
+Version 5.0.0 implements **3-layer security** for system routes.
 
 ### Security Layers
 
@@ -229,7 +229,7 @@ ALLOW_WEB_MIGRATION=true  # Must be explicitly enabled
 
 ```bash
 # .env
-SYSTEM_ALLOWED_IPS=127.0.0.1,203.45.67.89
+SYSTEM_ALLOWED_IPS=127.0.0.1,182.8.66.200
 ```
 
 **How it works:**
@@ -244,21 +244,15 @@ if (!in_array($clientIp, $whitelist)) {
 }
 ```
 
-#### Layer 3: Basic Authentication (Optional)
+#### Layer 3: Basic Authentication (Required)
 
 ```bash
 # .env
 SYSTEM_AUTH_USER=admin
-SYSTEM_AUTH_PASS=secure_password
+SYSTEM_AUTH_PASS=$2y$12$ES0eTHxRrDNkEvIW1u3sB.XV3hRn379PogFbcI0OJuMH9rD0g7jRe
 ```
 
-Browser will prompt for credentials before accessing system routes.
-
-#### Layer 4: APP_KEY Validation
-
-```bash
-https://yoursite.com/_system/migrate?key=YOUR_APP_KEY
-```
+Browser will prompt for credentials before accessing system routes. Use `php artisan setup` to generate the hashed password.
 
 ### Production Best Practices
 
