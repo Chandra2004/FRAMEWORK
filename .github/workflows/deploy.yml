@@ -66,4 +66,5 @@ jobs:
             **/README.md
             **/QA_AUDIT.md
             **/.cursorrules
+            **/.idx/**
             storage/**
