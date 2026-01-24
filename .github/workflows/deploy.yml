@@ -52,8 +52,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: htdocs/ # Upload ke folder htdocs
-          timeout: 600000 # 10 menit timeout
-          dangerous-clean-slate: true # WAJIB TRUE agar error 553 hilang (sampai deploy ini Sukses/Hijau)
+          timeout: 3600000 # 1 jam timeout untuk stabilitas maksimal di InfinityFree
           # Exclude file sampah agar tidak memenuhi hosting
           exclude: |
             **/.git*
