@@ -23,7 +23,9 @@ if (Config::get('APP_ENV') !== 'testing') {
 }
 
 // Setting Display Errors untuk PHP native (Backup)
-ini_set('display_errors', 0); // Kita handle sendiri via View
+$debug = Config::get('APP_DEBUG', 'false') === 'true';
+ini_set('display_errors', $debug ? 1 : 0);
+ini_set('display_startup_errors', $debug ? 1 : 0);
 error_reporting(E_ALL);
 
 // Hanya jalankan logic HTTP spesifik jika bukan CLI
