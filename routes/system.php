@@ -75,7 +75,7 @@ Router::add('GET', '/_system/migrate', function () {
 
     try {
         if (!defined('BASE_PATH'))
-            define('BASE_PATH', dirname(__DIR__, 2));
+            define('BASE_PATH', dirname(__DIR__));
 
         $migrationDir = BASE_PATH . '/database/migrations/';
         $files = glob($migrationDir . '*.php');
@@ -133,7 +133,7 @@ Router::add('GET', '/_system/seed', function () {
 
     try {
         if (!defined('BASE_PATH'))
-            define('BASE_PATH', dirname(__DIR__, 2));
+            define('BASE_PATH', dirname(__DIR__));
 
         $seedersPath = BASE_PATH . '/database/seeders';
         $files = glob($seedersPath . '/*Seeder.php');
