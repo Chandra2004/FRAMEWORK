@@ -22,14 +22,16 @@ if (Config::get('APP_ENV') !== 'testing') {
     $requiredDirs = [
         $storageRoot . '/storage/logs',
         $storageRoot . '/storage/session',
+        $storageRoot . '/storage/framework',
         $storageRoot . '/storage/framework/views',
         $storageRoot . '/storage/framework/cache',
+        $storageRoot . '/storage/app',
         $storageRoot . '/storage/app/public'
     ];
 
     foreach ($requiredDirs as $dir) {
         if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+            mkdir($dir, 0777, true);
             // Create helper .gitignore inside if we want to be super safe (optional)
             // file_put_contents($dir . '/.gitignore', "*\n!.gitignore");
         }

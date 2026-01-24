@@ -240,6 +240,46 @@ Router::add('GET', '/_system/storage-link', function () {
 });
 
 // 4. ENVIRONMENT INFO (Cek PHP Version & Extension Wajib)
+// 5. FILE HEALTH CHECK (Verify uploads)
+Router::add('GET', '/_system/check-files', function () {
+    checkSystemKey();
+    header('Content-Type: text/plain');
+    echo "🔍 FILE SYSTEM HEALTH CHECK\n==============================\n";
+
+    $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
+    $checkPaths = [
+        'index.php',
+        'bootstrap/app.php',
+        'routes/web.php',
+        'resources/views/interface/welcome.blade.php',
+        'resources/views/errors/exception.blade.php',
+        'storage/framework/views/.gitignore'
+    ];
+
+    echo "CRITICAL FILES:\n";
+    foreach ($checkPaths as $path) {
+        $fullPath = $root . '/' . $path;
+        $exists = file_exists($fullPath) ? "✅ FOUND" : "❌ MISSING";
+        echo str_pad($path, 45) . ": $exists\n";
+    }
+
+    echo "\nDIRECTORY SCAN (resources/views):\n";
+    $viewDir = $root . '/resources/views';
+    if (is_dir($viewDir)) {
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($viewDir));
+        $count = 0;
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                echo " - " . str_replace($viewDir, '', $file->getPathname()) . "\n";
+                $count++;
+            }
+        }
+        echo "\nTotal view files: $count\n";
+    } else {
+        echo "❌ Directory 'resources/views' NOT FOUND!\n";
+    }
+});
+
 Router::add('GET', '/_system/status', function () {
     checkSystemKey();
     header('Content-Type: text/plain');

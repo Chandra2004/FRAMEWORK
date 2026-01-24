@@ -62,10 +62,7 @@ class Handler
                         ]
                     ]);
                 } catch (\Throwable $th) {
-                    echo "<h1>Database Error</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
-                    if ($env !== 'production') {
-                        echo "<pre>" . htmlspecialchars($th->getMessage()) . "</pre>";
-                    }
+                    self::renderCriticalFallback("Database Connection Error", $e->getMessage(), $th->getMessage());
                 }
                 return;
             }
@@ -80,7 +77,7 @@ class Handler
                 try {
                     View::render($view);
                 } catch (\Throwable $th) {
-                    echo "<h1>Error $status</h1><p>A fatal error occurred.</p>";
+                    self::renderCriticalFallback("Error $status", "A fatal error occurred on our server. We are looking into it.", $th->getMessage());
                 }
                 return;
             }
@@ -120,12 +117,7 @@ class Handler
             try {
                 View::render('errors.exception', $data);
             } catch (\Throwable $th) {
-                echo "<h1>Exception Occurred</h1>";
-                echo "<strong>Message:</strong> " . htmlspecialchars($e->getMessage()) . "<br>";
-                echo "<strong>File:</strong> " . htmlspecialchars($e->getFile()) . ":" . $e->getLine();
-                if ($env !== 'production') {
-                    echo "<br><br><strong>Rendering Error:</strong> " . htmlspecialchars($th->getMessage());
-                }
+                self::renderCriticalFallback("Exception Occurred", $e->getMessage(), $th->getMessage(), $e->getFile(), $e->getLine());
             }
         });
 
@@ -162,15 +154,51 @@ class Handler
                 try {
                     View::render('errors.fatal', $data);
                 } catch (\Throwable $th) {
-                    echo "<h1>Fatal Error</h1>";
-                    echo "<strong>Message:</strong> " . htmlspecialchars($error['message']) . "<br>";
-                    echo "<strong>File:</strong> " . htmlspecialchars($error['file']) . ":" . $error['line'];
-                    if ($env !== 'production') {
-                        echo "<br><br><strong>Rendering Error:</strong> " . htmlspecialchars($th->getMessage());
-                    }
+                    self::renderCriticalFallback("Fatal System Error", $error['message'], $th->getMessage(), $error['file'], $error['line']);
                 }
             }
         });
+    }
+
+    /**
+     * Renders a premium fallback error page when view rendering fails
+     */
+    private static function renderCriticalFallback($title, $message, $renderError, $file = null, $line = null)
+    {
+        $debug = Config::get('APP_DEBUG', 'false') === 'true';
+        $style = <<<CSS
+        <style>
+            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #0f172a; color: #f1f5f9; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+            .card { background: #1e293b; border: 1px solid #334155; padding: 40px; border-radius: 16px; max-width: 600px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+            .icon { width: 64px; height: 64px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; font-size: 32px; font-weight: bold; }
+            h1 { font-size: 24px; margin: 0 0 12px 0; color: #ffffff; }
+            p { color: #94a3b8; line-height: 1.6; margin: 0 0 24px 0; font-size: 16px; }
+            .debug-box { background: #020617; border: 1px solid #1e293b; padding: 16px; border-radius: 8px; font-size: 13px; font-family: 'Fira Code', monospace; overflow-x: auto; color: #38bdf8; }
+            .debug-label { color: #64748b; margin-bottom: 4px; display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+            .path { color: #94a3b8; word-break: break-all; }
+            .footer { margin-top: 24px; font-size: 12px; color: #475569; text-align: center; }
+        </style>
+CSS;
+        echo $style;
+        echo '<div class="card">';
+        echo '<div class="icon">!</div>';
+        echo '<h1>' . htmlspecialchars($title) . '</h1>';
+        echo '<p>' . htmlspecialchars($message) . '</p>';
+
+        if ($debug) {
+            echo '<div>';
+            if ($file) {
+                echo '<span class="debug-label">Location</span>';
+                echo '<div class="debug-box" style="margin-bottom: 12px;">' . htmlspecialchars($file) . ':' . $line . '</div>';
+            }
+            echo '<span class="debug-label">Diagnostic Context (View Fallback Active)</span>';
+            echo '<div class="debug-box">' . htmlspecialchars($renderError) . '</div>';
+            echo '<p style="font-size: 12px; margin-top: 8px; color: #ef4444;">⚠️ This interface is active because the primary design system (Blade) could not find its views on the server.</p>';
+            echo '</div>';
+        }
+
+        echo '<div class="footer">TheFramework Runtime Support Engine</div>';
+        echo '</div>';
     }
 
     private static function getSnippet($file, $line, $linesAround = 10)
