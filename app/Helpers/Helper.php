@@ -278,8 +278,12 @@ class Helper
 
     public static function updateAt()
     {
-        $time = Config::get("DB_TIMEZONE");
-        $dt = new DateTime('now', new DateTimeZone($time));
+        $time = Config::get("DB_TIMEZONE") ?: 'UTC';
+        try {
+            $dt = new DateTime('now', new DateTimeZone($time));
+        } catch (\Exception $e) {
+            $dt = new DateTime('now', new DateTimeZone('UTC'));
+        }
         return $dt->format('Y-m-d H:i:s');
     }
 

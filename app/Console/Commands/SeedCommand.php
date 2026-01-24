@@ -78,7 +78,15 @@ class SeedCommand implements CommandInterface
 
         foreach ($seederFiles as $file) {
             $fileName = basename($file, '.php');
-            $className = 'Database\\Seeders\\Seeder_' . $fileName;
+
+            // Baca isi file untuk cari nama class
+            $content = file_get_contents($file);
+            if (preg_match('/class\s+(\w+)/', $content, $matches)) {
+                $className = 'Database\\Seeders\\' . $matches[1];
+            } else {
+                // Fallback jika regex gagal
+                $className = 'Database\\Seeders\\' . $fileName;
+            }
 
             echo "\033[38;5;39m➤ INFO  Menjalankan seeder: {$fileName}\033[0m\n";
 

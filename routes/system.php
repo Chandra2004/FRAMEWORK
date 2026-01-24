@@ -84,6 +84,7 @@ Router::add('GET', '/_system/migrate', function () {
 });
 
 // 2. SEED DATABASE (Web Seeder)
+// 2. SEED DATABASE (Web Seeder)
 Router::add('GET', '/_system/seed', function () {
     checkSystemKey();
     header('Content-Type: text/plain');
@@ -92,22 +93,50 @@ Router::add('GET', '/_system/seed', function () {
     try {
         if (!defined('BASE_PATH'))
             define('BASE_PATH', dirname(__DIR__, 2));
-        $seederFile = BASE_PATH . '/database/seeders/DatabaseSeeder.php';
 
-        if (!file_exists($seederFile)) {
-            die("❌ DatabaseSeeder.php not found.");
+        $seedersPath = BASE_PATH . '/database/seeders';
+        $files = glob($seedersPath . '/*Seeder.php');
+
+        // Sort files to ensure execution order (timestamps)
+        usort($files, function ($a, $b) {
+            return strcmp(basename($a), basename($b));
+        });
+
+        if (empty($files)) {
+            echo "ℹ No seeder files found in database/seeders.\n";
+            return;
         }
 
-        require_once $seederFile;
-        $seeder = new \Database\Seeders\DatabaseSeeder();
+        foreach ($files as $file) {
+            $fileName = basename($file, '.php');
 
-        // Cek apakah ada method run()
-        if (method_exists($seeder, 'run')) {
-            $seeder->run();
-            echo "✅ Database seeded successfully!";
-        } else {
-            echo "❌ Method 'run' not found in DatabaseSeeder.";
+            // Baca isi file untuk cari nama class yang sebenarnya (RegEx)
+            // Ini menangani kasus nama file tidak sama persis dengan nama class
+            $content = file_get_contents($file);
+            if (preg_match('/class\s+(\w+)/', $content, $matches)) {
+                $className = 'Database\\Seeders\\' . $matches[1];
+            } else {
+                echo "⚠ Skipped: Could not detect class name in $fileName\n";
+                continue;
+            }
+
+            require_once $file;
+
+            if (class_exists($className)) {
+                $seeder = new $className();
+                if (method_exists($seeder, 'run')) {
+                    $seeder->run();
+                    echo "✔ Seeded: $fileName\n";
+                } else {
+                    echo "⚠ Skipped: Method 'run' missing in $className\n";
+                }
+            } else {
+                echo "⚠ Skipped: Class $className not found.\n";
+            }
         }
+
+        echo "\n✨ Database Seeding Completed!";
+
     } catch (\Throwable $e) {
         echo "\n❌ SEEDING ERROR: " . $e->getMessage();
     }

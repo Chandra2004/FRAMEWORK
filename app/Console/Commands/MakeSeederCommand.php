@@ -32,8 +32,10 @@ class MakeSeederCommand implements CommandInterface
         }
 
         $baseName = str_ends_with($args[0], 'Seeder') ? $args[0] : $args[0] . 'Seeder';
+
+        // Perubahan: Gunakan format Seeder_TIMESTAMP_Nama agar urut & PSR-4 compliant
         $timestamp = date('Y_m_d_His');
-        $fileName = "{$timestamp}_{$baseName}.php";
+        $fileName = "Seeder_{$timestamp}_{$baseName}.php";
         $className = "Seeder_{$timestamp}_{$baseName}";
 
         $tableName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', str_replace('Seeder', '', $baseName)));
