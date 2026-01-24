@@ -61,7 +61,7 @@ use Faker\Factory;
 use TheFramework\Database\Seeder;
 use TheFramework\Helpers\Helper;
 
-class {$className} {
+class {$className} extends Seeder {
 
     public function run() {
         \$faker = Factory::create();

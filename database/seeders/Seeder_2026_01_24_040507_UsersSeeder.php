@@ -6,9 +6,11 @@ use Faker\Factory;
 use TheFramework\Database\Seeder;
 use TheFramework\Helpers\Helper;
 
-class Seeder_2026_01_24_040507_UsersSeeder {
+class Seeder_2026_01_24_040507_UsersSeeder extends Seeder
+{
 
-    public function run() {
+    public function run()
+    {
         $faker = Factory::create();
         Seeder::setTable('users');
 
@@ -18,10 +20,10 @@ class Seeder_2026_01_24_040507_UsersSeeder {
                 'uid' => Helper::uuid(36),
                 'name' => $faker->name(),
                 'email' => $faker->email(),
-                'password' => Helper::hash_password('123456'), // Password default
-                'created_at' => Helper::updateAt(),
-                'updated_at' => Helper::updateAt()
+                'password' => Helper::hash_password('123456'),
             ];
         }
+
+        Seeder::create($data);
     }
 }
