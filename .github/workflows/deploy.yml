@@ -53,7 +53,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: htdocs/ # Upload ke folder htdocs
           timeout: 600000 # 10 menit timeout
-          dangerous-clean-slate: true # WAJIB TRUE: Hapus semua file di server dan upload ulang
+          dangerous-clean-slate: false # Dinonaktifkan (hanya aktifkan jika butuh reset total)
           # Exclude file sampah agar tidak memenuhi hosting
           exclude: |
             **/.git*
