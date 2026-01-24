@@ -53,7 +53,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: htdocs/ # Upload ke folder htdocs
           timeout: 600000 # 10 menit timeout
-          dangerous-clean-slate: false # Dinonaktifkan (hanya aktifkan jika butuh reset total)
+          dangerous-clean-slate: true # WAJIB TRUE agar error 553 hilang (sampai deploy ini Sukses/Hijau)
           # Exclude file sampah agar tidak memenuhi hosting
           exclude: |
             **/.git*
