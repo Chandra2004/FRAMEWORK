@@ -1,12 +1,12 @@
 {
   "name": "chandra2004/the-framework",
-  "description": "Secure MVC Native PHP Framework - Version 4.0",
+  "description": "Secure MVC Native PHP Framework - Version 5.0.0 (Major Security & Stability Release)",
   "license": "MIT",
   "authors": [
     {
       "name": "Chandra Tri A",
       "email": "chandratriantomo123@gmail.com",
-      "homepage": "https://www.the-framework.ct.ws",
+      "homepage": "https://framework.rf.gd",
       "role": "Lead Developer"
     }
   ],

@@ -19,6 +19,9 @@ class User extends Model
     ];
 
     protected $hidden = [
-        // 'password', // Jika ada password
+        'password',
+        'remember_token',
+        'api_token',
+        'verification_token'
     ];
 }

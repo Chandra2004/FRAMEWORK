@@ -367,15 +367,30 @@ abstract class Model implements \JsonSerializable
 
     public function __get($name)
     {
+        // 1. Cek Method/Relationship (e.g. $user->posts)
         if (method_exists($this, $name)) {
             return $this->$name();
         }
 
+        // 2. Cek Properti Class (Protected/Public properties)
         if (property_exists($this, $name)) {
             return $this->$name;
         }
 
-        throw new Exception("Property atau relasi '$name' tidak ditemukan di " . get_class($this));
+        // 3. Cek Dynamic Attribute (Hasil Query Database)
+        // PDO FETCH_OBJ mengembalikan stdClass/Object, propertinya bersifat publik dinamis.
+        // Namun karena kita ada di dalam class, kita bisa akses $this->name jika itu ada.
+
+        // Trik: Cek apakah properti ini ada di object instance secara runtime
+        // Logika ini menangani kasus FETCH_CLASS atau jika Model di-hydrate manual
+        if (isset($this->$name)) {
+            return $this->$name;
+        }
+
+        // Jika tidak ketemu, return NULL alih-alih Error (Safe Null Object Pattern)
+        // Atau biarkan default PHP behavior (Notice: Undefined property)
+        // Tapi framework modern biasanya return null.
+        return null;
     }
 
     /**

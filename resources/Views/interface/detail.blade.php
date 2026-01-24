@@ -464,7 +464,11 @@
                 deleteBtn.classList.add('from-orange-500', 'to-red-600');
                 deleteBtn.classList.remove('from-red-600', 'to-red-800', 'animate-pulse');
 
-                loadShowDel.classList.remove('hidden');
+                // Null check - element might not exist if innerHTML was changed
+                if (loadShowDel) {
+                    loadShowDel.classList.remove('hidden');
+                }
+
                 // Hide existing content inside button including our temporary content
                 Array.from(deleteBtn.children).forEach(child => {
                     if (!child.classList.contains('loading-show-delete')) child.classList.add('hidden');
@@ -472,6 +476,8 @@
 
 
                 try {
+                    console.log('🔥 DELETE REQUEST START - UID:', userUid);
+
                     const response = await fetch(`/api/users/delete/${userUid}`, {
                         method: 'POST',
                         headers: {
@@ -481,46 +487,41 @@
                         credentials: 'include'
                     });
 
-                    // Safe JSON Parse
+                    console.log('Response Status:', response.status, response.ok);
+                    console.log('Content-Type:', response.headers.get('content-type'));
+
                     const contentType = response.headers.get("content-type");
                     let result;
                     if (contentType && contentType.indexOf("application/json") !== -1) {
                         result = await response.json();
+                        console.log('Result:', result);
                     } else {
                         const text = await response.text();
-                        console.error("Non-JSON Delete Response:", text);
-                        throw new Error("Server Error (Invalid response)");
+                        console.error("Non-JSON Response:", text);
+                        throw new Error("Server returned invalid response");
                     }
 
-                    if (response.ok) {
-                        showNotification('success', 'User Deleted. Redirecting...');
+                    if (response.ok && result.status === 'success') {
+                        console.log('✅ DELETE SUCCESS!');
+                        showNotification('success', result.message || 'User deleted successfully');
                         setTimeout(() => {
                             window.location.href = '/users';
                         }, 1500);
                     } else {
+                        console.error('❌ DELETE FAILED:', result);
                         showNotification('error', result.message || 'Delete failed');
-                        // Restore UI
                         deleteBtn.disabled = false;
                         deleteBtn.classList.remove('opacity-75');
-                        loadShowDel.classList.add('hidden');
-                        // Restore original button content (hardcoded reset to be safe)
-                        deleteBtn.innerHTML = `
-                                <svg class="w-6 h-6 text-white loading-hide-delete" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/>
-                                </svg>
-                                <span class="loading-hide-delete">Hapus User</span>
-                                <svg class="w-5 h-5 animate-spin hidden loading-show-delete" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            `;
+                        if (loadShowDel) loadShowDel.classList.add('hidden');
+                        loadHideDel.forEach(el => {
+                            if (el) el.classList.remove('hidden');
+                        });
                     }
                 } catch (error) {
-                    console.error(error);
+                    console.error('💥 Error:', error);
                     showNotification('error', error.message || 'Connection Error');
                     deleteBtn.disabled = false;
-                    // Restore UI (Simpler reset)
-                    location.reload(); // Safety fallback if UI state gets messy
+                    location.reload();
                 }
             });
         }

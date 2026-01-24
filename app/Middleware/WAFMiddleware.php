@@ -3,6 +3,7 @@
 namespace TheFramework\Middleware;
 
 use TheFramework\App\Logging;
+use TheFramework\App\Config;
 
 class WAFMiddleware implements Middleware
 {
@@ -24,11 +25,11 @@ class WAFMiddleware implements Middleware
                 'description' => 'XSS Attempt'
             ],
             'path_traversal' => [
-                'pattern' => '/(\.\.\/|\.\.\\\\)/',
+                'pattern' => '/\.\.[\\/\\\]/',
                 'description' => 'Path Traversal'
             ],
             'command_injection' => [
-                'pattern' => '/(\b(exec|system|shell_exec|passthru|proc_open|popen)\s*\()/i',
+                'pattern' => '/(\b(exec|system|shell_exec|passthru|proc_open|popen)\s*\(|`)/i',
                 'description' => 'Command Injection'
             ]
         ];
@@ -61,7 +62,7 @@ class WAFMiddleware implements Middleware
 
                         http_response_code(403);
 
-                        if (\TheFramework\App\Config::get('APP_ENV') === 'production') {
+                        if (Config::get('APP_ENV') === 'production') {
                             exit;
                         } else {
                             die(json_encode($response));

@@ -227,9 +227,38 @@ class Router
         // Jika ErrorController tidak ada, manual exit
     }
 
+    /**
+     * Memastikan file yang diakses berada di dalam direktori yang diizinkan.
+     * Mencegah Path Traversal (../../.env)
+     */
+    private static function isPathSecure(string $targetPath, string $baseDir): bool
+    {
+        $realBasePath = realpath($baseDir);
+        $realTargetPath = realpath($targetPath);
+
+        // Jika file tidak ada atau gagal di-realpath, anggap tidak aman
+        if ($realTargetPath === false || $realBasePath === false) {
+            return false;
+        }
+
+        // Cek apakah realpath target dimulai dengan realpath base
+        return str_starts_with($realTargetPath, $realBasePath);
+    }
+
     private static function servePublicAsset(string $fullPath)
     {
-        $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        // Security Check: Pastikan file ada di folder public/assets
+        $publicDir = dirname(__DIR__, 2) . "/public/assets";
+        if (!self::isPathSecure($fullPath, $publicDir)) {
+            http_response_code(403);
+            die("Access Denied: Invalid asset path");
+        }
+
+        if (!file_exists($fullPath)) {
+            http_response_code(404);
+            return;
+        }
+
         $mime = self::getMimeType($fullPath);
         header("Content-Type: $mime");
         readfile($fullPath);
@@ -237,7 +266,15 @@ class Router
 
     private static function serveAsset(string $filePath)
     {
-        $fullPath = dirname(__DIR__, 2) . "/resources/$filePath";
+        $resourcesDir = dirname(__DIR__, 2) . "/resources";
+        $fullPath = $resourcesDir . "/$filePath";
+
+        // Security Check: Pastikan file ada di folder resources
+        if (!self::isPathSecure($fullPath, $resourcesDir)) {
+            http_response_code(403);
+            die("Access Denied: Invalid asset path");
+        }
+
         if (!file_exists($fullPath)) {
             http_response_code(404);
             echo "Asset not found: $filePath";

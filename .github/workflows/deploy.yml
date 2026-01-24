@@ -5,6 +5,10 @@ on:
     branches:
       - main # Ganti dengan branch utama kamu jika beda (misal: "master")
 
+# Hardening: Batasi permission GITHUB_TOKEN hanya untuk read code
+permissions:
+  contents: read
+
 jobs:
   web-deploy:
     name: 🎉 Deploy
@@ -16,11 +20,13 @@ jobs:
       - name: ⚡ Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3" # Sesuaikan dengan versi PHP di InfinityFree kamu
+          php-version: "8.3" # Pastikan versi ini SAMA dengan versi di InfinityFree!
           extensions: mbstring, intl, pdo, pdo_mysql
+          coverage: none # Percepat build
 
       - name: 📦 Install Dependencies
-        run: composer install --no-dev --optimize-autoloader --prefer-dist
+        # Tambahkan --no-interaction --no-progress untuk log yang bersih
+        run: composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-progress
 
       - name: 🔐 Create .env file
         run: |
@@ -37,14 +43,21 @@ jobs:
           echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
 
       - name: 📂 Sync files to InfinityFree
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: htdocs/ # Upload ke folder htdocs
+          # Exclude file sampah agar tidak memenuhi hosting
           exclude: |
             **/.git*
             **/.git*/**
             **/tests/**
             **/node_modules/**
+            **/docs/**
+            **/.github/**
+            **/phpunit.xml
+            **/README.md
+            **/QA_AUDIT.md
+            **/.cursorrules

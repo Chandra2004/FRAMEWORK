@@ -4,25 +4,71 @@ use TheFramework\App\Router;
 use TheFramework\App\Migrator;
 use TheFramework\App\Container;
 
-// Helper function to check security key
-// Helper function to check security key
+/**
+ * Multi-Layer Security Check for System Routes
+ * v5.0.0 Security Enhancement
+ * 
+ * Layers:
+ * 1. Feature Toggle Check
+ * 2. IP Whitelist Validation
+ * 3. Basic Auth (Optional but Recommended)
+ * 4. APP_KEY Validation
+ */
 function checkSystemKey()
 {
-    // Feature Toggle Check
-    // Harus string 'true' karena env values biasanya string
+    // === LAYER 1: Feature Toggle ===
     if (($_ENV['ALLOW_WEB_MIGRATION'] ?? 'false') !== 'true') {
         header('HTTP/1.0 403 Forbidden');
         die("⛔ FEATURE DISABLED: Web migration tools are disabled in configuration.");
     }
 
+    // === LAYER 2: IP Whitelist ===
+    $clientIp = \TheFramework\Helpers\Helper::get_client_ip();
+    $allowedIps = $_ENV['SYSTEM_ALLOWED_IPS'] ?? '127.0.0.1';
+    $ipWhitelist = array_map('trim', explode(',', $allowedIps));
+
+    if (!in_array($clientIp, $ipWhitelist) && !in_array('*', $ipWhitelist)) {
+        \TheFramework\App\Logging::getLogger()->warning(
+            "System route access denied for IP: $clientIp",
+            ['uri' => $_SERVER['REQUEST_URI'] ?? '']
+        );
+        header('HTTP/1.0 403 Forbidden');
+        die("⛔ ACCESS DENIED: Your IP ($clientIp) is not whitelisted for system access.");
+    }
+
+    // === LAYER 3: Basic Auth (Optional) ===
+    if (!empty($_ENV['SYSTEM_AUTH_USER']) && !empty($_ENV['SYSTEM_AUTH_PASS'])) {
+        $authUser = $_SERVER['PHP_AUTH_USER'] ?? '';
+        $authPass = $_SERVER['PHP_AUTH_PW'] ?? '';
+
+        $validUser = hash_equals($_ENV['SYSTEM_AUTH_USER'], $authUser);
+        $validPass = hash_equals($_ENV['SYSTEM_AUTH_PASS'], $authPass);
+
+        if (!$validUser || !$validPass) {
+            header('WWW-Authenticate: Basic realm="System Administration Panel"');
+            header('HTTP/1.0 401 Unauthorized');
+            die("⛔ AUTHENTICATION REQUIRED: Invalid credentials.");
+        }
+    }
+
+    // === LAYER 4: APP_KEY Validation ===
     $key = $_GET['key'] ?? null;
     $appKey = $_ENV['APP_KEY'] ?? 'base64:default';
 
-    // Perbandingan string (Timing Attack Safe tidak terlalu krusial di sini tapi good practice)
     if (!$key || !hash_equals($appKey, $key)) {
+        \TheFramework\App\Logging::getLogger()->warning(
+            "System route access with invalid key",
+            ['ip' => $clientIp, 'uri' => $_SERVER['REQUEST_URI'] ?? '']
+        );
         header('HTTP/1.0 403 Forbidden');
         die("⛔ SYSTEM ERROR: Invalid Security Key.");
     }
+
+    // Log successful access
+    \TheFramework\App\Logging::getLogger()->info(
+        "System route accessed successfully",
+        ['ip' => $clientIp, 'uri' => $_SERVER['REQUEST_URI'] ?? '']
+    );
 }
 
 // 1. MIGRATE DATABASE

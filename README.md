@@ -1,158 +1,235 @@
 <div align="center">
 
-<img src="private-uploads/public/favicon.ico" alt="The Framework Logo" width="100">
+<img src="private-uploads/public/favicon.ico" alt="The Framework Logo" width="120">
 
-# The Framework v4.0.0
+# The Framework
 
-**Modern, Secure, and Hosting-Friendly PHP Framework**
+**Modern PHP Framework for Everyone**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D%208.3-8892BF.svg)](https://php.net/)
-[![Status](https://img.shields.io/badge/status-stable-green.svg)]()
-[![Version](https://img.shields.io/badge/version-4.0.0-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-5.0.0-red.svg)](https://github.com/chandra2004/the-framework/releases)
+[![Security](https://img.shields.io/badge/security-A--grade-green.svg)](SECURITY.md)
 
-<p align="center">
-  <b>The Framework</b> adalah solusi Native PHP modern yang dirancang untuk kecepatan, keamanan, dan kemudahan deployment di semua jenis hosting (termasuk Shared Hosting Gratisan). Dibangun dengan arsitektur MVC yang solid namun tetap ringan.
-</p>
+[Website](https://framework.rf.gd) • [Documentation](#-documentation) • [Get Started](#-quick-start) • [Changelog](CHANGELOG.md)
 
 </div>
 
 ---
 
-## 📖 Dokumentasi & Panduan
+## 🎯 About The Framework
 
-Dokumentasi lengkap tersedia di folder `docs/`. Silakan baca panduan berikut untuk memahami cara kerja framework:
+**The Framework** is a modern, secure, and lightweight PHP framework designed with one mission: **make web development accessible to everyone**, including developers using free shared hosting without SSH access.
 
-- **Mulai Cepat**:
-  - [🏗️ Struktur Folder](docs/structure.md)
-  - [🚀 Deployment & Hosting](docs/deployment.md) (Wajib baca untuk pengguna hosting gratis!)
-  - [🛠️ Artisan Command Line](docs/artisan.md)
+### Why The Framework?
 
-- **Fitur Utama**:
-  - [🛣️ Routing](docs/routing.md)
-  - [🗄️ Database & Query Builder](docs/database.md)
-  - [🏗️ Migrations](docs/migrations.md)
-  - [🎨 Views & Templating](docs/views.md)
-  - [🛡️ Security (CSRF, XSS)](docs/security.md)
-
-- **Topik Lanjut**:
-  - [🌐 Environment Config](docs/environment.md)
-  - [🛠️ Helper Functions](docs/helpers.md)
-  - [🚀 Performance & Caching](docs/performance.md)
-  - [🧪 Testing](docs/testing.md)
+```
+✅ No VPS required          ✅ Laravel-like syntax
+✅ Works on free hosting    ✅ Built-in security (WAF, CSRF)
+✅ Zero configuration        ✅ Comprehensive documentation
+✅ Web-based management     ✅ Production-ready
+```
 
 ---
 
-## 🚀 Fitur Unggulan (Version 4.0)
+## 🚀 Quick Start
 
-### 🛡️ Security First
-
-- **WAF Terintegrasi**: Web Application Firewall bawaan untuk menangkal serangan umum.
-- **CSRF Protection**: Otomatis aktif pada setiap form request.
-- **Secure Headers**: HSTS, CSP, XSS-Protection out-of-the-box.
-- **Encryption Service**: Menggunakan Defuse PHP Encryption standard industri.
-
-### 🌐 Hosting Friendly (Killer Feature!)
-
-Satu-satunya framework yang peduli nasib pengguna Shared Hosting tanpa SSH.
-
-- **Web Command Center**: Jalankan migrasi, seeder, dan maintenance lewat browser.
-- **Smart Log Viewer**: Baca error log langsung di web tanpa perlu FTP.
-- **Auto-Discovery Seeder**: Upload file seeder, sistem akan menemukannya otomatis.
-
-### ⚡ Developer Experience
-
-- **Expressive Routing**: Syntax mirip Laravel, mendukung Regex & Parameters.
-- **Artisan CLI**: Console command lengkap untuk generate code & maintenance.
-- **Blade-like Engine**: Templating engine ringan tapi powerful.
-- **Database Query Builder**: Fluent interface untuk database operations.
-
----
-
-## 📚 Dokumentasi Lengkap
-
-### 1. Instalasi & Setup
-
-**Via Git:**
+### Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/chandra2004/the-framework.git
 cd the-framework
 
+# Install dependencies
 composer install
-composer dump-autoload
-composer clear-cache
 
+# Setup environment
 php artisan setup
+
+# Run development server
 php artisan serve
 ```
 
-**Konfigurasi Environment:**
-File `.env` otomatis dibuat oleh `php artisan setup`. Pastikan Anda mengisi:
-
-- `DB_NAME`, `DB_USER`, `DB_PASS` (Koneksi Database)
-- `APP_KEY` (Otomatis digenerate untuk enkripsi)
-
-### 2. Artisan Command Line (CLI)
-
-Gunakan perintah ini di terminal lokal atau VPS:
-
-| Perintah                             | Fungsi                                   |
-| :----------------------------------- | :--------------------------------------- |
-| `php artisan serve`                  | Menjalankan local server di port 8080.   |
-| `php artisan make:controller [Name]` | Membuat Controller baru.                 |
-| `php artisan make:model [Name]`      | Membuat Model database baru.             |
-| `php artisan migrate`                | Menjalankan migrasi database.            |
-| `php artisan db:seed`                | Menjalankan seeder (urut waktu).         |
-| `php artisan route:list`             | Melihat semua daftar URL yang terdaftar. |
-| `php artisan optimize`               | Membersihkan cache aplikasi & OpCache.   |
-
-### 3. Web Command Center (Untuk Shared Hosting)
-
-Jika server Anda tidak punya akses SSH (Terminal), aktifkan fitur ini di `.env`:
-`ALLOW_WEB_MIGRATION=true`
-
-Lalu akses URL berikut di browser Anda:
-
-| Fitur            | URL Endpoint                    | Deskripsi                       |
-| :--------------- | :------------------------------ | :------------------------------ |
-| **Migrate DB**   | `/_system/migrate?key=APP_KEY`  | Update struktur database.       |
-| **Seed DB**      | `/_system/seed?key=APP_KEY`     | Isi data dummy otomatis.        |
-| **Log Viewer**   | `/_system/logs?key=APP_KEY`     | Lihat error log aplikasi.       |
-| **Optimize**     | `/_system/optimize?key=APP_KEY` | Reset cache agar update tampil. |
-| **Route List**   | `/_system/routes?key=APP_KEY`   | Cek daftar URL yang aktif.      |
-| **Health Check** | `/_system/health?key=APP_KEY`   | Cek permission folder storage.  |
-
-> **Catatan:** `key` adalah nilai `APP_KEY` dari file `.env` Anda.
+Visit **http://127.0.0.1:8080** 🎉
 
 ---
 
-## 📂 Struktur Folder
+## 📚 Documentation
 
+Our documentation is comprehensive, well-organized, and beginner-friendly:
+
+### **Getting Started**
+
+- [📖 Introduction](docs/introduction.md) - What is The Framework?
+- [⚙️ Installation](docs/installation.md) - Step-by-step installation guide
+- [🏗️ Structure](docs/structure.md) - Understanding the folder structure
+- [🔧 Configuration](docs/environment.md) - Environment variables guide
+
+### **The Basics**
+
+- [🛣️ Routing](docs/routing.md) - URL routing and parameters
+- [🎨 Views &amp; Blade](docs/views.md) - Templating engine
+- [🔐 Security](docs/security.md) - CSRF, XSS, WAF protection
+- [✅ Validation](docs/validation.md) - Input validation rules
+
+### **Database**
+
+- [🗄️ Database](docs/database.md) - Query Builder & connections
+- [📊 Migrations](docs/migrations.md) - Database version control
+- [🔗 ORM &amp; Relations](docs/orm.md) - Eloquent-like ORM
+
+### **Advanced Topics**
+
+- [🏗️ Architecture](docs/architecture.md) - MVC pattern explained
+- [🚀 Performance](docs/performance.md) - Caching & optimization
+- [🧪 Testing](docs/testing.md) - Unit & feature testing
+- [🚢 Deployment](docs/deployment.md) - Deploy to production
+
+### **Special Features**
+
+- [🌐 Web Command Center](docs/web-command-center.md) - Manage without SSH
+- [🛠️ Artisan CLI](docs/artisan.md) - Command-line tools
+- [🌍 Localization](docs/localization.md) - Multi-language support
+
+📖 **[View Full Documentation](docs/README.md)**
+
+---
+
+## ✨ Key Features
+
+### 🛡️ Security First (Grade A)
+
+```php
+// Built-in Web Application Firewall
+WAFMiddleware::protect();
+
+// Automatic CSRF protection
+@csrf
+
+// Secure headers out-of-the-box
+X-Frame-Options, CSP, HSTS, XSS-Protection
 ```
-The-Framework/
-├── app/
-│   ├── Console/      # Perintah Artisan Custom
-│   ├── Controllers/  # Logika Aplikasi
-│   ├── Models/       # Interaksi Database
-│   └── Helpers/      # Fungsi Bantuan Global
-├── database/
-│   ├── migrations/   # File Struktur Database
-│   └── seeders/      # File Data Dumy
-├── public/           # Entry Point (index.php, css, js)
-├── resources/
-│   └── views/        # Template HTML
-├── routes/
-│   ├── web.php       # Rute Aplikasi Utama
-│   └── system.php    # Rute Web Utilities
-└── storage/          # Logs, Cache, Uploads
+
+### 🌐 Hosting Friendly (Unique!)
+
+**The only PHP framework designed for shared hosting users:**
+
+```bash
+# No SSH? No problem! Use Web Command Center
+https://yoursite.com/_system/migrate?key=YOUR_APP_KEY
+https://yoursite.com/_system/seed?key=YOUR_APP_KEY
+https://yoursite.com/_system/logs?key=YOUR_APP_KEY
+```
+
+Perfect for:
+
+- ✅ InfinityFree, 000webhost, Hostinger
+- ✅ Any shared hosting without SSH
+- ✅ Students with limited budget
+
+### ⚡ Developer Experience
+
+```php
+// Expressive routing (Laravel-like)
+Router::get('/users/{id}', [UserController::class, 'show']);
+
+// Powerful ORM
+$users = User::with('posts')->where('active', true)->get();
+
+// Clean blade templates
+@extends('layouts.app')
+@section('content')
+    <h1>{{ $title }}</h1>
+@endsection
 ```
 
 ---
 
-## ❤️ Kontribusi & Lisensi
+## 🎓 Learning Resources
 
-Framework ini dikembangkan dengan ❤️ oleh **Chandra Tri Antomo**.
-Dilisensikan di bawah **MIT License**. Silakan gunakan, modifikasi, dan distribusikan secara bebas.
+### Official Guides
 
-**Happy Coding!** 🚀
+- 📘 [Getting Started Tutorial](docs/tutorial-blog.md)
+- 📹 Video Tutorials _(coming soon)_
+- 💬 Community Forum _(coming soon)_
+
+### Example Projects
+
+- 🛒 E-commerce Starter _(coming soon)_
+- 📝 Blog Platform _(coming soon)_
+- 🎫 Event Management _(coming soon)_
+
+---
+
+## 🔄 What's New in v5.0.0?
+
+**Major Security & Stability Release**
+
+### 🔐 Security Enhancements
+
+- ✅ Multi-layer Web Command Center protection
+- ✅ Enhanced WAF (backtick & shell injection)
+- ✅ Model sensitive data hiding
+- ✅ Comprehensive security audit
+
+### 📖 [Read Full Changelog](CHANGELOG.md)
+
+### 📖 [Upgrade Guide v4 → v5](UPGRADE_TO_5.0.0.md)
+
+### 📖 [Release Notes](RELEASE_NOTES_5.0.0.md)
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+### Ways to Contribute
+
+- 🐛 Report bugs
+- 💡 Suggest features
+- 📝 Improve documentation
+- 🔧 Submit pull requests
+
+---
+
+## 🛡️ Security Vulnerabilities
+
+If you discover a security vulnerability, please email:
+
+📧 **security@the-framework.ct.ws**
+
+**DO NOT** create public GitHub issues for security vulnerabilities.
+
+See [SECURITY.md](SECURITY.md) for our security policy.
+
+---
+
+## 📄 License
+
+The Framework is open-sourced software licensed under the [MIT license](LICENSE).
+
+---
+
+## 💖 Credits
+
+**Created with ❤️ by [Chandra Tri Antomo](https://framework.rf.gd)**
+
+### Special Thanks
+
+- Laravel team for inspiration
+- Illuminate components
+- All contributors and users
+
+---
+
+<div align="center">
+
+**⭐ Star us on GitHub — it motivates us a lot!**
+
+[Documentation](docs/README.md) • [Website](https://framework.rf.gd) • [GitHub](https://github.com/chandra2004/the-framework)
+
+Made in 🇮🇩 Indonesia
+
+</div>
