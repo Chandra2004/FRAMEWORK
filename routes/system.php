@@ -280,6 +280,15 @@ Router::add('GET', '/_system/check-files', function () {
     }
 });
 
+// 0. WHAT'S MY IP (Public - to help identify IP for whitelisting)
+Router::add('GET', '/_system/my-ip', function () {
+    header('Content-Type: text/plain');
+    $ip = \TheFramework\Helpers\Helper::get_client_ip();
+    echo "🌐 YOUR CURRENT IP ADDRESS:\n==============================\n";
+    echo $ip . "\n\n";
+    echo "Note: Use this IP to update SYSTEM_ALLOWED_IPS in your .env or GitHub Secrets.";
+});
+
 Router::add('GET', '/_system/status', function () {
     checkSystemKey();
     header('Content-Type: text/plain');
