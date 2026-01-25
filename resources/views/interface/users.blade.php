@@ -136,8 +136,9 @@
                         </button>
                     </div>
 
-                    <!-- Modal Body Form -->
-                    <form id="createUserForm" class="p-6 space-y-5" enctype="multipart/form-data">
+                    <!-- Modal Body Form - Traditional POST (No AJAX) -->
+                    <form id="createUserForm" action="/users/create" method="POST" class="p-6 space-y-5"
+                        enctype="multipart/form-data">
                         @csrf
 
                         <!-- Name Field -->
@@ -234,7 +235,7 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC (Robust & Clean) -->
+    <!-- JAVASCRIPT LOGIC (Modal & File Preview Only - No AJAX) -->
     <script>
         // --- 1. MODAL SYSTEM (Native & Manual for Stability) ---
         const modal = document.getElementById('customModal');
@@ -296,149 +297,20 @@
             }
         });
 
-        // --- 3. TOAST NOTIFICATION SYSTEM (MATCHING NATIVE DESIGN) ---
-        function showNotification(type, message) {
-            const container = document.getElementById('toast-container');
-            const isSuccess = type === 'success';
-
-            // Design Config based on notification.blade.php
-            const iconBg = isSuccess ? 'bg-cyan-400/20' : 'bg-red-500/20';
-            const iconColor = isSuccess ? 'text-cyan-400' : 'text-red-500';
-            const iconSvg = isSuccess ?
-                '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />' :
-                '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />';
-
-            const toast = document.createElement('div');
-            // Exact classes from notification.blade.php
-            toast.className =
-                `flex items-center w-full max-w-xs p-4 mb-4 text-gray-300 bg-gray-900/90 backdrop-blur-lg border border-gray-800 rounded-lg shadow-sm transform transition-all duration-300 ease-in-out translate-y-4 opacity-0 pointer-events-auto`;
-
-            toast.innerHTML = `
-                    <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 ${iconColor} ${iconBg} rounded-lg">
-                        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                            ${iconSvg}
-                        </svg>
-                        <span class="sr-only">${isSuccess ? 'Success' : 'Error'}</span>
-                    </div>
-                    <div class="ms-3 text-sm font-normal">
-                        ${message}
-                    </div>
-                    <button type="button" class="ms-auto -mx-1.5 -my-1.5 text-gray-400 hover:text-cyan-400 rounded-lg p-1.5 hover:bg-gray-800 inline-flex items-center justify-center h-8 w-8" onclick="this.parentElement.remove()">
-                        <span class="sr-only">Close</span>
-                        <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                        </svg>
-                    </button>
-                `;
-
-            container.appendChild(toast);
-
-            // Animate In (translate-y-0 opacity-100)
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-4', 'opacity-0');
-                toast.classList.add('translate-y-0', 'opacity-100');
-            });
-
-            // Auto Remove (5s default like blade fallback)
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-4', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
-        }
-
-        // --- 4. FORM HANDLER (Fetch Logic) ---
+        // --- 3. FORM SUBMIT (Traditional - shows loading state) ---
         const form = document.getElementById('createUserForm');
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
+        form.addEventListener('submit', function(e) {
+            // Show loading state on submit button (form will submit normally)
             const submitBtn = document.getElementById('submitBtn');
             const spinner = submitBtn.querySelector('.loading-spinner');
             const btnText = submitBtn.querySelector('span');
 
-            // UI Loading State
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-            spinner.classList.remove('hidden');
-            btnText.textContent = 'Processing...';
+            if (spinner) spinner.classList.remove('hidden');
+            if (btnText) btnText.textContent = 'Processing...';
 
-            const formData = new FormData(this);
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-            try {
-                const response = await fetch('/api/users/create', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    credentials: 'include',
-                    body: formData
-                });
-
-                // Safe parsing
-                const contentType = response.headers.get("content-type");
-                let result;
-                if (contentType && contentType.includes("application/json")) {
-                    result = await response.json();
-                } else {
-                    const text = await response.text();
-                    console.error("Server Response (Not JSON):", text);
-                    throw new Error("Server returned an invalid response.");
-                }
-
-                if (response.ok) {
-                    showNotification('success', result.message || 'User successfully created!');
-                    closeModal(); // Close modal immediately on success
-
-                    // SPA Update: Add new card to grid
-                    if (result.data) {
-                        const newUser = result.data;
-                        const grid = document.getElementById('userGrid');
-                        const emptyState = document.getElementById('emptyState');
-                        if (emptyState) emptyState.remove();
-
-                        const profileImg = newUser.profile_picture ?
-                            `<img src="/file/user-pictures/${newUser.profile_picture}" class="w-16 h-16 rounded-full object-cover border-2 border-gray-700 group-hover:border-cyan-400 transition-colors shadow-md">` :
-                            `<div class="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-600 group-hover:border-cyan-400 flex items-center justify-center text-xl font-bold text-gray-300 group-hover:text-cyan-400 transition-all shadow-md">${newUser.name.charAt(0).toUpperCase()}</div>`;
-
-                        const newCard = `
-                                <a href="/users/information/${newUser.uid}" class="group relative bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 hover:bg-gray-800/80 hover:border-cyan-500/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/10 flex items-center gap-5 overflow-hidden animate-fade-in-down">
-                                     <div class="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 rounded-full bg-cyan-500/10 blur-2xl group-hover:bg-cyan-500/20 transition-all"></div>
-                                     <div class="relative shrink-0">
-                                        ${profileImg}
-                                        <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-gray-800 rounded-full"></div>
-                                     </div>
-                                     <div class="relative z-10 min-w-0 flex-1">
-                                        <h3 class="text-xl font-bold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">${newUser.name}</h3>
-                                        <p class="text-sm text-gray-400 truncate mb-1">${newUser.email || 'No Email'}</p>
-                                        <div class="flex items-center gap-2 text-xs text-gray-500">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                            <span>Joined Just now</span>
-                                        </div>
-                                     </div>
-                                      <div class="text-gray-600 group-hover:text-cyan-400 transition-colors transform group-hover:translate-x-1">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                    </div>
-                                </a>
-                                `;
-                        // Insert at the beginning
-                        grid.insertAdjacentHTML('afterbegin', newCard);
-                    }
-                } else {
-                    showNotification('error', result.message || 'Failed to create user.');
-                }
-
-            } catch (error) {
-                console.error(error);
-                showNotification('error', 'Connection Error. Please try again.');
-            } finally {
-                // UI Reset
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                spinner.classList.add('hidden');
-                btnText.textContent = 'Save Member';
-            }
+            // Form will submit naturally via POST
         });
     </script>
 @endsection

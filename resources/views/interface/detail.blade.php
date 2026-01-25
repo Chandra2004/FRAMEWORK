@@ -30,8 +30,10 @@
                     </div>
                 </div>
 
-                <!-- AJAX Update Form -->
-                <form id="updateUserForm" class="space-y-6" enctype="multipart/form-data">
+                <!-- Update Form - Traditional POST (No AJAX) -->
+                <form id="updateUserForm" action="/users/update/{{ $user['uid'] }}" method="POST" class="space-y-6"
+                    enctype="multipart/form-data">
+                    @csrf
                     <h3
                         class="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-6">
                         {{ __('messages.edit_user') }}
@@ -139,8 +141,9 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                         <div>
                             <p class="text-gray-400 text-sm mb-1">Aksi</p>
-                            <!-- AJAX Delete Form -->
-                            <form id="deleteUserForm" method="POST">
+                            <!-- Delete Form - Traditional POST (No AJAX) -->
+                            <form id="deleteUserForm" action="/users/delete/{{ $user['uid'] }}" method="POST">
+                                @csrf
                                 <button type="submit" id="deleteBtn"
                                     class="flex gap-2 py-3.5 px-6 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold rounded-lg transition-all transform hover:scale-[1.02] shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30 w-full justify-center items-center">
                                     <svg class="w-6 h-6 text-white loading-hide-delete" aria-hidden="true"
@@ -223,57 +226,6 @@
     <div id="toast-container" class="fixed top-24 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <script>
-        // --- TOAST NOTIFICATION SYSTEM (MATCHING NATIVE DESIGN) ---
-        function showNotification(type, message) {
-            const container = document.getElementById('toast-container');
-            const isSuccess = type === 'success';
-
-            // Design Config based on notification.blade.php
-            const iconBg = isSuccess ? 'bg-cyan-400/20' : 'bg-red-500/20';
-            const iconColor = isSuccess ? 'text-cyan-400' : 'text-red-500';
-            const iconSvg = isSuccess ?
-                '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />' :
-                '<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 11.793a1 1 0 1 1-1.414 1.414L10 11.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L8.586 10 6.293 7.707a1 1 0 0 1 1.414-1.414L10 8.586l2.293-2.293a1 1 0 0 1 1.414 1.414L11.414 10l2.293 2.293Z" />';
-
-            const toast = document.createElement('div');
-            // Exact classes from notification.blade.php
-            toast.className =
-                `flex items-center w-full max-w-xs p-4 mb-4 text-gray-300 bg-gray-900/90 backdrop-blur-lg border border-gray-800 rounded-lg shadow-sm transform transition-all duration-300 ease-in-out translate-y-4 opacity-0 pointer-events-auto`;
-
-            toast.innerHTML = `
-                        <div class="inline-flex items-center justify-center shrink-0 w-8 h-8 ${iconColor} ${iconBg} rounded-lg">
-                            <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                                ${iconSvg}
-                            </svg>
-                            <span class="sr-only">${isSuccess ? 'Success' : 'Error'}</span>
-                        </div>
-                        <div class="ms-3 text-sm font-normal">
-                            ${message}
-                        </div>
-                        <button type="button" class="ms-auto -mx-1.5 -my-1.5 text-gray-400 hover:text-cyan-400 rounded-lg p-1.5 hover:bg-gray-800 inline-flex items-center justify-center h-8 w-8" onclick="this.parentElement.remove()">
-                            <span class="sr-only">Close</span>
-                            <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                            </svg>
-                        </button>
-                    `;
-
-            container.appendChild(toast);
-
-            // Animate In (translate-y-0 opacity-100)
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-4', 'opacity-0');
-                toast.classList.add('translate-y-0', 'opacity-100');
-            });
-
-            // Auto Remove (5s default like blade fallback)
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-4', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
-        }
-
         // --- FILE PREVIEW ---
         const fileInput = document.getElementById('profile_picture');
         if (fileInput) {
@@ -297,141 +249,35 @@
             });
         }
 
-        // --- AJAX HANDLERS ---
-        const userUid = "{{ $user['uid'] }}";
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        // --- FORM SUBMIT HANDLERS (Traditional - No AJAX) ---
 
-        // 1. UPDATE USER
+        // 1. UPDATE USER - Show loading state on submit
         const updateForm = document.getElementById('updateUserForm');
         if (updateForm) {
-            updateForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-
-                // NO CONFIRM ALERT - DIRECT ACTION
+            updateForm.addEventListener('submit', function(e) {
                 const updateBtn = document.getElementById('updateBtn');
                 const loadShowUpd = document.querySelector('.loading-show-update');
                 const loadHideUpd = document.querySelector('.loading-hide-update');
 
                 updateBtn.disabled = true;
-                loadShowUpd.classList.remove('hidden');
-                loadHideUpd.classList.add('hidden');
+                if (loadShowUpd) loadShowUpd.classList.remove('hidden');
+                if (loadHideUpd) loadHideUpd.classList.add('hidden');
 
-                const formData = new FormData(this);
-
-                try {
-                    const response = await fetch(`/api/users/update/${userUid}`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        credentials: 'include',
-                        body: formData
-                    });
-
-                    // Safe JSON Parse
-                    const contentType = response.headers.get("content-type");
-                    let result;
-                    if (contentType && contentType.indexOf("application/json") !== -1) {
-                        result = await response.json();
-                    } else {
-                        const text = await response.text();
-                        console.error("Non-JSON Update Response:", text);
-                        throw new Error("Server Error (Invalid response)");
-                    }
-
-                    if (response.ok) {
-                        showNotification('success', result.message || 'User updated successfully!');
-
-                        // --- UPDATE DOM ELEMENTS REAL-TIME ---
-                        if (result.data) {
-                            const updatedUser = result.data;
-
-                            // 1. Update Profile Image (Graceful Preloading)
-                            if (updatedUser.profile_picture) {
-                                const baseImgUrl = `/file/user-pictures/${updatedUser.profile_picture}`;
-                                const timestamp = new Date().getTime();
-                                const fullImgUrl = `${baseImgUrl}?t=${timestamp}`;
-
-                                // Preload image first to avoid broken icon
-                                const tempImg = new Image();
-                                tempImg.src = fullImgUrl;
-
-                                // Visual Loading State
-                                const imgEl = document.getElementById('currentProfileImage');
-                                const linkEl = document.getElementById('currentProfileLink');
-                                if (imgEl) {
-                                    imgEl.classList.add('opacity-50', 'blur-sm', 'transition-all',
-                                        'duration-300');
-                                }
-
-                                tempImg.onload = function() {
-                                    if (imgEl) {
-                                        imgEl.src = fullImgUrl;
-                                        // Remove loading state
-                                        setTimeout(() => {
-                                            imgEl.classList.remove('opacity-50', 'blur-sm');
-                                        }, 100);
-                                    }
-                                    if (linkEl) linkEl.href = fullImgUrl;
-                                };
-
-                                tempImg.onerror = function() {
-                                    console.warn('Image not ready yet, retrying in 1s...');
-                                    setTimeout(() => {
-                                        // Retry update directly
-                                        if (imgEl) {
-                                            imgEl.src = fullImgUrl;
-                                            imgEl.classList.remove('opacity-50', 'blur-sm');
-                                        }
-                                    }, 1000);
-                                };
-                            } else {
-                                // Revert to dummy if deleted
-                                const dummyUrl = `/file/dummy/dummy.webp`;
-                                const imgEl = document.getElementById('currentProfileImage');
-                                const linkEl = document.getElementById('currentProfileLink');
-                                if (imgEl) imgEl.src = dummyUrl;
-                                if (linkEl) linkEl.href = dummyUrl;
-                            }
-
-                            // 2. Update Name Display
-                            const nameInput = document.getElementById('name');
-                            if (nameInput && nameInput.value !== updatedUser.name) nameInput.value = updatedUser
-                                .name;
-                        }
-
-                        // Clear file input preview
-                        document.getElementById('profile_picture').value = '';
-                        document.getElementById('imagePreview').classList.add('hidden');
-                        document.getElementById('fileName').textContent = '';
-
-                    } else {
-                        showNotification('error', result.message || 'Update failed');
-                    }
-                } catch (error) {
-                    console.error(error);
-                    showNotification('error', error.message || 'Connection Error');
-                } finally {
-                    updateBtn.disabled = false;
-                    loadShowUpd.classList.add('hidden');
-                    loadHideUpd.classList.remove('hidden');
-                }
+                // Form will submit naturally via POST
             });
         }
 
-        // 2. DELETE USER (2-Step Confirmation Button)
+        // 2. DELETE USER - Simple Confirmation
         const deleteForm = document.getElementById('deleteUserForm');
         const deleteBtn = document.getElementById('deleteBtn');
         let deleteConfirmMode = false;
 
         if (deleteForm) {
-            deleteForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-
-                // 2-Step Logic
+            deleteForm.addEventListener('submit', function(e) {
+                // 2-Step Confirmation Logic
                 if (!deleteConfirmMode) {
-                    // Step 1: Ask for confirmation on the button itself
+                    e.preventDefault(); // Prevent first click
+
                     deleteConfirmMode = true;
                     const originalContent = deleteBtn.innerHTML;
 
@@ -440,9 +286,9 @@
                     deleteBtn.classList.remove('from-orange-500', 'to-red-600');
                     deleteBtn.classList.add('from-red-600', 'to-red-800', 'animate-pulse');
 
-                    // Reset after 3 seconds if not clicked
+                    // Reset after 3 seconds if not clicked again
                     setTimeout(() => {
-                        if (deleteConfirmMode) { // Only reset if still in confirm mode (and not loading)
+                        if (deleteConfirmMode) {
                             deleteConfirmMode = false;
                             deleteBtn.innerHTML = originalContent;
                             deleteBtn.classList.add('from-orange-500', 'to-red-600');
@@ -452,77 +298,23 @@
                     return;
                 }
 
-                // Step 2: EXECUTE DELETE
-                deleteConfirmMode = false; // Reset mode prevents double submit race conditions
+                // Second click - Submit form naturally
+                deleteConfirmMode = false;
 
                 const loadShowDel = document.querySelector('.loading-show-delete');
                 const loadHideDel = document.querySelectorAll('.loading-hide-delete');
 
                 deleteBtn.disabled = true;
                 deleteBtn.classList.add('opacity-75');
-                // Revert button text for loading state
                 deleteBtn.classList.add('from-orange-500', 'to-red-600');
                 deleteBtn.classList.remove('from-red-600', 'to-red-800', 'animate-pulse');
 
-                // Null check - element might not exist if innerHTML was changed
-                if (loadShowDel) {
-                    loadShowDel.classList.remove('hidden');
-                }
-
-                // Hide existing content inside button including our temporary content
-                Array.from(deleteBtn.children).forEach(child => {
-                    if (!child.classList.contains('loading-show-delete')) child.classList.add('hidden');
+                if (loadShowDel) loadShowDel.classList.remove('hidden');
+                loadHideDel.forEach(el => {
+                    if (el) el.classList.add('hidden');
                 });
 
-
-                try {
-                    console.log('🔥 DELETE REQUEST START - UID:', userUid);
-
-                    const response = await fetch(`/api/users/delete/${userUid}`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        credentials: 'include'
-                    });
-
-                    console.log('Response Status:', response.status, response.ok);
-                    console.log('Content-Type:', response.headers.get('content-type'));
-
-                    const contentType = response.headers.get("content-type");
-                    let result;
-                    if (contentType && contentType.indexOf("application/json") !== -1) {
-                        result = await response.json();
-                        console.log('Result:', result);
-                    } else {
-                        const text = await response.text();
-                        console.error("Non-JSON Response:", text);
-                        throw new Error("Server returned invalid response");
-                    }
-
-                    if (response.ok && result.status === 'success') {
-                        console.log('✅ DELETE SUCCESS!');
-                        showNotification('success', result.message || 'User deleted successfully');
-                        setTimeout(() => {
-                            window.location.href = '/users';
-                        }, 1500);
-                    } else {
-                        console.error('❌ DELETE FAILED:', result);
-                        showNotification('error', result.message || 'Delete failed');
-                        deleteBtn.disabled = false;
-                        deleteBtn.classList.remove('opacity-75');
-                        if (loadShowDel) loadShowDel.classList.add('hidden');
-                        loadHideDel.forEach(el => {
-                            if (el) el.classList.remove('hidden');
-                        });
-                    }
-                } catch (error) {
-                    console.error('💥 Error:', error);
-                    showNotification('error', error.message || 'Connection Error');
-                    deleteBtn.disabled = false;
-                    location.reload();
-                }
+                // Form will submit naturally via POST
             });
         }
     </script>
