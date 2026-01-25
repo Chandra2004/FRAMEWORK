@@ -4,67 +4,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <!-- Primary Meta Tags -->
-    <title>{{ $title }}</title>
-    <meta name="description"
-        content="THE FRAMEWORK: High-performance PHP framework with Laravel-like features including database migrations, seeders, RESTful API support, and elegant syntax. Perfect for modern web development.">
-    <meta name="keywords"
-        content="PHP Framework, MVC, Database Migrations, REST API, Web Development, Laravel Alternative, MySQL, Composer">
+    <title>@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')</title>
+    <meta name="title" content="@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')">
+    <meta name="description" content="@yield('meta_description', 'High-performance PHP framework with Laravel-like features, database migrations, and elegant syntax. Built for speed and developer happiness.')">
+    <meta name="keywords" content="@yield('meta_keywords', 'PHP Framework, MVC PHP, Modern PHP, Web Development Framework, Light PHP Framework, Fast PHP')">
     <meta name="author" content="Chandra Tri Antomo">
     <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://kiwkiw-mvc.tech/">
-    <meta property="og:title" content="THE FRAMEWORK - Modern PHP Framework for Web Artisans">
-    <meta property="og:description"
-        content="Build scalable web applications with THE FRAMEWORK framework featuring database migrations, REST API support, and enterprise-grade security">
-    <meta property="og:image" content="https://kiwkiw-mvc.tech/images/og-banner.jpg">
+    <meta property="og:type" content="@yield('og_type', 'website')">
+    <meta property="og:url" content="{{ url($_SERVER['REQUEST_URI'] ?? '/') }}">
+    <meta property="og:title" content="@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')">
+    <meta property="og:description" content="@yield('meta_description', 'Build scalable web applications with THE-FRAMEWORK featuring database migrations, REST API support, and enterprise-grade security.')">
+    <meta property="og:image" content="@yield('og_image', url('/file/public/og-banner.jpg'))">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://kiwkiw-mvc.tech/">
-    <meta property="twitter:title" content="THE FRAMEWORK - Modern PHP Framework for Web Artisans">
-    <meta property="twitter:description"
-        content="High-performance PHP framework with Laravel-like features and minimalist architecture">
-    <meta property="twitter:image" content="https://kiwkiw-mvc.tech/images/og-banner.jpg">
+    <meta property="twitter:url" content="{{ url($_SERVER['REQUEST_URI'] ?? '/') }}">
+    <meta property="twitter:title" content="@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')">
+    <meta property="twitter:description" content="@yield('meta_description', 'High-performance PHP framework with Laravel-like features and minimalist architecture.')">
+    <meta property="twitter:image" content="@yield('og_image', url('/file/public/og-banner.jpg'))">
+
+    <!-- Favicon & Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url('/file/public/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('/file/public/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url('/file/public/favicon-16x16.png') }}">
+    <link rel="icon" href="{{ url('/file/public/favicon.ico') }}">
+    <link rel="manifest" href="{{ url('/file/public/site.webmanifest') }}">
+    <meta name="theme-color" content="#0ea5e9">
 
     <!-- Canonical -->
-    <link rel="canonical" href="https://kiwkiw-mvc.tech/">
+    <link rel="canonical" href="{{ url($_SERVER['REQUEST_URI'] ?? '/') }}">
 
-    <!-- Favicon -->
-    <link rel="icon" href="{{ url('/file/public/favicon.ico') }}">
-
-    <!-- Preload Resources -->
-    <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://unpkg.com">
-
-    <!-- Stylesheets -->
+    <!-- Preload & Optimize -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Flowbite removed - caused DevTools redirect issue -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.6.5/flowbite.min.js"></script> -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        slate: {
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 
     <style>
-        /* Scrollbar Styling */
+        /* Smooth Scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Modern Scrollbar */
         ::-webkit-scrollbar {
-            width: 5px;
+            width: 8px;
         }
 
         ::-webkit-scrollbar-track {
-            background: rgb(17 24 39 / 0.8);
+            background: #0f172a;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: rgb(17 24 39);
+            background: #334155;
+            border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #555;
+            background: #475569;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .animate-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
         }
     </style>
+    @yield('extra_head')
 </head>
 
 <body class="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen">
@@ -126,8 +177,8 @@
             <div class="text-center text-gray-500">
                 <p class="text-sm">
                     © 2024 THE FRAMEWORK •
-                    <a href="https://www.instagram.com/chandratriantomo.2077/" target="_blank" rel="noopener noreferrer"
-                        class="hover:text-cyan-400 transition-all">
+                    <a href="https://www.instagram.com/chandratriantomo.2077/" target="_blank"
+                        rel="noopener noreferrer" class="hover:text-cyan-400 transition-all">
                         {{ __('messages.crafted_by') }} Chandra Tri A
                     </a>
                 </p>

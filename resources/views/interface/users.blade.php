@@ -1,32 +1,32 @@
 @extends('template.layout')
+
+@section('meta_title', 'Member Directory | THE-FRAMEWORK Management Console')
+@section('meta_description', 'Manage your team members and users with an elegant, lightning-fast interface. Powered by
+    THE-FRAMEWORK.')
+@section('meta_keywords', 'user management system, php member directory, mvc user crud, secure member portal')
+
 @section('main-content')
     <!-- Main Content Wrapper with Premium Spacing -->
     <main class="min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col relative z-0">
 
         <!-- HEADER SECTION -->
-        <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-12 gap-6 animate-fade-in-down">
+        <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-12 gap-6 animate-fade-in">
             <div>
                 <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-3">
                     <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-600">
                         {{ __('messages.user_management') }}
                     </span>
                 </h1>
-                <p class="text-gray-400 text-lg max-w-2xl">
+                <p class="text-slate-400 text-lg max-w-2xl">
                     {{ __('messages.user_management_desc') }}
                 </p>
             </div>
 
             <!-- Add User Button (Premium Glow Effect) -->
             <button onclick="openModal()"
-                class="group relative inline-flex items-center justify-center px-8 py-3.5 text-base font-bold text-white transition-all duration-200 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl hover:from-cyan-400 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:-translate-y-0.5">
-                <span
-                    class="absolute inset-0 w-full h-full -mt-1 rounded-lg opacity-30 bg-gradient-to-b from-transparent via-transparent to-black"></span>
+                class="group relative inline-flex items-center justify-center px-8 py-3.5 text-base font-bold text-white transition-all duration-300 bg-cyan-600 rounded-xl hover:bg-cyan-500 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-cyan-500/20">
                 <span class="relative flex items-center gap-2">
-                    <svg class="w-5 h-5 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
+                    <i data-lucide="user-plus" class="w-5 h-5 transition-transform group-hover:scale-110"></i>
                     {{ __('messages.add_new_member') }}
                 </span>
             </button>
@@ -36,174 +36,160 @@
         <div id="userGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @forelse($users as $user)
                 <!-- User Card Item -->
-                <a href="/users/information/{{ $user['uid'] }}"
-                    class="group relative bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 hover:bg-gray-800/80 hover:border-cyan-500/50 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-cyan-500/10 flex items-center gap-5 overflow-hidden">
+                <article>
+                    <a href="/users/information/{{ $user['uid'] }}"
+                        class="group relative block glass-card rounded-2xl p-6 hover:border-cyan-500/50 transition-all duration-500 transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-cyan-500/10 overflow-hidden">
 
-                    <!-- Decorative Background Gradient -->
-                    <div
-                        class="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 rounded-full bg-cyan-500/10 blur-2xl group-hover:bg-cyan-500/20 transition-all">
-                    </div>
-
-                    <!-- Avatar / Initials -->
-                    <div class="relative shrink-0">
-                        @if (!empty($user['profile_picture']))
-                            <img src="{{ url('/file/user-pictures/' . $user['profile_picture']) }}"
-                                alt="{{ $user['name'] }}"
-                                class="w-16 h-16 rounded-full object-cover border-2 border-gray-700 group-hover:border-cyan-400 transition-colors shadow-md">
-                        @else
-                            <div
-                                class="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-600 group-hover:border-cyan-400 flex items-center justify-center text-xl font-bold text-gray-300 group-hover:text-cyan-400 transition-all shadow-md">
-                                {{ strtoupper(substr($user['name'], 0, 1)) }}
+                        <div class="flex items-center gap-5">
+                            <!-- Avatar / Initials -->
+                            <div class="relative shrink-0">
+                                @if (!empty($user['profile_picture']))
+                                    <img src="{{ url('/file/user-pictures/' . $user['profile_picture']) }}"
+                                        alt="{{ $user['name'] }}"
+                                        class="w-16 h-16 rounded-2xl object-cover border border-slate-700 group-hover:border-cyan-400 transition-colors shadow-xl">
+                                @else
+                                    <div
+                                        class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 group-hover:border-cyan-400 flex items-center justify-center text-xl font-bold text-slate-400 group-hover:text-cyan-400 transition-all shadow-xl">
+                                        {{ strtoupper(substr($user['name'], 0, 1)) }}
+                                    </div>
+                                @endif
+                                <!-- Status Indicator (Active) -->
+                                <div
+                                    class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full shadow-lg pulse-emerald">
+                                </div>
                             </div>
-                        @endif
-                        <!-- Status Indicator (Dummy Active) -->
-                        <div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-gray-800 rounded-full">
-                        </div>
-                    </div>
 
-                    <!-- Info -->
-                    <div class="relative z-10 min-w-0 flex-1">
-                        <h3 class="text-xl font-bold text-gray-100 truncate group-hover:text-cyan-400 transition-colors">
-                            {{ $user['name'] }}
-                        </h3>
-                        <p class="text-sm text-gray-400 truncate mb-1">{{ $user['email'] ?? 'No Email' }}</p>
-                        <div class="flex items-center gap-2 text-xs text-gray-500">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                </path>
-                            </svg>
-                            <span>{{ __('messages.joined') }} {{ date('M d, Y', strtotime($user['created_at'])) }}</span>
-                        </div>
-                    </div>
+                            <!-- Info -->
+                            <div class="relative z-10 min-w-0 flex-1">
+                                <h3
+                                    class="text-xl font-bold text-white truncate group-hover:text-cyan-400 transition-colors mb-0.5">
+                                    {{ $user['name'] }}
+                                </h3>
+                                <p class="text-sm text-slate-400 truncate mb-2">{{ $user['email'] ?? 'No Email' }}</p>
+                                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                                    <span>{{ __('messages.joined') }}
+                                        {{ date('M d, Y', strtotime($user['created_at'])) }}</span>
+                                </div>
+                            </div>
 
-                    <!-- Arrow Icon -->
-                    <div
-                        class="text-gray-600 group-hover:text-cyan-400 transition-colors transform group-hover:translate-x-1">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </div>
-                </a>
+                            <!-- Arrow Icon -->
+                            <div
+                                class="text-slate-600 group-hover:text-cyan-400 transition-all transform group-hover:translate-x-1">
+                                <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                            </div>
+                        </div>
+                    </a>
+                </article>
             @empty
                 <!-- Empty State -->
                 <div id="emptyState"
-                    class="col-span-full py-20 flex flex-col items-center justify-center text-center border-2 border-dashed border-gray-700 rounded-2xl bg-gray-800/20">
-                    <div class="bg-gray-800 p-4 rounded-full mb-4">
-                        <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
+                    class="col-span-full py-24 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-800 rounded-3xl bg-slate-900/50">
+                    <div class="w-20 h-20 bg-slate-800 rounded-2xl mb-6 flex items-center justify-center">
+                        <i data-lucide="users-round" class="w-10 h-10 text-slate-500"></i>
                     </div>
-                    <h3 class="text-xl font-semibold text-white mb-2">{{ __('messages.no_members') }}</h3>
-                    <p class="text-gray-400 mb-6 max-w-sm">{{ __('messages.no_members_desc') }}</p>
+                    <h3 class="text-2xl font-bold text-white mb-2">{{ __('messages.no_members') }}</h3>
+                    <p class="text-slate-400 mb-8 max-w-sm">{{ __('messages.no_members_desc') }}</p>
                     <button onclick="openModal()"
-                        class="text-cyan-400 font-semibold hover:text-cyan-300 hover:underline">{{ __('messages.add_first_member') }}</button>
+                        class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold rounded-xl transition-all border border-slate-700">
+                        {{ __('messages.add_first_member') }}
+                    </button>
                 </div>
             @endforelse
         </div>
     </main>
 
-    <!-- TOAST NOTIFICATION CONTAINER (BOTTOM-RIGHT) -->
-    <!-- Positioned at Bottom-Right to avoid header conflict safely -->
+    <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="fixed bottom-8 right-8 z-[60] flex flex-col gap-3 pointer-events-none"></div>
 
-    <!-- MODAL (Custom Implementation for Robustness) -->
-    <!-- z-50 to be above content, but below toast if needed -->
+    <!-- MODAL -->
     <div id="customModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <!-- Backdrop -->
-        <div id="modalBackdrop" class="fixed inset-0 bg-gray-900/90 backdrop-blur-sm transition-opacity opacity-0"
+        <div id="modalBackdrop"
+            class="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity duration-300 opacity-0"
             aria-hidden="true"></div>
 
         <!-- Modal Panel -->
-        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="fixed inset-0 z-50 w-screen overflow-y-auto">
             <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
                 <div id="modalPanel"
-                    class="relative transform overflow-hidden rounded-2xl bg-gray-800 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-gray-700 opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+                    class="relative transform overflow-hidden rounded-3xl bg-slate-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-slate-800 opacity-0 translate-y-8 scale-95 duration-300">
 
                     <!-- Modal Header -->
-                    <div
-                        class="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-5 flex items-center justify-between">
+                    <div class="px-8 pt-8 pb-6 flex items-start justify-between">
                         <div>
-                            <h3 class="text-xl font-bold text-white">{{ __('messages.create_user') }}</h3>
-                            <p class="text-sm text-gray-400 mt-1">{{ __('messages.create_user_desc') }}</p>
+                            <h3 class="text-2xl font-bold text-white">{{ __('messages.create_user') }}</h3>
+                            <p class="text-slate-400 mt-1">{{ __('messages.create_user_desc') }}</p>
                         </div>
                         <button type="button" onclick="closeModal()"
-                            class="text-gray-400 hover:text-white transition-colors bg-gray-700/50 hover:bg-gray-700 rounded-lg p-2">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            class="text-slate-400 hover:text-white transition-colors bg-slate-800/50 hover:bg-slate-800 rounded-xl p-2.5">
+                            <i data-lucide="x" class="w-5 h-5"></i>
                         </button>
                     </div>
 
-                    <!-- Modal Body Form - Traditional POST (No AJAX) -->
-                    <form id="createUserForm" action="/users/create" method="POST" class="p-6 space-y-5"
+                    <!-- Modal Body Form -->
+                    <form id="createUserForm" action="/users/create" method="POST" class="px-8 pb-8 space-y-6"
                         enctype="multipart/form-data">
                         @csrf
 
                         <!-- Name Field -->
-                        <div>
+                        <div class="space-y-2">
                             <label for="name"
-                                class="block text-sm font-medium text-gray-300 mb-2">{{ __('messages.full_name') }}</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-500">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                </span>
+                                class="block text-sm font-semibold text-slate-300">{{ __('messages.full_name') }}</label>
+                            <div class="relative group">
+                                <div
+                                    class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors">
+                                    <i data-lucide="user" class="w-5 h-5"></i>
+                                </div>
                                 <input type="text" name="name" id="name" required
-                                    class="block w-full rounded-xl border-gray-600 bg-gray-700/50 pl-10 py-3 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm transition-all shadow-sm"
+                                    class="block w-full rounded-xl border-slate-700 bg-slate-950 pl-11 py-3.5 text-white placeholder-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none"
                                     placeholder="e.g. John Doe">
                             </div>
                         </div>
 
                         <!-- Email Field -->
-                        <div>
+                        <div class="space-y-2">
                             <label for="email"
-                                class="block text-sm font-medium text-gray-300 mb-2">{{ __('messages.email_address') }}</label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-cyan-500">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                                    </svg>
-                                </span>
+                                class="block text-sm font-semibold text-slate-300">{{ __('messages.email_address') }}</label>
+                            <div class="relative group">
+                                <div
+                                    class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors">
+                                    <i data-lucide="mail" class="w-5 h-5"></i>
+                                </div>
                                 <input type="email" name="email" id="email" required
-                                    class="block w-full rounded-xl border-gray-600 bg-gray-700/50 pl-10 py-3 text-white placeholder-gray-400 focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm transition-all shadow-sm"
+                                    class="block w-full rounded-xl border-slate-700 bg-slate-950 pl-11 py-3.5 text-white placeholder-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none"
                                     placeholder="john@example.com">
                             </div>
                         </div>
 
                         <!-- File Upload Area -->
-                        <div>
+                        <div class="space-y-2">
                             <label
-                                class="block text-sm font-medium text-gray-300 mb-2">{{ __('messages.profile_picture') }}</label>
-                            <div class="mt-1 flex justify-center rounded-xl border-2 border-dashed border-gray-600 px-6 pt-5 pb-6 hover:border-cyan-500 hover:bg-gray-700/30 transition-all cursor-pointer"
+                                class="block text-sm font-semibold text-slate-300">{{ __('messages.profile_picture') }}</label>
+                            <div class="group relative flex justify-center rounded-2xl border-2 border-dashed border-slate-700 px-6 py-8 hover:border-cyan-500 hover:bg-cyan-500/5 transition-all cursor-pointer overflow-hidden"
                                 onclick="document.getElementById('profile_picture').click()">
-                                <div class="space-y-1 text-center">
-                                    <!-- Preview Image Container -->
-                                    <div id="previewContainer" class="hidden mb-3">
+
+                                <div class="space-y-2 text-center relative z-10">
+                                    <!-- Preview Image -->
+                                    <div id="previewContainer" class="hidden mb-4">
                                         <img id="previewImage" src="#" alt="Preview"
-                                            class="mx-auto h-24 w-24 rounded-full object-cover border-2 border-cyan-500">
-                                        <p id="fileName" class="text-sm text-cyan-400 mt-2 font-medium"></p>
+                                            class="mx-auto h-24 w-24 rounded-2xl object-cover border-2 border-cyan-500 ring-8 ring-cyan-500/10">
+                                        <p id="fileName" class="text-sm text-cyan-400 mt-3 font-bold"></p>
                                     </div>
-                                    <!-- Default Icon -->
-                                    <div id="uploadIcon">
-                                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none"
-                                            viewBox="0 0 48 48" aria-hidden="true">
-                                            <path
-                                                d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                        </svg>
-                                        <div class="flex text-sm text-gray-400 justify-center mt-2">
-                                            <span
-                                                class="relative cursor-pointer rounded-md font-medium text-cyan-500 hover:text-cyan-400 focus-within:outline-none">
-                                                <span>{{ __('messages.upload_file') }}</span>
-                                            </span>
-                                            <p class="pl-1">{{ __('messages.drag_drop') }}</p>
+
+                                    <!-- Default State -->
+                                    <div id="uploadIcon" class="flex flex-col items-center">
+                                        <div
+                                            class="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                            <i data-lucide="image-plus"
+                                                class="w-6 h-6 text-slate-400 group-hover:text-cyan-400"></i>
                                         </div>
-                                        <p class="text-xs text-gray-500">PNG, JPG up to 2MB</p>
+                                        <div class="text-sm font-medium text-slate-400">
+                                            <span
+                                                class="text-cyan-400 font-bold group-hover:text-cyan-300">{{ __('messages.upload_file') }}</span>
+                                            <span class="mx-1">{{ __('messages.drag_drop') }}</span>
+                                        </div>
+                                        <p class="text-xs text-slate-500 mt-1">SVG, PNG, JPG (Max. 2MB)</p>
                                     </div>
                                     <input id="profile_picture" name="profile_picture" type="file" class="hidden"
                                         accept="image/*">
@@ -211,22 +197,20 @@
                             </div>
                         </div>
 
-                        <!-- Footer Actions -->
-                        <div class="mt-8 flex gap-3">
+                        <!-- Actions -->
+                        <div class="flex gap-4 pt-4">
                             <button type="button" onclick="closeModal()"
-                                class="w-full rounded-xl bg-gray-700 px-4 py-3 text-sm font-semibold text-white shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-600 transition-all">{{ __('messages.cancel') }}</button>
+                                class="flex-1 px-6 py-3.5 bg-slate-800 text-slate-300 font-bold rounded-xl hover:bg-slate-700 transition-all">
+                                {{ __('messages.cancel') }}
+                            </button>
                             <button type="submit" id="submitBtn"
-                                class="w-full rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-3 text-sm font-bold text-white shadow-lg hover:from-cyan-500 hover:to-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 transition-all flex justify-center items-center gap-2">
-                                <span>{{ __('messages.save_member') }}</span>
-                                <!-- Spinner -->
-                                <svg class="hidden w-5 h-5 text-white animate-spin loading-spinner"
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10"
-                                        stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                                    </path>
-                                </svg>
+                                class="flex-1 px-6 py-3.5 bg-cyan-600 text-white font-bold rounded-xl hover:bg-cyan-500 transition-all flex items-center justify-center gap-2 group">
+                                <span id="btnText">{{ __('messages.save_member') }}</span>
+                                <i data-lucide="arrow-right"
+                                    class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                                <div id="spinner"
+                                    class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin">
+                                </div>
                             </button>
                         </div>
                     </form>
@@ -235,82 +219,63 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC (Modal & File Preview Only - No AJAX) -->
     <script>
-        // --- 1. MODAL SYSTEM (Native & Manual for Stability) ---
+        // --- 1. MODAL SYSTEM ---
         const modal = document.getElementById('customModal');
         const modalBackdrop = document.getElementById('modalBackdrop');
         const modalPanel = document.getElementById('modalPanel');
-        const body = document.body;
 
         function openModal() {
             modal.classList.remove('hidden');
-            // Animate In sequence
             setTimeout(() => {
                 modalBackdrop.classList.remove('opacity-0');
-                modalPanel.classList.remove('opacity-0', 'translate-y-4', 'sm:translate-y-0', 'sm:scale-95');
-                modalPanel.classList.add('opacity-100', 'translate-y-0', 'sm:scale-100');
-            }, 10); // small delay for CSS transition trigger
-            body.classList.add('overflow-hidden'); // Prevent background scroll
+                modalPanel.classList.remove('opacity-0', 'translate-y-8', 'scale-95');
+                modalPanel.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+            }, 50);
+            document.body.style.overflow = 'hidden';
         }
 
         function closeModal() {
-            // Animate Out sequence
             modalBackdrop.classList.add('opacity-0');
-            modalPanel.classList.remove('opacity-100', 'translate-y-0', 'sm:scale-100');
-            modalPanel.classList.add('opacity-0', 'translate-y-4', 'sm:translate-y-0', 'sm:scale-95');
-
+            modalPanel.classList.add('opacity-0', 'translate-y-8', 'scale-95');
             setTimeout(() => {
                 modal.classList.add('hidden');
-                body.classList.remove('overflow-hidden');
-                resetFormVisuals();
-            }, 300); // Wait for transition duration (300ms)
+                document.body.style.overflow = 'auto';
+                resetForm();
+            }, 300);
         }
 
-        // Close on backdrop click
-        modalBackdrop.addEventListener('click', closeModal);
-
-        function resetFormVisuals() {
+        function resetForm() {
             document.getElementById('createUserForm').reset();
             document.getElementById('previewContainer').classList.add('hidden');
             document.getElementById('uploadIcon').classList.remove('hidden');
-            document.getElementById('profile_picture').value = ''; // clear file input
         }
 
         // --- 2. FILE PREVIEW ---
         document.getElementById('profile_picture').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            const previewContainer = document.getElementById('previewContainer');
-            const previewImage = document.getElementById('previewImage');
-            const fileName = document.getElementById('fileName');
-            const uploadIcon = document.getElementById('uploadIcon');
-
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    previewImage.src = e.target.result;
-                    fileName.textContent = file.name;
-                    previewContainer.classList.remove('hidden');
-                    uploadIcon.classList.add('hidden');
+                    document.getElementById('previewImage').src = e.target.result;
+                    document.getElementById('fileName').textContent = file.name;
+                    document.getElementById('previewContainer').classList.remove('hidden');
+                    document.getElementById('uploadIcon').classList.add('hidden');
                 }
                 reader.readAsDataURL(file);
             }
         });
 
-        // --- 3. FORM SUBMIT (Traditional - shows loading state) ---
-        const form = document.getElementById('createUserForm');
-        form.addEventListener('submit', function(e) {
-            // Show loading state on submit button (form will submit normally)
-            const submitBtn = document.getElementById('submitBtn');
-            const spinner = submitBtn.querySelector('.loading-spinner');
-            const btnText = submitBtn.querySelector('span');
+        // --- 3. FORM SUBMIT ---
+        document.getElementById('createUserForm').addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            document.getElementById('spinner').classList.remove('hidden');
+            document.getElementById('btnText').textContent = 'Processing...';
+        });
 
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-            if (spinner) spinner.classList.remove('hidden');
-            if (btnText) btnText.textContent = 'Processing...';
-
-            // Form will submit naturally via POST
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) window.lucide.createIcons();
         });
     </script>
 @endsection
