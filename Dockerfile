@@ -1,12 +1,10 @@
-# Railway PHP Deployment Dockerfile
-# Using official PHP-FPM + Nginx for production
+# Railway PHP Deployment - Simplified
+# Using PHP built-in server
 
-FROM php:8.3-fpm-alpine
+FROM php:8.3-cli-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
-    nginx \
-    supervisor \
     curl \
     libpng-dev \
     libjpeg-turbo-dev \
@@ -15,7 +13,8 @@ RUN apk add --no-cache \
     libxml2-dev \
     zip \
     unzip \
-    git
+    git \
+    bash
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -48,18 +47,17 @@ RUN mkdir -p storage/session storage/logs storage/framework/views storage/framew
 # Create private-uploads directory
 RUN mkdir -p private-uploads && chmod -R 777 private-uploads
 
-# Configure Nginx
-RUN rm -f /etc/nginx/http.d/default.conf
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
-
-# Configure PHP-FPM
+# Copy custom php.ini
 COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
 
-# Configure Supervisor
-COPY docker/supervisord.conf /etc/supervisord.conf
+# Create startup script that properly expands $PORT
+RUN echo '#!/bin/bash' > /start.sh && \
+    echo 'echo "Starting PHP server on port ${PORT:-8080}..."' >> /start.sh && \
+    echo 'php -S 0.0.0.0:${PORT:-8080} -t .' >> /start.sh && \
+    chmod +x /start.sh
 
-# Expose port (Railway sets PORT env var)
+# Expose port
 EXPOSE 8080
 
-# Start supervisor (manages nginx + php-fpm)
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+# Use shell form so environment variables get expanded
+CMD ["/bin/bash", "/start.sh"]
