@@ -37,7 +37,11 @@ class BladeInit
             $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
             $cachePath = $root . '/storage/framework/views';
             if (!is_dir($cachePath)) {
-                mkdir($cachePath, 0755, true);
+                if (!@mkdir($cachePath, 0777, true) && !is_dir($cachePath)) {
+                    throw new \Exception("Failed to create Blade cache directory: $cachePath");
+                }
+            } else if (!is_writable($cachePath)) {
+                @chmod($cachePath, 0777);
             }
 
             $resolver->register('blade', function () use ($filesystem, $cachePath) {
