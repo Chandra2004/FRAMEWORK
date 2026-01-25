@@ -66,4 +66,8 @@ jobs:
             **/QA_AUDIT.md
             **/.cursorrules
             **/.idx/**
-            storage/**
+            storage/logs/**
+            storage/framework/views/**
+            storage/framework/cache/**
+            storage/app/**
+            !storage/**/

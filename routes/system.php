@@ -304,5 +304,81 @@ Router::add('GET', '/_system/status', function () {
     }
 });
 
+// NEW: Debug Session & Database for InfinityFree Issues
+Router::add('GET', '/_system/diagnose', function () {
+    checkSystemKey();
+    header('Content-Type: text/plain');
+    echo "🔧 SYSTEM DIAGNOSIS\n==============================\n\n";
+
+    // 1. Session Check
+    echo "SESSION STATUS:\n";
+    echo str_pad("Session Status", 25) . ": " . (session_status() === PHP_SESSION_ACTIVE ? "✅ ACTIVE" : "❌ INACTIVE") . "\n";
+    echo str_pad("Session ID", 25) . ": " . (session_id() ?: "N/A") . "\n";
+    echo str_pad("Session Save Path", 25) . ": " . (session_save_path() ?: "DEFAULT") . "\n";
+
+    $sessionPath = defined('ROOT_DIR') ? ROOT_DIR . '/storage/session' : dirname(__DIR__) . '/storage/session';
+    echo str_pad("Custom Session Dir", 25) . ": " . $sessionPath . "\n";
+    echo str_pad("  - Exists", 25) . ": " . (is_dir($sessionPath) ? "✅ YES" : "❌ NO") . "\n";
+    echo str_pad("  - Writable", 25) . ": " . (is_writable($sessionPath) ? "✅ YES" : "❌ NO") . "\n";
+
+    echo str_pad("CSRF Token Set", 25) . ": " . (isset($_SESSION['csrf_token']) ? "✅ YES (len:" . strlen($_SESSION['csrf_token']) . ")" : "❌ NO") . "\n";
+
+    echo "\n";
+
+    // 2. Database Check
+    echo "DATABASE STATUS:\n";
+    try {
+        $dbEnabled = \TheFramework\App\Database::isEnabled();
+        echo str_pad("DB Enabled", 25) . ": " . ($dbEnabled ? "✅ YES" : "❌ NO") . "\n";
+
+        if ($dbEnabled) {
+            $db = \TheFramework\App\Database::getInstance();
+            $connected = $db->testConnection();
+            echo str_pad("DB Connection", 25) . ": " . ($connected ? "✅ CONNECTED" : "❌ FAILED") . "\n";
+
+            if ($connected) {
+                // Test simple query
+                $db->query("SELECT 1 as test");
+                $result = $db->single();
+                echo str_pad("DB Query Test", 25) . ": " . ($result ? "✅ OK" : "❌ FAILED") . "\n";
+            }
+        }
+    } catch (\Throwable $e) {
+        echo str_pad("DB Error", 25) . ": " . $e->getMessage() . "\n";
+    }
+
+    echo "\n";
+
+    // 3. Storage Directories
+    echo "STORAGE DIRECTORIES:\n";
+    $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
+    $storageDirs = [
+        '/storage/session',
+        '/storage/logs',
+        '/storage/framework/views',
+        '/storage/framework/cache',
+        '/storage/app/public',
+    ];
+
+    foreach ($storageDirs as $dir) {
+        $fullPath = $root . $dir;
+        $exists = is_dir($fullPath);
+        $writable = is_writable($fullPath);
+        $status = $exists ? ($writable ? "✅ OK" : "⚠ NOT WRITABLE") : "❌ MISSING";
+        echo str_pad($dir, 30) . ": $status\n";
+    }
+
+    echo "\n";
+
+    // 4. Request Headers (untuk debug AJAX)
+    echo "REQUEST INFO:\n";
+    echo str_pad("HTTP Method", 25) . ": " . $_SERVER['REQUEST_METHOD'] . "\n";
+    echo str_pad("Content-Type", 25) . ": " . ($_SERVER['CONTENT_TYPE'] ?? 'N/A') . "\n";
+    echo str_pad("Accept", 25) . ": " . ($_SERVER['HTTP_ACCEPT'] ?? 'N/A') . "\n";
+    echo str_pad("X-CSRF-TOKEN", 25) . ": " . (isset($_SERVER['HTTP_X_CSRF_TOKEN']) ? "Present" : "Not sent") . "\n";
+    echo str_pad("Cookie Header", 25) . ": " . (isset($_SERVER['HTTP_COOKIE']) ? "Present" : "Not sent") . "\n";
+
+    echo "\n✨ Diagnosis Complete!";
+});
 
 

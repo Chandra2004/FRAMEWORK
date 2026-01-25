@@ -18,6 +18,8 @@ class HomeController extends Controller
     ];
     private const UPDATE_ERRORS = [
         'not_found' => 'User tidak ditemukan',
+        'name_exist' => 'Nama sudah digunakan',
+        'email_exist' => 'Email sudah digunakan',
     ];
 
     public function __construct()
@@ -28,7 +30,7 @@ class HomeController extends Controller
     public function Welcome()
     {
         $notification = Helper::get_flash('notification');
-        
+
         return View::render('interface.welcome', [
             'title' => 'THE FRAMEWORK - Modern PHP Framework with Database Migrations & REST API',
             'notification' => $notification,
@@ -103,8 +105,8 @@ class HomeController extends Controller
                 return Helper::redirect('/users', 'error', 'User not found', 5);
             }
 
-            if (is_string($result) && array_key_exists($result, self::CREATE_ERRORS)) {
-                return Helper::redirect("/users/information/{$uid}", 'error', 'error: ' . self::CREATE_ERRORS[$result], 5);
+            if (is_string($result) && array_key_exists($result, self::UPDATE_ERRORS)) {
+                return Helper::redirect("/users/information/{$uid}", 'error', 'error: ' . self::UPDATE_ERRORS[$result], 5);
             }
 
             if (!$result) {

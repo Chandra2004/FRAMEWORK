@@ -7,8 +7,19 @@
 /vendor/
 composer.phar
 
-# Storage & Cache (Fully Ignored)
-/storage/
+# Storage & Cache (Ignore contents, keep directory structure)
+/storage/session/*
+!/storage/session/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/cache/*
+!/storage/cache/.gitignore
+/storage/app/*
+!/storage/app/.gitignore
 
 # User Uploads (Ignore file uploads)
 /private-uploads/*

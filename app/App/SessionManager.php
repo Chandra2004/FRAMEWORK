@@ -19,6 +19,15 @@ class SessionManager
             ini_set('session.use_strict_mode', 1);
             ini_set('session.cookie_samesite', 'Lax');
 
+            // Set custom session save path untuk InfinityFree compatibility
+            $sessionPath = defined('ROOT_DIR') ? ROOT_DIR . '/storage/session' : dirname(__DIR__, 2) . '/storage/session';
+            if (!is_dir($sessionPath)) {
+                @mkdir($sessionPath, 0777, true);
+            }
+            if (is_writable($sessionPath)) {
+                session_save_path($sessionPath);
+            }
+
             session_start();
 
             if (!isset($_SESSION['initiated'])) {
