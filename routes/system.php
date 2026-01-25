@@ -8,6 +8,10 @@ use TheFramework\App\Container;
  * Multi-Layer Security Check for System Routes
  * v5.1.0 Security Enhancement
  */
+if (!defined('BASE_PATH')) {
+    define('BASE_PATH', defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__));
+}
+
 function checkSystemKey()
 {
     // === LAYER 1: Feature Toggle ===
@@ -79,9 +83,6 @@ Router::add('GET', '/_system/migrate', function () {
     echo "⚙️ SYSTEM MIGRATION TOOL\n==============================\n";
 
     try {
-        if (!defined('BASE_PATH'))
-            define('BASE_PATH', dirname(__DIR__));
-
         $migrationDir = BASE_PATH . '/database/migrations/';
         $files = glob($migrationDir . '*.php');
 
@@ -137,9 +138,6 @@ Router::add('GET', '/_system/seed', function () {
     echo "🌱 SYSTEM DATABASE SEEDER\n==============================\n";
 
     try {
-        if (!defined('BASE_PATH'))
-            define('BASE_PATH', dirname(__DIR__));
-
         $seedersPath = BASE_PATH . '/database/seeders';
         $files = glob($seedersPath . '/*Seeder.php');
 
@@ -402,32 +400,39 @@ Router::add('GET', '/_system/optimize', function () {
     header('Content-Type: text/plain');
     echo "🚀 SYSTEM OPTIMIZER\n==============================\n";
 
-    $cleared = 0;
-    $cacheDirs = [
-        BASE_PATH . '/storage/framework/views',
-        BASE_PATH . '/storage/framework/cache',
-    ];
+    try {
+        $cleared = 0;
+        $cacheDirs = [
+            BASE_PATH . '/storage/framework/views',
+            BASE_PATH . '/storage/framework/cache',
+        ];
 
-    foreach ($cacheDirs as $dir) {
-        if (!is_dir($dir))
-            continue;
-        $files = glob($dir . '/*.php');
-        foreach ($files as $file) {
-            if (unlink($file)) {
-                $cleared++;
-                echo "Cleared: " . basename($file) . "\n";
+        foreach ($cacheDirs as $dir) {
+            if (!is_dir($dir))
+                continue;
+            $files = glob($dir . '/*.php');
+            if ($files) {
+                foreach ($files as $file) {
+                    if (@unlink($file)) {
+                        $cleared++;
+                        echo "Cleared: " . basename($file) . "\n";
+                    }
+                }
             }
         }
-    }
 
-    // Attempt to clear OpCache
-    if (function_exists('opcache_reset')) {
-        @opcache_reset();
-        echo "✅ OpCache cleared.\n";
-    }
+        // Attempt to clear OpCache
+        if (function_exists('opcache_reset')) {
+            if (@opcache_reset()) {
+                echo "✅ OpCache cleared.\n";
+            }
+        }
 
-    echo "\n✨ Total compiled files cleared: $cleared\n";
-    echo "Optimization complete!";
+        echo "\n✨ Total compiled files cleared: $cleared\n";
+        echo "Optimization complete!";
+    } catch (\Throwable $e) {
+        echo "\n❌ OPTIMIZATION ERROR: " . $e->getMessage();
+    }
 });
 
 // NEW: View Logs
@@ -442,9 +447,21 @@ Router::add('GET', '/_system/logs', function () {
         return;
     }
 
-    $lines = file($logFile);
-    $lastLines = array_slice($lines, -50);
-    echo implode("", $lastLines);
+    // Memory efficient way to read large files
+    try {
+        $file = new \SplFileObject($logFile, 'r');
+        $file->seek(PHP_INT_MAX);
+        $totalLines = $file->key();
+        $startLine = max(0, $totalLines - 50);
+        $file->seek($startLine);
+
+        while (!$file->eof()) {
+            echo $file->current();
+            $file->next();
+        }
+    } catch (\Throwable $e) {
+        echo "❌ Error reading log file: " . $e->getMessage() . "\n";
+    }
 });
 
 // NEW: List Routes
@@ -462,7 +479,15 @@ Router::add('GET', '/_system/routes', function () {
 // NEW: PHP Info
 Router::add('GET', '/_system/phpinfo', function () {
     checkSystemKey();
-    phpinfo();
+    try {
+        if (!function_exists('phpinfo')) {
+            echo "⛔ phpinfo() is disabled on this server.";
+            return;
+        }
+        phpinfo();
+    } catch (\Throwable $e) {
+        echo "❌ Error executing phpinfo(): " . $e->getMessage();
+    }
 });
 
 // NEW: Database Test Connection Details
@@ -497,19 +522,27 @@ Router::add('GET', '/_system/test-connection', function () {
 // NEW: System Health
 Router::add('GET', '/_system/health', function () {
     header('Content-Type: application/json');
-    $dbConnected = false;
     try {
-        $dbConnected = \TheFramework\App\Database::getInstance()->testConnection();
-    } catch (\Throwable $e) {
-    }
+        $dbConnected = false;
+        try {
+            $dbConnected = \TheFramework\App\Database::getInstance()->testConnection();
+        } catch (\Throwable $e) {
+        }
 
-    echo json_encode([
-        'status' => 'up',
-        'php_version' => PHP_VERSION,
-        'database' => $dbConnected ? 'connected' : 'disconnected',
-        'storage' => is_writable(BASE_PATH . '/storage') ? 'writable' : 'not writable',
-        'timestamp' => date('c')
-    ], JSON_PRETTY_PRINT);
+        echo json_encode([
+            'status' => 'up',
+            'php_version' => PHP_VERSION,
+            'database' => $dbConnected ? 'connected' : 'disconnected',
+            'storage' => @is_writable(BASE_PATH . '/storage') ? 'writable' : 'not writable',
+            'timestamp' => date('c')
+        ], JSON_PRETTY_PRINT);
+    } catch (\Throwable $e) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'timestamp' => date('c')
+        ]);
+    }
 });
 
 
