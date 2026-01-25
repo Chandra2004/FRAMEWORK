@@ -157,26 +157,26 @@ class Database
 
         Config::loadEnv();
 
-        // Get database configuration
-        $host = Config::get('DB_HOST');
-        $dbname = Config::get('DB_NAME');
-        $user = Config::get('DB_USER');
-        $pass = Config::get('DB_PASS');
-        $port = Config::get('DB_PORT', '3306');
+        // Get database configuration with Railway fallbacks
+        $host = Config::get('DB_HOST') ?: Config::get('MYSQLHOST');
+        $dbname = Config::get('DB_NAME') ?: Config::get('MYSQLDATABASE');
+        $user = Config::get('DB_USER') ?: Config::get('MYSQLUSER');
+        $pass = Config::get('DB_PASS') ?: Config::get('MYSQLPASSWORD');
+        $port = Config::get('DB_PORT') ?: Config::get('MYSQLPORT', '3306');
         $debug = Config::get('APP_DEBUG', false);
 
-        // Check for missing required values
+        // Check for missing required values (after considering fallbacks)
         if (empty($host)) {
-            $configErrors[] = "DB_HOST is missing or empty";
+            $configErrors[] = "Database Host (DB_HOST/MYSQLHOST) is missing or empty";
         }
         if (empty($dbname)) {
-            $configErrors[] = "DB_NAME is missing or empty";
+            $configErrors[] = "Database Name (DB_NAME/MYSQLDATABASE) is missing or empty";
         }
         if (empty($user)) {
-            $configErrors[] = "DB_USER is missing or empty";
+            $configErrors[] = "Database User (DB_USER/MYSQLUSER) is missing or empty";
         }
 
-        // Check for possible typos in .env file
+        // Only check for typos if .env file exists (don't error if it's missing in production)
         $envFile = __DIR__ . '/../../.env';
         if (file_exists($envFile)) {
             $envContent = file_get_contents($envFile);
@@ -200,25 +200,18 @@ class Database
 
             foreach ($expectedVars as $var) {
                 if (!in_array($var, $foundVars)) {
-                    // Check for typos
                     $possibleTypos = $commonTypos[$var] ?? [];
                     $foundTypo = false;
 
                     foreach ($possibleTypos as $typo) {
                         if (preg_match('/^' . preg_quote($typo, '/') . '\s*=/m', $envContent)) {
-                            $envErrors[] = "Found '$typo' but expected '$var'. Possible typo in .env file.";
+                            $envErrors[] = "Found '$typo' but expected '$var' in .env. Possible typo.";
                             $foundTypo = true;
                             break;
                         }
                     }
-
-                    if (!$foundTypo) {
-                        $configErrors[] = "$var is missing in .env file";
-                    }
                 }
             }
-        } else {
-            $configErrors[] = ".env file not found at: $envFile";
         }
 
         if (!empty($configErrors) || !empty($envErrors)) {
