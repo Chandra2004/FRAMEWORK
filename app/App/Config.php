@@ -35,6 +35,19 @@ class Config
 
     public static function get($key, $default = null)
     {
-        return $_ENV[$key] ?? $default;
+        if (isset($_ENV[$key])) {
+            return $_ENV[$key];
+        }
+
+        if (isset($_SERVER[$key])) {
+            return $_SERVER[$key];
+        }
+
+        $value = getenv($key);
+        if ($value !== false) {
+            return $value;
+        }
+
+        return $default;
     }
 }
