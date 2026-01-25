@@ -4,6 +4,7 @@ namespace TheFramework\Services;
 
 use TheFramework\Models\User;
 use TheFramework\Config\UploadHandler;
+use TheFramework\Helpers\DatabaseHelper;
 use TheFramework\Helpers\Helper;
 use TheFramework\Http\Requests\UserRequest;
 
@@ -18,8 +19,7 @@ class UserService
 
     public function status()
     {
-        // Simple check via DB Helper or just try a query
-        return \TheFramework\Helpers\DatabaseHelper::isConnected() ? 'success' : 'failed';
+        return DatabaseHelper::testConnection() ? 'success' : 'failed';
     }
 
     public function getAllUsers()

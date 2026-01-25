@@ -41,7 +41,7 @@ class DatabaseHelper
     }
 
     /**
-     * Check apakah database terhubung
+     * Check apakah database terhubung (hanya mengecek status property)
      * 
      * @return bool
      */
@@ -50,6 +50,21 @@ class DatabaseHelper
         try {
             $db = Database::getInstance();
             return $db->isConnected();
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Mencoba melakukan koneksi ke database dan mengembalikan statusnya
+     * 
+     * @return bool
+     */
+    public static function testConnection(): bool
+    {
+        try {
+            $db = Database::getInstance();
+            return $db->testConnection();
         } catch (\Exception $e) {
             return false;
         }
