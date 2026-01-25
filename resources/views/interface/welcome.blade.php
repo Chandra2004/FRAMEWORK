@@ -9,18 +9,18 @@
 @section('extra_head')
     <script type="application/ld+json">
 {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
+  "@@context": "https://schema.org",
+  "@@type": "SoftwareApplication",
   "name": "THE-FRAMEWORK",
   "operatingSystem": "Linux, Windows, macOS",
   "applicationCategory": "DeveloperApplication",
   "description": "High-performance PHP framework with Laravel-like features and minimalist architecture.",
   "author": {
-    "@type": "Person",
+    "@@type": "Person",
     "name": "Chandra Tri Antomo"
   },
   "offers": {
-    "@type": "Offer",
+    "@@type": "Offer",
     "price": "0",
     "priceCurrency": "USD"
   }
@@ -80,8 +80,7 @@
                 <div
                     class="bg-slate-950 rounded-xl overflow-hidden border border-slate-800 aspect-video flex items-center justify-center relative">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10"></div>
-                    <code class="text-cyan-400 font-mono text-lg animate-pulse">composer create-project
-                        the-framework/app</code>
+                    <code class="text-cyan-400 font-mono text-lg animate-pulse">git clone https://github.com/Chandra2004/FRAMEWORK.git</code>
                 </div>
             </div>
         </header>
@@ -131,22 +130,22 @@
             <div
                 class="glass-card rounded-2xl p-8 max-w-2xl mx-auto flex flex-col md:flex-row items-center gap-6 border-slate-800/50">
                 <div class="flex-shrink-0">
-                    @if ($status == 'success')
-                        <div class="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center">
-                            <i data-lucide="database" class="w-8 h-8 text-emerald-500"></i>
-                        </div>
-                    @else
-                        <div class="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center">
-                            <i data-lucide="database-zap" class="w-8 h-8 text-rose-500"></i>
-                        </div>
-                    @endif
+                    <?php if ($status == 'success'): ?>
+                    <div class="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                        <i data-lucide="database" class="w-8 h-8 text-emerald-500"></i>
+                    </div>
+                    <?php else: ?>
+                    <div class="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center">
+                        <i data-lucide="database-zap" class="w-8 h-8 text-rose-500"></i>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="flex-grow text-center md:text-left">
                     <h2 id="db-status" class="text-xl font-bold text-white mb-1">
-                        {{ $status == 'success' ? __('messages.db_connected') : __('messages.db_error') }}
+                        <?php echo $status == 'success' ? __('messages.db_connected') : __('messages.db_error'); ?>
                     </h2>
                     <p class="text-slate-400 text-sm">
-                        {{ $status == 'success' ? __('messages.db_ready') : __('messages.db_check') }}
+                        <?php echo $status == 'success' ? __('messages.db_ready') : __('messages.db_check'); ?>
                     </p>
                 </div>
                 <div>

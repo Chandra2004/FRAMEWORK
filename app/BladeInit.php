@@ -82,6 +82,7 @@ class BladeInit
             $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
             $viewPaths = [
                 $root . '/resources/views',
+                $root . '/app/App/Internal/Views', // Internal System Views
             ];
             $finder = new FileViewFinder($filesystem, $viewPaths);
 

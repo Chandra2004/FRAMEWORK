@@ -1,9 +1,16 @@
 @extends('template.layout')
 
-@section('meta_title', 'Member Directory | THE-FRAMEWORK Management Console')
-@section('meta_description', 'Manage your team members and users with an elegant, lightning-fast interface. Powered by
-    THE-FRAMEWORK.')
-@section('meta_keywords', 'user management system, php member directory, mvc user crud, secure member portal')
+@section('meta_title')
+    Member Directory | THE-FRAMEWORK Management Console
+@endsection
+
+@section('meta_description')
+    Manage your team members and users with an elegant, lightning-fast interface. Powered by THE-FRAMEWORK.
+@endsection
+
+@section('meta_keywords')
+    user management system, php member directory, mvc user crud, secure member portal
+@endsection
 
 @section('main-content')
     <!-- Main Content Wrapper with Premium Spacing -->

@@ -121,24 +121,34 @@ REQUEST → Layer 1 → Layer 2 → Layer 3 → ✅ ALLOWED
 
 Karena tidak ada terminal hitam (SSH), kita gunakan **Web Utilities** yang sudah disiapkan di `routes/system.php`.
 
-### Web Utilities (Pengganti Terminal)
+### Web Command Center (GUI Dashboard) ⭐ **NEW v5.1.0**
+
+Kini Anda memiliki antarmuka grafis (GUI) berbasis terminal (CLI Style) untuk menjalankan semua perintah sistem tanpa perlu mengetik URL satu per satu.
+
+- **URL Dashboard:** `/_system`
+- **Lokasi View:** `app/App/Internal/Views/` (Terpisah dari `resources/views` agar folder utama tetap bersih).
+
+### Web Utilities (Daftar Perintah)
 
 Akses URL ini di browser. Browser akan meminta Basic Auth (Username & Password) sesuai yang diatur di `.env`.
 
-Format: `https://domain-anda.com/_system/{perintah}`
-
-| Tugas                | Perintah Artisan (Asli)    | URL Web Utility (Pengganti)                  |
-| :------------------- | :------------------------- | :------------------------------------------- |
-| **Migrate Database** | `php artisan migrate`      | `/_system/migrate`                           |
-| **Isi Data Awal**    | `php artisan db:seed`      | `/_system/seed`                              |
-| **Optimize System**  | `php artisan optimize`     | `/_system/optimize` (Clear cache + OpCache)  |
-| **Lihat Log Error**  | `tail -f storage/logs/..`  | `/_system/logs` (50 error terakhir)          |
-| **Cek Rute**         | `php artisan route:list`   | `/_system/routes`                            |
-| **Cek Kesehatan**    | -                          | `/_system/health` (Permission & Disk Space)  |
-| **Test Koneksi**     | -                          | `/_system/test-connection` (DB & Mail Check) |
-| **Info Server**      | `php -i`                   | `/_system/phpinfo`                           |
-| **Symlink Storage**  | `php artisan storage:link` | `/_system/storage-link`                      |
-| **Cek Status**       | `php -v`                   | `/_system/status`                            |
+| Tugas                | Perintah Artisan (Asli)    | URL Web Utility (Dashboard) | Deskripsi                                     |
+| :------------------- | :------------------------- | :-------------------------- | :-------------------------------------------- |
+| **Main Dashboard**   | -                          | `/_system`                  | **(NEW)** Panel kontrol utama sistem          |
+| **Migrate Database** | `php artisan migrate`      | `/_system/migrate`          | Menjalankan file migrasi database             |
+| **Isi Data Awal**    | `php artisan db:seed`      | `/_system/seed`             | Mengisi data awal/dummy ke database           |
+| **Diagnosis Sistem** | -                          | `/_system/diagnose`         | Cek Session, CSRF, & DB details               |
+| **System Check**     | -                          | `/_system/check-files`      | Verifikasi keberadaan file kritis & scan View |
+| **Optimize System**  | `php artisan optimize`     | `/_system/optimize`         | Clear cache views + Opcache reset             |
+| **Clear Cache**      | `php artisan cache:clear`  | `/_system/clear-cache`      | Hapus manual file cache & logs                |
+| **Lihat Log Error**  | `tail -f storage/logs/..`  | `/_system/logs`             | Menampilkan 50 baris log terakhir             |
+| **Cek Rute**         | `php artisan route:list`   | `/_system/routes`           | Melihat daftar semua rute terdaftar           |
+| **Cek Kesehatan**    | -                          | `/_system/health`           | Cek status DB & Storage Writable (JSON)       |
+| **Test Koneksi**     | -                          | `/_system/test-connection`  | Cek detail koneksi & versi MySQL              |
+| **Info PHP**         | `php -i`                   | `/_system/phpinfo`          | Menampilkan fungsi `phpinfo()` standar        |
+| **Symlink Storage**  | `php artisan storage:link` | `/_system/storage-link`     | Membuat symlink storage (jika disupport)      |
+| **Cek Status**       | `php -v`                   | `/_system/status`           | Cek versi PHP & Ekstensi Wajib terinstall     |
+| **Cek IP Saya**      | -                          | `/_system/my-ip`            | Mengetahui IP Anda untuk whitelist .env       |
 
 ### Fitur Keamanan (On/Off Switch)
 

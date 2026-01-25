@@ -124,11 +124,7 @@
         const toasts = ['alert-2', 'alert-3', 'alert-4'];
         toasts.forEach(toastId => {
             const toast = document.getElementById(toastId);
-            @if (isset($notification['duration']))
-                const toastDuration = {{ $notification['duration'] }};
-            @else
-                const toastDuration = 10000;
-            @endif
+            const toastDuration = {{ isset($notification['duration']) ? (int) $notification['duration'] : 10000 }};
             if (toast) {
                 showToast(toastId);
                 setTimeout(() => hideToast(toastId), toastDuration); // Hide after 10 seconds
