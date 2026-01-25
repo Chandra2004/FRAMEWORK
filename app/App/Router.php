@@ -346,6 +346,11 @@ class Router
         return self::$routeDefinitions;
     }
 
+    public static function getRoutes(): array
+    {
+        return self::$routeDefinitions;
+    }
+
     public static function loadCachedRoutes(array $cachedRoutes)
     {
         foreach ($cachedRoutes as $route) {

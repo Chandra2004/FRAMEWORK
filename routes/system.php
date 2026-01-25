@@ -226,15 +226,30 @@ Router::add('GET', '/_system/storage-link', function () {
     $target = BASE_PATH . '/storage/app/public';
     $link = BASE_PATH . '/public/storage';
 
+    if (!is_dir($target)) {
+        if (!mkdir($target, 0777, true)) {
+            echo "❌ Target directory does not exist and could not be created: $target\n";
+            return;
+        }
+    }
+
     if (file_exists($link)) {
         echo "ℹ Symlink already exists.\n";
     } else {
         try {
-            symlink($target, $link);
-            echo "✅ Symlink created: public/storage -> storage/app/public\n";
+            if (!function_exists('symlink')) {
+                throw new \Exception("Function 'symlink' is disabled on this server.");
+            }
+            if (@symlink($target, $link)) {
+                echo "✅ Symlink created: public/storage -> storage/app/public\n";
+            } else {
+                $error = error_get_last();
+                throw new \Exception($error['message'] ?? "Unknown error during symlink creation.");
+            }
         } catch (\Throwable $e) {
             echo "❌ Failed to create symlink: " . $e->getMessage() . "\n";
-            echo "   (Note: Shared Hosting might block symlink creation)\n";
+            echo "   (Note: InfinityFree and some shared hosting block symlink creation for security reasons)\n";
+            echo "   (Manual Fix: You might need to move your uploads to a public folder instead)\n";
         }
     }
 });
@@ -379,6 +394,122 @@ Router::add('GET', '/_system/diagnose', function () {
     echo str_pad("Cookie Header", 25) . ": " . (isset($_SERVER['HTTP_COOKIE']) ? "Present" : "Not sent") . "\n";
 
     echo "\n✨ Diagnosis Complete!";
+});
+
+// NEW: Optimize (Clear cache & Compiled files)
+Router::add('GET', '/_system/optimize', function () {
+    checkSystemKey();
+    header('Content-Type: text/plain');
+    echo "🚀 SYSTEM OPTIMIZER\n==============================\n";
+
+    $cleared = 0;
+    $cacheDirs = [
+        BASE_PATH . '/storage/framework/views',
+        BASE_PATH . '/storage/framework/cache',
+    ];
+
+    foreach ($cacheDirs as $dir) {
+        if (!is_dir($dir))
+            continue;
+        $files = glob($dir . '/*.php');
+        foreach ($files as $file) {
+            if (unlink($file)) {
+                $cleared++;
+                echo "Cleared: " . basename($file) . "\n";
+            }
+        }
+    }
+
+    // Attempt to clear OpCache
+    if (function_exists('opcache_reset')) {
+        @opcache_reset();
+        echo "✅ OpCache cleared.\n";
+    }
+
+    echo "\n✨ Total compiled files cleared: $cleared\n";
+    echo "Optimization complete!";
+});
+
+// NEW: View Logs
+Router::add('GET', '/_system/logs', function () {
+    checkSystemKey();
+    header('Content-Type: text/plain');
+    echo "📜 SYSTEM LOGS (Last 50 lines)\n==============================\n";
+
+    $logFile = BASE_PATH . '/storage/logs/app.log';
+    if (!file_exists($logFile)) {
+        echo "ℹ No log file found at: $logFile\n";
+        return;
+    }
+
+    $lines = file($logFile);
+    $lastLines = array_slice($lines, -50);
+    echo implode("", $lastLines);
+});
+
+// NEW: List Routes
+Router::add('GET', '/_system/routes', function () {
+    checkSystemKey();
+    header('Content-Type: text/plain');
+    echo "🛣️ REGISTERED ROUTES\n==============================\n";
+
+    $routes = Router::getRoutes();
+    foreach ($routes as $route) {
+        echo str_pad($route['method'], 8) . " : " . $route['path'] . "\n";
+    }
+});
+
+// NEW: PHP Info
+Router::add('GET', '/_system/phpinfo', function () {
+    checkSystemKey();
+    phpinfo();
+});
+
+// NEW: Database Test Connection Details
+Router::add('GET', '/_system/test-connection', function () {
+    checkSystemKey();
+    header('Content-Type: text/plain');
+    echo "🔌 DATABASE CONNECTION TEST\n==============================\n";
+
+    try {
+        $db = \TheFramework\App\Database::getInstance();
+        $start = microtime(true);
+        $connected = $db->testConnection();
+        $end = microtime(true);
+
+        if ($connected) {
+            echo "✅ Status: CONNECTED\n";
+            echo "⏱️ Time Taken: " . round(($end - $start) * 1000, 2) . " ms\n";
+
+            // Get Server Info
+            $db->query("SELECT VERSION() as version, DATABASE() as db_name");
+            $info = $db->single();
+            echo "📦 MySQL Version: " . $info['version'] . "\n";
+            echo "📂 Database Name: " . $info['db_name'] . "\n";
+        } else {
+            echo "❌ Status: FAILED\n";
+        }
+    } catch (\Throwable $e) {
+        echo "❌ Error: " . $e->getMessage() . "\n";
+    }
+});
+
+// NEW: System Health
+Router::add('GET', '/_system/health', function () {
+    header('Content-Type: application/json');
+    $dbConnected = false;
+    try {
+        $dbConnected = \TheFramework\App\Database::getInstance()->testConnection();
+    } catch (\Throwable $e) {
+    }
+
+    echo json_encode([
+        'status' => 'up',
+        'php_version' => PHP_VERSION,
+        'database' => $dbConnected ? 'connected' : 'disconnected',
+        'storage' => is_writable(BASE_PATH . '/storage') ? 'writable' : 'not writable',
+        'timestamp' => date('c')
+    ], JSON_PRETTY_PRINT);
 });
 
 
