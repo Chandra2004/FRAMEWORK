@@ -28,7 +28,7 @@ class HomeController extends Controller
     public function Welcome()
     {
         $notification = Helper::get_flash('notification');
-        aowk
+
         return View::render('interface.welcome', [
             'title' => 'THE FRAMEWORK - Modern PHP Framework with Database Migrations & REST API',
             'notification' => $notification,
