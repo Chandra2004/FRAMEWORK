@@ -1,0 +1,41 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+QA_AUDIT.md
+docs/
+
+# Development files
+.env.example
+.env.backup
+.cursorrules
+.idx/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Tests
+tests/
+phpunit.xml
+.phpunit.cache
+.phpunit.result.cache
+
+# GitHub Actions (not needed in container)
+.github/
+
+# Runtime files that will be created in container
+storage/session/*
+storage/logs/*
+storage/framework/views/*
+storage/framework/cache/*
+storage/cache/*
+!storage/*/.gitignore
+
+# Keep vendor for faster builds (optional - remove if you want fresh composer install)
+# vendor/

@@ -1,0 +1,13 @@
+{
+    "name": "php/theframework",
+    "config": {
+        "runtime": "V2"
+    },
+    "build": {
+        "builder": "NIXPACKS"
+    },
+    "deploy": {
+        "startCommand": "php -S 0.0.0.0:$PORT -t .",
+        "restartPolicyType": "ON_FAILURE"
+    }
+}
