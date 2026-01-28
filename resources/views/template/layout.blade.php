@@ -7,6 +7,8 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <!-- Primary Meta Tags -->
+    <meta name="google-site-verification" content="RF83Wz2HkZcrq0kumYyYr4Ja2WNFW2l1mH4-XHIxgnA" />
+    
     <title>@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')</title>
     <meta name="title" content="@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')">
     <meta name="description" content="@yield('meta_description', 'High-performance PHP framework with Laravel-like features, database migrations, and elegant syntax. Built for speed and developer happiness.')">
