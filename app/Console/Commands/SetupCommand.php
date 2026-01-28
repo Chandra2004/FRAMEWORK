@@ -95,6 +95,10 @@ class SetupCommand implements CommandInterface
                 $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
                 // Update .env dengan username dan hashed password
+                // Update .env dengan username dan hashed password
+                // Note: Kita gunakan str_replace untuk escape $ agar tidak dianggap backreference oleh preg_replace
+                $safeHash = str_replace('$', '\\$', $hashedPassword);
+
                 if (preg_match('/^SYSTEM_AUTH_USER=/m', $env)) {
                     $env = preg_replace('/^SYSTEM_AUTH_USER=.*/m', "SYSTEM_AUTH_USER={$username}", $env);
                 } else {
@@ -102,7 +106,7 @@ class SetupCommand implements CommandInterface
                 }
 
                 if (preg_match('/^SYSTEM_AUTH_PASS=/m', $env)) {
-                    $env = preg_replace('/^SYSTEM_AUTH_PASS=.*/m', "SYSTEM_AUTH_PASS={$hashedPassword}", $env);
+                    $env = preg_replace('/^SYSTEM_AUTH_PASS=.*/m', "SYSTEM_AUTH_PASS={$safeHash}", $env);
                 } else {
                     $env .= "\nSYSTEM_AUTH_PASS={$hashedPassword}";
                 }
@@ -117,7 +121,8 @@ class SetupCommand implements CommandInterface
             echo "\033[38;5;244m⊘ SKIPPED  Basic Auth tidak diaktifkan (bisa disetup manual di .env)\033[0m\n";
         }
 
-        shell_exec('composer dump-autoload');
+        echo "\n\033[38;5;39m➤ INFO  Menjalankan composer dump-autoload...\033[0m\n";
+        passthru('composer dump-autoload');
         echo "\n\033[38;5;28m★ SUCCESS  Autoload Composer diperbarui\033[0m\n";
         echo "\033[38;5;28m★ SUCCESS  Pengaturan selesai! Jalankan 'php artisan serve' untuk memulai\033[0m\n";
     }
