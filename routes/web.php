@@ -11,6 +11,7 @@ use TheFramework\Middleware\LanguageMiddleware;
 // CONTROLLER
 use TheFramework\Http\Controllers\HomeController;
 use TheFramework\Http\Controllers\ApiHomeController;
+// UTILITIES
 
 Router::add('GET', '/', HomeController::class, 'Welcome', [WAFMiddleware::class, LanguageMiddleware::class]);
 Router::add('GET', '/users', HomeController::class, 'Users', [WAFMiddleware::class, LanguageMiddleware::class]);

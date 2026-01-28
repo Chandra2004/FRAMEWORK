@@ -3,6 +3,8 @@
 use TheFramework\App\Router;
 use TheFramework\App\Migrator;
 use TheFramework\App\Container;
+use TheFramework\Http\Controllers\Services\SitemapController;
+use TheFramework\Middleware\WAFMiddleware;
 
 /**
  * Multi-Layer Security Check for System Routes
@@ -11,6 +13,9 @@ use TheFramework\App\Container;
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__));
 }
+
+// 15. SITEMAP XML (Automatic)
+Router::add('GET', '/sitemap.xml', SitemapController::class, 'index', [WAFMiddleware::class]);
 
 function checkSystemKey()
 {
