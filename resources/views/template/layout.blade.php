@@ -51,8 +51,8 @@
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet" media="print" onload="this.media='all'">
 
-    <!-- Move heavy scripts to footer or defer -->
-    <script src="https://cdn.tailwindcss.com" defer></script>
+    <!-- Tailwind MUST NOT be deferred when using Play CDN to avoid CLS on Desktop -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest" defer></script>
 
     <script>
