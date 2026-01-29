@@ -408,7 +408,42 @@ Router::add('GET', '/_system/routes', function () {
     checkSystemKey();
     return renderTerminal('routes', function () {
         echo "🛣️ REGISTERED ROUTES\n==============================\n";
-        foreach (Router::getRoutes() as $route) {
+
+        $routes = Router::getRoutes();
+        $internal = [];
+        $developer = [];
+
+        foreach ($routes as $route) {
+            $path = $route['path'];
+            $handler = $route['handler'];
+
+            // Logic Kategori: Internal vs Developer
+            $isInternal = false;
+            if (
+                strpos($path, '/_system') === 0 ||
+                strpos($path, '/file/') === 0 ||
+                $path === '/sitemap.xml' ||
+                (is_string($handler) && strpos($handler, 'TheFramework\\Http\\Controllers\\Services\\') !== false)
+            ) {
+                $isInternal = true;
+            }
+
+            if ($isInternal) {
+                $internal[] = $route;
+            } else {
+                $developer[] = $route;
+            }
+        }
+
+        echo "\n🚀 [ DEVELOPER ROUTES ]\n";
+        echo "------------------------------\n";
+        foreach ($developer as $route) {
+            echo str_pad($route['method'], 8) . " : " . $route['path'] . "\n";
+        }
+
+        echo "\n🛡️ [ INTERNAL / SYSTEM ROUTES ]\n";
+        echo "------------------------------\n";
+        foreach ($internal as $route) {
             echo str_pad($route['method'], 8) . " : " . $route['path'] . "\n";
         }
     });

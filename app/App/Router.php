@@ -133,10 +133,7 @@ class Router
         } else {
             // Development mode atau cache tidak ada -> Regex Parsing on-the-fly
             // Manual load route file karena tidak diload di tempat lain
-            $routeFile = dirname(__DIR__, 2) . '/routes/web.php';
-            if (file_exists($routeFile)) {
-                require $routeFile;
-            }
+            // REMOVED redundant require to prevent double registration since index.php already loads it
         }
 
         try {

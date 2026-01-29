@@ -94,7 +94,9 @@ $container->singleton(UserService::class, function () {
 
 // --- ROUTING SYSTEM ---
 // Route File Serving Route (Private Uploads)
-Router::add('GET', '/file/(.*)', FileController::class, 'Serve');
+foreach (FileController::getAllowedFolders() as $folder) {
+    Router::add('GET', "/file/{$folder}/(.*)", FileController::class, 'Serve');
+}
 
 BladeInit::init();
 

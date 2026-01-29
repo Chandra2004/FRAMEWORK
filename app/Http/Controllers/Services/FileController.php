@@ -5,9 +5,14 @@ use TheFramework\App\Config;
 
 class FileController
 {
+    public static function getAllowedFolders(): array
+    {
+        return ['shared', 'user-pictures', 'dummy', 'docs'];
+    }
+
     public function Serve($params = [])
     {
-        $allowedFolders = ['shared', 'user-pictures', 'dummy', 'docs'];
+        $allowedFolders = self::getAllowedFolders();
         $forbiddenExtensions = ['php', 'phtml', 'phar', 'exe', 'sh', 'bat', 'sql'];
 
         $requested = '';
