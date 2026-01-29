@@ -24,6 +24,7 @@ composer.phar
 # User Uploads (Ignore file uploads)
 /private-uploads/*
 !/private-uploads/.gitignore
+!/private-uploads/shared/
 /public/assets/uploads/*
 !/public/assets/uploads/.gitignore
 

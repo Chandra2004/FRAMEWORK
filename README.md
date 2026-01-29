@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/assets/img/favicon.ico" alt="The Framework Logo" width="120">
+<img src="/private-uploads/shared/favicon.ico" alt="The Framework Logo" width="120">
 
 # The Framework
 

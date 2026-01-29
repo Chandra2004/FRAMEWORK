@@ -8,7 +8,7 @@
 
     <!-- Primary Meta Tags -->
     <meta name="google-site-verification" content="RF83Wz2HkZcrq0kumYyYr4Ja2WNFW2l1mH4-XHIxgnA" />
-    
+
     <title>@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')</title>
     <meta name="title" content="@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')">
     <meta name="description" content="@yield('meta_description', 'High-performance PHP framework with Laravel-like features, database migrations, and elegant syntax. Built for speed and developer happiness.')">
@@ -24,21 +24,21 @@
     <meta property="og:url" content="{{ url($_SERVER['REQUEST_URI'] ?? '/') }}">
     <meta property="og:title" content="@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')">
     <meta property="og:description" content="@yield('meta_description', 'Build scalable web applications with THE-FRAMEWORK featuring database migrations, REST API support, and enterprise-grade security.')">
-    <meta property="og:image" content="@yield('og_image', url('/file/public/og-banner.jpg'))">
+    <meta property="og:image" content="@yield('og_image', url('/file/shared/og-banner.jpg'))">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ url($_SERVER['REQUEST_URI'] ?? '/') }}">
     <meta property="twitter:title" content="@yield('meta_title', $title ?? 'THE-FRAMEWORK - Modern PHP Framework')">
     <meta property="twitter:description" content="@yield('meta_description', 'High-performance PHP framework with Laravel-like features and minimalist architecture.')">
-    <meta property="twitter:image" content="@yield('og_image', url('/file/public/og-banner.jpg'))">
+    <meta property="twitter:image" content="@yield('og_image', url('/file/shared/og-banner.jpg'))">
 
     <!-- Favicon & Icons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url('/file/public/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('/file/public/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url('/file/public/favicon-16x16.png') }}">
-    <link rel="icon" href="{{ url('/file/public/favicon.ico') }}">
-    <link rel="manifest" href="{{ url('/file/public/site.webmanifest') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url('/file/shared/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url('/file/shared/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url('/file/shared/favicon-16x16.png') }}">
+    <link rel="icon" href="{{ url('/file/shared/favicon.ico') }}">
+    <link rel="manifest" href="{{ url('/file/shared/site.webmanifest') }}">
     <meta name="theme-color" content="#0ea5e9">
 
     <!-- Canonical -->

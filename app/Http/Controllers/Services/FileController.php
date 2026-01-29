@@ -7,7 +7,7 @@ class FileController
 {
     public function Serve($params = [])
     {
-        $allowedFolders = ['public', 'user-pictures', 'dummy', 'docs'];
+        $allowedFolders = ['shared', 'user-pictures', 'dummy', 'docs'];
         $forbiddenExtensions = ['php', 'phtml', 'phar', 'exe', 'sh', 'bat', 'sql'];
 
         $requested = '';
