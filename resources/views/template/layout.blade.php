@@ -49,9 +49,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+        rel="stylesheet" media="print" onload="this.media='all'">
+
+    <!-- Move heavy scripts to footer or defer -->
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://unpkg.com/lucide@latest" defer></script>
 
     <script>
         tailwind.config = {
@@ -72,49 +74,47 @@
     </script>
 
     <style>
-        /* Smooth Scroll */
         html {
-            scroll-behavior: smooth;
+            scroll-behavior: smooth
         }
 
-        /* Modern Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 8px
         }
 
         ::-webkit-scrollbar-track {
-            background: #0f172a;
+            background: #0f172a
         }
 
         ::-webkit-scrollbar-thumb {
             background: #334155;
-            border-radius: 4px;
+            border-radius: 4px
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
+            background: #475569
         }
 
         .glass-card {
-            background: rgba(30, 41, 59, 0.5);
+            background: rgba(30, 41, 59, .5);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, .05)
         }
 
         @keyframes shimmer {
             0% {
-                background-position: -200% 0;
+                background-position: -200% 0
             }
 
             100% {
-                background-position: 200% 0;
+                background-position: 200% 0
             }
         }
 
         .animate-shimmer {
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .05), transparent);
             background-size: 200% 100%;
-            animation: shimmer 2s infinite;
+            animation: shimmer 2s infinite
         }
     </style>
     @yield('extra_head')

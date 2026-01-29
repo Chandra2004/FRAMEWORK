@@ -1,0 +1,13 @@
+User-agent: *
+Disallow: /_system/
+Disallow: /app/
+Disallow: /bootstrap/
+Disallow: /database/
+Disallow: /private-uploads/
+Disallow: /resources/
+Disallow: /routes/
+Disallow: /storage/
+Disallow: /tests/
+Disallow: /vendor/
+
+Sitemap: https://framework.rf.gd/sitemap.xml

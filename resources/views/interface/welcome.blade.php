@@ -1,9 +1,11 @@
 @extends('template.layout')
 
 @section('meta_title', 'THE-FRAMEWORK | Enterprise PHP Framework for Modern Developers')
-@section('meta_description', 'Building lightning-fast web applications with THE-FRAMEWORK. Featuring native database
+@section('meta_description',
+    'Building lightning-fast web applications with THE-FRAMEWORK. Featuring native database
     migrations, built-in REST API support, and a premium developer experience.')
-@section('meta_keywords', 'php framework tutorial, lightweight php framework, best php framework 2026, fast php mvc,
+@section('meta_keywords',
+    'php framework tutorial, lightweight php framework, best php framework 2026, fast php mvc,
     chandra tri antomo')
 
 @section('extra_head')
@@ -23,6 +25,11 @@
     "@@type": "Offer",
     "price": "0",
     "priceCurrency": "USD"
+  },
+  "potentialAction": {
+    "@@type": "SearchAction",
+    "target": "https://framework.rf.gd/search?q={search_term_string}",
+    "query-input": "required name=search_term_string"
   }
 }
 </script>
@@ -80,7 +87,8 @@
                 <div
                     class="bg-slate-950 rounded-xl overflow-hidden border border-slate-800 aspect-video flex items-center justify-center relative">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10"></div>
-                    <code class="text-cyan-400 font-mono text-lg animate-pulse">git clone https://github.com/Chandra2004/FRAMEWORK.git</code>
+                    <code class="text-cyan-400 font-mono text-lg animate-pulse">git clone
+                        https://github.com/Chandra2004/FRAMEWORK.git</code>
                 </div>
             </div>
         </header>
@@ -150,8 +158,9 @@
                 </div>
                 <div>
                     <a href="{{ url('_system/diagnose') }}"
-                        class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-colors border border-slate-700">
-                        Diagnostics
+                        class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-colors border border-slate-700"
+                        aria-label="View System Diagnostics and Connection Status">
+                        System Diagnostics
                     </a>
                 </div>
             </div>
