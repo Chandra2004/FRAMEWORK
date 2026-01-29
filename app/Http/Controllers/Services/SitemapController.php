@@ -71,6 +71,23 @@ class SitemapController
             $xml .= '    </url>' . PHP_EOL;
         }
 
+        // 5. Dynamic Content: Blog Posts (Contoh Implementasi)
+        if (class_exists('\\TheFramework\\Models\\Post')) {
+            try {
+                $posts = \TheFramework\Models\Post::all();
+                foreach ($posts as $post) {
+                    $xml .= '    <url>' . PHP_EOL;
+                    $xml .= '        <loc>' . htmlspecialchars($baseUrl . '/blog/' . ($post->slug ?? $post->id)) . '</loc>' . PHP_EOL;
+                    $xml .= '        <lastmod>' . date('Y-m-d') . '</lastmod>' . PHP_EOL;
+                    $xml .= '        <changefreq>weekly</changefreq>' . PHP_EOL;
+                    $xml .= '        <priority>0.6</priority>' . PHP_EOL;
+                    $xml .= '    </url>' . PHP_EOL;
+                }
+            } catch (\Exception $e) {
+                // Silently skip if table doesn't exist or DB error
+            }
+        }
+
         $xml .= '</urlset>';
 
         echo $xml;

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="private-uploads/public/favicon.ico" alt="The Framework Logo" width="120">
+<img src="public/assets/img/favicon.ico" alt="The Framework Logo" width="120">
 
 # The Framework
 
@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D%208.3-8892BF.svg)](https://php.net/)
 [![Version](https://img.shields.io/badge/version-5.0.0-red.svg)](https://github.com/chandra2004/the-framework/releases)
-[![Security](https://img.shields.io/badge/security-A--grade-green.svg)](SECURITY.md)
+[![Security](https://img.shields.io/badge/security-A%2B--grade-brightgreen.svg)](SECURITY.md)
 
 [Website](https://framework.rf.gd) • [Documentation](#-documentation) • [Get Started](#-quick-start) • [Changelog](CHANGELOG.md)
 
@@ -83,14 +83,20 @@ Our documentation is comprehensive, well-organized, and beginner-friendly:
 
 - [🏗️ Architecture](docs/architecture.md) - MVC pattern explained
 - [🚀 Performance](docs/performance.md) - Caching & optimization
-- [🧪 Testing](docs/testing.md) - Unit & feature testing
+- [🧪 Testing](docs/testing-guide.md) - Unit & feature testing
 - [🚢 Deployment](docs/deployment.md) - Deploy to production
+- [🐳 Docker](docs/docker.md) - Containerization
+- [🚨 Error Handling](docs/error-handling.md) - Exception patterns
 
 ### **Special Features**
 
 - [🌐 Web Command Center](docs/web-command-center.md) - Manage without SSH
 - [🛠️ Artisan CLI](docs/artisan.md) - Command-line tools
 - [🌍 Localization](docs/localization.md) - Multi-language support
+- [🗺️ SEO & Sitemap](docs/seo.md) - SEO best practices
+- [📧 Email](docs/email.md) - SMTP sending
+- [💳 Payments](docs/payment.md) - Midtrans integration
+- [📤 File Uploads](docs/file-uploads.md) - UploadHandler
 
 📖 **[View Full Documentation](docs/README.md)**
 

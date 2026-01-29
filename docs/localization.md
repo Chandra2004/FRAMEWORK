@@ -50,9 +50,57 @@ echo __('messages.welcome');
 
 Anda bisa menyisipkan variabel ke dalam string terjemahan.
 
-File Lang: `'greeting' => 'Halo, :name!'`
+**File Lang:** `'greeting' => 'Halo, :name!'`
 
 ```php
 echo __('messages.greeting', ['name' => 'Chandra']);
 // Output: Halo, Chandra!
 ```
+
+---
+
+## 🔄 Pemindah Bahasa (Switcher)
+
+Anda dapat mengubah bahasa secara dinamis menggunakan rute atau controller.
+
+### 1. Buat Rute
+
+```php
+Router::add('GET', '/lang/{code}', function($code) {
+    if (in_array($code, ['id', 'en'])) {
+        Helper::session_write('app_locale', $code);
+    }
+    Helper::redirect('/');
+});
+```
+
+### 2. Middleware (Opsional)
+
+Untuk menerapkan bahasa dari session ke aplikasi, pastikan `AppServiceProvider` atau `Middleware` memanggil:
+
+```php
+$lang = Helper::session_get('app_locale', Config::get('APP_LOCALE'));
+App::setLocale($lang);
+```
+
+---
+
+## 👥 Pluralization (Jamak)
+
+Urusi perbedaan kata benda tunggal dan jamak (Bahasa Inggris).
+
+**File Lang:**
+
+```php
+'apples' => '{0} No apples|{1} One apple|[2,*] :count apples'
+```
+
+**Penggunaan:**
+
+```php
+echo trans_choice('messages.apples', 0); // No apples
+echo trans_choice('messages.apples', 1); // One apple
+echo trans_choice('messages.apples', 5); // 5 apples
+```
+
+_(Catatan: Fitur pluralization memerlukan library `illuminate/translation` yang sudah terintegrasi jika Anda menggunakan template Blade)._

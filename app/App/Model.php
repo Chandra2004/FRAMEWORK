@@ -19,15 +19,8 @@ use Exception;
  */
 abstract class Model implements \JsonSerializable
 {
-    // ... code ...
 
-    /**
-     * Alias untuk insert (Gaya Laravel)
-     */
-    protected function create(array $data)
-    {
-        return $this->insert($data);
-    }
+
     protected $table;
     protected $primaryKey = 'id';
     protected $db;
@@ -36,6 +29,14 @@ abstract class Model implements \JsonSerializable
     protected $with = [];
     protected $fillable = [];
     protected $hidden = [];
+
+    /**
+     * Alias untuk insert (Gaya Laravel)
+     */
+    public function create(array $data)
+    {
+        return $this->insert($data);
+    }
 
     // ... (kode construct dan lain-lain)
 

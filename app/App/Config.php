@@ -15,7 +15,8 @@ class Config
         }
 
         // 🚀 PERFORMANCE MOD: Config Caching Check
-        $cacheFile = __DIR__ . '/../../storage/cache/config.php';
+        $storageDir = defined('ROOT_DIR') ? ROOT_DIR . '/storage' : __DIR__ . '/../../storage';
+        $cacheFile = $storageDir . '/cache/config.php';
 
         if (file_exists($cacheFile)) {
             $config = require $cacheFile;

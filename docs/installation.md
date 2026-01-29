@@ -259,6 +259,38 @@ Edit php.ini, uncomment: extension=pdo_mysql
 
 ---
 
+## 🛠️ Edge Cases & Special Scenarios
+
+### 🐘 Windows Specific (XAMPP/Laragon)
+
+Jika Anda menggunakan XAMPP di Windows:
+
+1. Pastikan `PHP 8.3+` sudah terdaftar di **System Environment Variables**.
+2. Jika Apache tidak mau start, cek apakah port `80` atau `443` dipakai aplikasi lain (seperti Skype/VMWare).
+3. Gunakan **Laragon** (Sangat disarankan) karena sudah menyertakan PHP 8.3, Composer, dan terminal yang lebih modern.
+
+### 🧠 Composer Memory Limit
+
+Jika instalasi terhenti karena batasan memori:
+
+```bash
+# Gunakan flag memory_limit=-1
+COMPOSER_MEMORY_LIMIT=-1 composer install
+```
+
+### ⚓ WSL2 (Windows Subsystem for Linux)
+
+Saat menginstal di WSL2 (Ubuntu):
+
+1. Simpan folder proyek di dalam file system Linux (misal: `~/projects`), **TIDAK** di `/mnt/c/`. Performa file system di `/mnt/c/` sangat lambat untuk PHP/Composer.
+2. Gunakan **VS Code Remote Development** extension.
+
+### ☁️ Cloudflare Pages / Workers
+
+The Framework adalah framework native PHP, sehingga **TIDAK** bisa dideploy langsung ke Cloudflare Workers yang berbasis V8/JavaScript. Gunakan **Cloudflare Tunnel** jika ingin hosting dari komputer lokal atau server internal.
+
+---
+
 ## Verification
 
 ### Check Installation

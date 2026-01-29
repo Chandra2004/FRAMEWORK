@@ -254,7 +254,7 @@ class Database
         try {
             $this->dbh = new PDO($dsn, $user, $pass, $options);
             // Jika konstanta tidak tersedia, jalankan perintah inisialisasi manual
-            if (!isset($needExecInit) || empty($needExecInit) === false) {
+            if (isset($needExecInit) && $needExecInit) {
                 // Pastikan perintah berjalan tanpa mengganggu eksekusi awal
                 try {
                     $this->dbh->exec("SET NAMES utf8mb4");

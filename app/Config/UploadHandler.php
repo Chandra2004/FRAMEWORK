@@ -15,7 +15,10 @@ use Exception;
 class UploadHandler
 {
     // Default allowed file types
-    private const DEFAULT_IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'];
+    // 🔒 SECURITY FIX: SVG removed from default types (XSS vulnerability CVSS 7.5)
+    // SVG can contain <script> tags enabling stored XSS attacks
+    // To re-enable, install enshrined/svg-sanitize and add sanitization
+    private const DEFAULT_IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
     private const DEFAULT_DOCUMENT_TYPES = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'];
     private const DEFAULT_ARCHIVE_TYPES = ['zip', 'rar', '7z', 'tar', 'gz'];
     private const DEFAULT_VIDEO_TYPES = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'];
@@ -131,6 +134,11 @@ class UploadHandler
                 return self::error('File tidak memiliki ekstensi.');
             }
 
+            // 🔒 SECURITY FIX: Block SVG uploads (XSS vulnerability)
+            if ($ext === 'svg') {
+                return self::error('SVG uploads are disabled for security reasons. Use PNG or WebP instead.');
+            }
+
             // Validasi tipe file
             if ($allowedTypes !== null && !in_array($ext, $allowedTypes, true)) {
                 return self::error("Tipe file .{$ext} tidak diizinkan.");
@@ -174,13 +182,8 @@ class UploadHandler
                 return self::success($fileName, $targetPath);
             }
 
-            // Handle SVG (tidak perlu processing)
-            if ($ext === 'svg' || $targetExt === 'svg') {
-                if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
-                    return self::error('Gagal mengupload file SVG.');
-                }
-                return self::success($fileName, $targetPath);
-            }
+            // 🔒 SECURITY: SVG handling disabled (previously vulnerable to XSS)
+            // Code removed - SVG uploads now blocked at validation stage
 
             // Handle image processing (resize/convert)
             $result = self::processImage($file['tmp_name'], $targetPath, $ext, $targetExt, $resize);

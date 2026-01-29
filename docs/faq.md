@@ -4,6 +4,20 @@ Common questions and answers about The Framework.
 
 ---
 
+## 📑 Daftar Isi
+
+- [🏠 Umum (General)](#general)
+- [📥 Instalasi (Installation)](#installation)
+- [🗄️ Database](#database)
+- [🔒 Keamanan (Security)](#security)
+- [⚡ Performa (Performance)](#performance)
+- [🚀 Deployment](#deployment)
+- [🛠️ Pengembangan (Development)](#development)
+- [🐞 Debugging & Error](#errors--debugging)
+- [📚 Lain-lain (Miscellaneous)](#miscellaneous)
+
+---
+
 ## General
 
 ### Q: Apa bedanya The Framework dengan Laravel?

@@ -25,7 +25,7 @@ class WAFMiddleware implements Middleware
                 'description' => 'XSS Attempt'
             ],
             'path_traversal' => [
-                'pattern' => '/\.\.[\\/\\\]/',
+                'pattern' => '#\.\.[\\\\/]#',
                 'description' => 'Path Traversal'
             ],
             'command_injection' => [

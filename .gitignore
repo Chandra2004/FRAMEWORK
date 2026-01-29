@@ -32,6 +32,7 @@ composer.phar
 Thumbs.db
 .idea/
 .vscode/
+.idx/
 *.swp
 *.swo
 
@@ -50,6 +51,9 @@ npm-debug.log
 
 # INTERNAL AUDIT DOCS (DO NOT COMMIT)
 QA_AUDIT.md
+QA_CATEGORIZED_ISSUES.md
+SECURITY_AUDIT_REPORT.md
+.AUDIT/
 
 # Google Verification
 google*.html

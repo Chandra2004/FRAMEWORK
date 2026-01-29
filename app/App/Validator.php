@@ -230,9 +230,36 @@ class Validator
         }
     }
 
+    /**
+     * 🔒 SECURITY FIX: Windows compatibility for active_url validation
+     * checkdnsrr() is NOT available on Windows (XAMPP/Laragon)
+     * Falls back to gethostbyname() on Windows systems
+     */
     protected function validate_active_url(string $field, string $label, $value, $param = null): void
     {
-        if (!checkdnsrr(parse_url($value, PHP_URL_HOST))) {
+        if (empty($value)) {
+            return;
+        }
+
+        $host = parse_url($value, PHP_URL_HOST);
+        if (!$host) {
+            $this->addError($field, "{$label} bukan URL yang valid.");
+            return;
+        }
+
+        // Windows compatibility check
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Use gethostbyname() fallback on Windows
+            $ip = gethostbyname($host);
+            if ($ip === $host) {
+                // gethostbyname returns hostname if DNS lookup fails
+                $this->addError($field, "{$label} bukan URL yang aktif.");
+            }
+            return;
+        }
+
+        // Use checkdnsrr on Unix/Linux/Mac
+        if (!checkdnsrr($host)) {
             $this->addError($field, "{$label} bukan URL yang aktif.");
         }
     }

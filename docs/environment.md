@@ -9,19 +9,32 @@ The Framework menggunakan library `vlucas/phpdotenv` untuk mengelola konfigurasi
 
 ## Daftar Variabel Penting
 
-| Key                   | Deskripsi                                    | Contoh Nilai        |
-| :-------------------- | :------------------------------------------- | :------------------ |
-| `APP_ENV`             | Mode aplikasi (`local` atau `production`).   | `local`             |
-| `APP_DEBUG`           | Menampilkan error detail (`true` untuk dev). | `true`              |
-| `APP_KEY`             | Kunci enkripsi acak (Wajib diisi!).          | `base64:xYz...`     |
-| `APP_URL`             | URL dasar aplikasi.                          | `http://mysite.com` |
-| `DB_CONNECTION`       | Driver database (saat ini support `mysql`).  | `mysql`             |
-| `DB_HOST`             | Alamat server database.                      | `127.0.0.1`         |
-| `DB_PORT`             | Port database.                               | `3306`              |
-| `DB_DATABASE`         | Nama database.                               | `my_app`            |
-| `DB_USERNAME`         | Username database.                           | `root`              |
-| `DB_PASSWORD`         | Password database.                           | `secret`            |
-| `ALLOW_WEB_MIGRATION` | Switch ON/OFF fitur Web Command Center.      | `false`             |
+| Key                      | Deskripsi                                    | Contoh Nilai            |
+| :----------------------- | :------------------------------------------- | :---------------------- |
+| `APP_NAME`               | Nama aplikasi.                               | `The Framework`         |
+| `APP_ENV`                | Mode aplikasi (`local` atau `production`).   | `local`                 |
+| `APP_DEBUG`              | Menampilkan error detail (`true` untuk dev). | `true`                  |
+| `APP_KEY`                | Kunci enkripsi acak (Wajib diisi!).          | `base64:xYz...`         |
+| `APP_URL`                | URL dasar aplikasi.                          | `http://127.0.0.1:8000` |
+| `DB_CONNECTION`          | Driver database (saat ini support `mysql`).  | `mysql`                 |
+| `DB_HOST`                | Alamat server database.                      | `127.0.0.1`             |
+| `DB_PORT`                | Port database.                               | `3306`                  |
+| `DB_NAME`                | Nama database (Gunakan `DB_NAME`).           | `my_app`                |
+| `DB_USER`                | Username database (Gunakan `DB_USER`).       | `root`                  |
+| `DB_PASS`                | Password database (Gunakan `DB_PASS`).       | `secret`                |
+| `SYSTEM_ALLOWED_IPS`     | Whitelist IP untuk Web Command Center.       | `127.0.0.1,::1`         |
+| `SYSTEM_AUTH_USER`       | Admin username untuk Web Command Center.     | `admin`                 |
+| `SYSTEM_AUTH_PASS`       | Admin password untuk Web Command Center.     | `admin123`              |
+| `ALLOW_WEB_MIGRATION`    | Switch ON/OFF fitur Web Command Center.      | `false`                 |
+| `MAIL_HOST`              | SMTP server host.                            | `smtp.mailtrap.io`      |
+| `MAIL_PORT`              | SMTP server port.                            | `2525`                  |
+| `MAIL_USERNAME`          | SMTP username.                               | `user123`               |
+| `MAIL_PASSWORD`          | SMTP password.                               | `pass123`               |
+| `MAIL_FROM`              | Email pengirim default.                      | `no-reply@app.com`      |
+| `MAIL_FROM_NAME`         | Nama pengirim default.                       | `My App`                |
+| `MIDTRANS_SERVER_KEY`    | API Server Key dari Midtrans.                | `SB-Mid-server-...`     |
+| `MIDTRANS_CLIENT_KEY`    | API Client Key dari Midtrans.                | `SB-Mid-client-...`     |
+| `MIDTRANS_IS_PRODUCTION` | Set `true` untuk mode produksi Midtrans.     | `false`                 |
 
 ## Mengakses Konfigurasi
 

@@ -15,46 +15,54 @@
 ### 🚀 Getting Started
 
 1. [Introduction](#introduction) - What is The Framework?
-2. [Installation](installation.md) - Setup your first project
-3. [Configuration](environment.md) - Environment variables
-4. [Structure](structure.md) - Project folder structure
-5. [Deployment](deployment.md) - Deploy to production
+2. [5-Minute Quick Start](quick-start.md) - Get up and running fast ⚡
+3. [Installation](installation.md) - Setup your first project
+4. [Configuration](environment.md) - Environment variables
+5. [Structure](structure.md) - Project folder structure
+6. [Deployment](deployment.md) - Deploy to production
 
 ### 💻 The Basics
 
-6. [Routing](routing.md) - URL routing system
-7. [Controllers](controllers.md) - Handle HTTP requests
-8. [Views & Blade](views.md) - Template engine
-9. [Security](security.md) - CSRF, XSS, WAF
-10. [Validation](validation.md) - Input validation
+7. [Routing](routing.md) - URL routing system
+8. [Controllers](controllers.md) - Handle HTTP requests
+9. [Views & Blade](views.md) - Template engine
+10. [Security](security.md) - CSRF, XSS, WAF
+11. [Validation](validation.md) - Input validation
 
 ### 🗄️ Database
 
-11. [Database](database.md) - Query Builder & connections
-12. [Migrations](migrations.md) - Database version control
-13. [ORM & Models](orm.md) - Eloquent-like ORM
-14. [Relationships](relationships.md) - Model relations
+12. [Database](database.md) - Query Builder & connections
+13. [Migrations](migrations.md) - Database version control
+14. [ORM & Models](orm.md) - Eloquent-like ORM
+15. [Relationships](relationships.md) - Model relations
 
 ### 🔧 Advanced Topics
 
-15. [Architecture](architecture.md) - MVC pattern
-16. [Middleware](middleware.md) - HTTP middleware
-17. [Helpers](helpers.md) - Global functions
-18. [Performance](performance.md) - Caching & optimization
-19. [Testing](testing.md) - Unit & feature tests
-20. [Localization](localization.md) - Multi-language
+16. [Architecture](architecture.md) - MVC pattern
+17. [Middleware](middleware.md) - HTTP middleware
+18. [Helpers](helpers.md) - Global functions
+19. [Performance](performance.md) - Caching & optimization
+20. [Testing](testing-guide.md) - Unit & feature tests
+21. [Localization](localization.md) - Multi-language
+22. [Docker](docker.md) - Containerization
+23. [Error Handling](error-handling.md) - Standard Patterns
+24. [Rate Limiting](rate-limiting.md) - Brute-force protection
 
 ### 🌐 Unique Features
 
-21. [Web Command Center](web-command-center.md) - Manage without SSH ⭐
-22. [Artisan CLI](artisan.md) - Command-line tools
-23. [Queue System](queue.md) - Background jobs
+25. [Web Command Center](web-command-center.md) - Manage without SSH ⭐
+26. [Artisan CLI](artisan.md) - Command-line tools
+27. [Queue System](queue.md) - Background jobs
+28. [SEO & Sitemap](seo.md) - Search engine optimization
+29. [Email](email.md) - SMTP sending
+30. [Payments](payment.md) - Midtrans integration
+31. [File Uploads](file-uploads.md) - UploadHandler
 
 ### 📝 Tutorials
 
-24. [Build a Blog](tutorial-blog.md) - Complete tutorial
-25. [API Development](tutorial-api.md) - REST API guide
-26. [Authentication](tutorial-auth.md) - User login system
+32. [Build a Blog](tutorial-blog.md) - Complete tutorial
+33. [API Development](tutorial-api.md) - REST API guide
+34. [Authentication](tutorial-auth.md) - User login system
 
 ---
 

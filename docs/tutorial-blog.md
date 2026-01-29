@@ -73,8 +73,8 @@ File: `app/Models/Post.php`
 
 ```php
 <?php
-namespace App\Models;
-use TheFramework\Database\Model;
+namespace TheFramework\Models;
+use TheFramework\App\Model;
 
 class Post extends Model {
     protected $table = 'posts';
@@ -97,9 +97,9 @@ File: `app/Controllers/BlogController.php`
 
 ```php
 <?php
-namespace App\Controllers;
-use TheFramework\Core\View;
-use App\Models\Post;
+namespace TheFramework\Http\Controllers;
+use TheFramework\App\View;
+use TheFramework\Models\Post;
 
 class BlogController {
     // Tampilkan semua postingan
@@ -118,11 +118,11 @@ class BlogController {
 Daftarkan rute di `routes/web.php`:
 
 ```php
-use App\Controllers\BlogController;
+use TheFramework\Http\Controllers\BlogController;
 
-Router::add('GET', '/blog', 'BlogController@index');
-Router::add('GET', '/blog/create', 'BlogController@create');
-Router::add('POST', '/blog/store', 'BlogController@store');
+Router::add('GET', '/blog', BlogController::class, 'index');
+Router::add('GET', '/blog/create', BlogController::class, 'create');
+Router::add('POST', '/blog/store', BlogController::class, 'store');
 ```
 
 ---
@@ -193,7 +193,7 @@ Tambahkan method `store` di `BlogController.php`.
 
 ```php
 use TheFramework\Helpers\Helper;
-use TheFramework\Helpers\Validator;
+use TheFramework\App\Validator;
 
 public function store() {
     $input = Helper::request()->all();
@@ -226,12 +226,85 @@ public function store() {
 
 ---
 
+## Mengedit Data (Update)
+
+Untuk mengupdate data, kita butuh rute baru dan method di controller.
+
+1. **Rute** (`routes/web.php`):
+
+   ```php
+   Router::add('GET', '/blog/{id}/edit', BlogController::class, 'edit');
+   Router::add('POST', '/blog/{id}/update', BlogController::class, 'update');
+   ```
+
+2. **Controller Method** (`BlogController.php`):
+
+   ```php
+   public function edit($id) {
+       $post = Post::findOrFail($id);
+       return View::render('blog/edit', ['post' => $post]);
+   }
+
+   public function update($id) {
+       $input = Helper::request()->all();
+       $post = Post::findOrFail($id);
+
+       $post->update([
+           'title'   => $input['title'],
+           'content' => $input['content']
+       ]);
+
+       Helper::redirect('/blog', 'success', 'Artikel berhasil diupdate!');
+   }
+   ```
+
+---
+
+## Menghapus Data (Delete)
+
+Gunakan _Method Spoofing_ untuk penghapusan yang aman.
+
+1. **Rute** (`routes/web.php`):
+
+   ```php
+   Router::add('POST', '/blog/{id}/delete', BlogController::class, 'destroy');
+   ```
+
+2. **Controller Method** (`BlogController.php`):
+
+   ```php
+   public function destroy($id) {
+       $post = Post::findOrFail($id);
+       $post->delete();
+
+       Helper::redirect('/blog', 'danger', 'Artikel telah dihapus.');
+   }
+   ```
+
+3. **Tombol Hapus di View** (`blog/index.php`):
+   ```html
+   <form
+     action="/blog/<?= $post->id ?>/delete"
+     method="POST"
+     style="display:inline;"
+   >
+     <input
+       type="hidden"
+       name="_token"
+       value="<?= Helper::generateCsrfToken() ?>"
+     />
+     <button type="submit" onclick="return confirm('Yakin?')">Hapus</button>
+   </form>
+   ```
+
+---
+
 ## Kesimpulan
 
-Selamat! Anda baru saja membangun fitur blog lengkap dengan database, validasi, dan keamanan (CSRF) menggunakan The Framework.
+Selamat! Anda baru saja membangun aplikasi Blog fungsional dengan fitur CRUD lengkap. Framework ini menangani urusan berat seperti routing, database, dan security, sehingga Anda bisa fokus pada logika aplikasi.
 
 Langkah selanjutnya:
 
-- Tambahkan fitur **Edit** dan **Delete**.
 - Tambahkan autentikasi (Login Admin).
-- Percantik tampilan dengan CSS framework (Bootstrap/Tailwind).
+- Implementasikan **File Upload** untuk gambar thumbnail artikel.
+- Percantik tampilan dengan CSS atau framework seperti Tailwind.

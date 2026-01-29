@@ -41,7 +41,8 @@ class CsrfMiddleware implements Middleware
                 }
 
                 // Coba load view error 403 jika ada
-                $viewFile = dirname(__DIR__, 2) . '/resources/views/errors/403.blade.php';
+                $baseDir = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__, 2);
+                $viewFile = $baseDir . '/resources/views/errors/403.blade.php';
                 if (file_exists($viewFile)) {
                     // Quick include view (tanpa Blade Engine full untuk performa error)
                     // Atau bisa panggil View::render() jika class View sudah diload

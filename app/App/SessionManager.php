@@ -35,7 +35,11 @@ class SessionManager
                 $_SESSION['initiated'] = true;
             }
 
-
+            // 🔒 SECURITY NOTE: User Agent checking disabled (too strict)
+            // Problem: Browser updates → user agent changes → legitimate users kicked out
+            // Laravel, Symfony, and other frameworks don't implement this check
+            // If enabled, should be configurable via SESSION_CHECK_USER_AGENT=true/.env
+            /*
             $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
             if (!isset($_SESSION['user_agent'])) {
                 $_SESSION['user_agent'] = $userAgent;
@@ -43,7 +47,7 @@ class SessionManager
                 self::destroySession();
                 return Helper::redirect('/login', 'warning', 'Invalid session');
             }
-
+            */
 
             $timeout = 30 * 60;
             if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {

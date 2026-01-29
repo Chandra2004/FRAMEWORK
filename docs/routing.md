@@ -26,10 +26,10 @@ The Framework mendukung semua verb HTTP standar.
 ```php
 use TheFramework\App\Router;
 
-Router::add('GET', '/home', 'HomeController@index');
-Router::add('POST', '/post/store', 'PostController@store');
-Router::add('PUT', '/post/update', 'PostController@update');
-Router::add('DELETE', '/post/delete', 'PostController@destroy');
+Router::add('GET', '/home', HomeController::class, 'index');
+Router::add('POST', '/post/store', PostController::class, 'store');
+Router::add('PUT', '/post/update', PostController::class, 'update');
+Router::add('DELETE', '/post/delete', PostController::class, 'destroy');
 ```
 
 ### Menggunakan Closure (Fungsi Langsung)
@@ -52,7 +52,7 @@ Anda sering perlu menangkap ID dari URL (misal `/user/5`).
 
 ```php
 // URL: /user/5
-Router::add('GET', '/user/{id}', 'UserController@show');
+Router::add('GET', '/user/{id}', UserController::class, 'show');
 ```
 
 Di Controller, parameter ini otomatis di-mappping ke argumen method:
@@ -84,10 +84,10 @@ Mengelompokkan rute yang mirip membuat kode lebih rapi.
 Router::group(['prefix' => '/admin', 'middleware' => ['AuthMiddleware']], function() {
 
     // URL: /admin/dashboard
-    Router::add('GET', '/dashboard', 'AdminController@dashboard');
+    Router::add('GET', '/dashboard', AdminController::class, 'dashboard');
 
     // URL: /admin/users
-    Router::add('GET', '/users', 'AdminController@users');
+    Router::add('GET', '/users', AdminController::class, 'users');
 
 });
 ```
@@ -99,7 +99,7 @@ Router::group(['prefix' => '/admin', 'middleware' => ['AuthMiddleware']], functi
 Anda bisa memasang middleware (filter) pada rute spesifik.
 
 ```php
-Router::add('GET', '/profile', 'UserController@profile', ['AuthMiddleware']);
+Router::add('GET', '/profile', UserController::class, 'profile', [AuthMiddleware::class]);
 ```
 
 Rute ini hanya bisa diakses jika `AuthMiddleware` meloloskan request.
