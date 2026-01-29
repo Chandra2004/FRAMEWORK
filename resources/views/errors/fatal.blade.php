@@ -4,235 +4,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kesalahan Fatal - {{ $error_code ?? 500 }} | The Framework</title>
+    <title>Fatal Error - {{ $error_code ?? 500 }} | The Framework</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        :root {
+            --bg-main: #0a0000;
+            --bg-card: #1a0505;
+            --border: rgba(248, 81, 73, 0.15);
+            --error: #f85149;
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
         }
 
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.5;
+            background-image: radial-gradient(circle at 50% 0%, #3d1414 0%, #0a0000 70%);
         }
 
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.5;
-            }
+        .premium-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
         }
 
-        .animate-pulse-slow {
-            animation: pulse 3s ease-in-out infinite;
+        .editor-container {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #0d1117;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .editor-header {
+            background-color: #161b22;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .window-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .editor-content {
+            padding: 12px 0;
+            overflow-x: auto;
+        }
+
+        .code-line {
+            display: flex;
+            width: 100%;
+            height: 22px;
+            align-items: center;
+            transition: background 0.1s;
+        }
+
+        .ln-col {
+            width: 50px;
+            text-align: right;
+            padding-right: 16px;
+            color: #484f58;
+            user-select: none;
+            flex-shrink: 0;
+            font-size: 11px;
+            border-right: 1px solid var(--border);
+        }
+
+        .code-col {
+            padding-left: 16px;
+            white-space: pre;
+            color: var(--text-main);
+            font-size: 13px;
+        }
+
+        .error-line {
+            background: rgba(248, 81, 73, 0.15) !important;
+            position: relative;
+        }
+
+        .error-line::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--error);
+        }
+
+        .glow-error {
+            text-shadow: 0 0 30px rgba(248, 81, 73, 0.5);
+        }
+
+        .trace-item {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .trace-item:hover {
+            background: rgba(248, 81, 73, 0.03);
+        }
+
+        .trace-badge {
+            font-size: 9px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .trace-badge-app {
+            background: rgba(248, 81, 73, 0.15);
+            color: #f85149;
+            border: 1px solid rgba(248, 81, 73, 0.3);
+        }
+
+        .trace-badge-vendor {
+            background: rgba(139, 148, 158, 0.1);
+            color: #8b949e;
+            border: 1px solid rgba(139, 148, 158, 0.2);
+        }
+
+        .code-snippet-trace {
+            margin-top: 12px;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .trace-item.active .code-snippet-trace {
+            display: block;
+        }
+
+        .trace-item.active {
+            border-left: 2px solid #f85149;
         }
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-slate-950 via-red-950/20 to-slate-950 min-h-screen text-gray-100">
-    <div class="min-h-screen flex flex-col">
-        <!-- Header -->
-        <header class="border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="skull" class="w-6 h-6 text-red-500"></i>
-                        <span
-                            class="text-xl font-semibold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                            The Framework
-                        </span>
-                    </div>
-                    <a href="https://github.com/Chandra2004/FRAMEWORK" target="_blank"
-                        class="text-slate-400 hover:text-cyan-400 transition-colors">
-                        <i data-lucide="github" class="w-5 h-5"></i>
-                    </a>
+<body class="p-4 md:p-8 min-h-screen">
+    <div class="max-w-6xl mx-auto space-y-8">
+        <!-- Fatal Hero -->
+        <div class="space-y-6">
+            <div class="flex items-center gap-4">
+                <div
+                    class="px-4 py-1.5 bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] font-black rounded-full uppercase tracking-[0.2em] animate-pulse">
+                    CRITICAL SYSTEM FAILURE
+                </div>
+                <div class="text-slate-500 text-xs font-mono">
+                    {{ date('H:i:s') }}
                 </div>
             </div>
-        </header>
 
-        <!-- Main Content -->
-        <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-            <div class="space-y-6 animate-fade-in">
-                <!-- Error Header -->
-                <div class="text-center space-y-4">
-                    <div
-                        class="inline-flex items-center gap-3 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full animate-pulse-slow">
-                        <i data-lucide="alert-octagon" class="w-5 h-5 text-red-500"></i>
-                        <span class="text-red-400 font-medium">HTTP {{ $error_code ?? 500 }} - Kesalahan Sistem
-                            Fatal</span>
-                    </div>
-                    <h1
-                        class="text-6xl sm:text-7xl font-bold bg-gradient-to-r from-red-500 via-pink-500 to-red-600 bg-clip-text text-transparent">
-                        Kesalahan Fatal
-                    </h1>
-                    <div
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full">
-                        <i data-lucide="code" class="w-4 h-4 text-red-400"></i>
-                        <span class="text-red-300 font-medium">{{ $type_name ?? 'E_ERROR' }}</span>
-                    </div>
-                    <p class="text-xl text-slate-300 max-w-2xl mx-auto">
-                        {{ $message }}
-                    </p>
-                </div>
+            <h1 class="text-5xl md:text-7xl font-black text-white glow-error uppercase italic tracking-tighter">
+                {{ $error_code_text ?? 'FATAL_ERROR' }}
+            </h1>
 
-                <!-- Error Details Grid -->
-                <div class="grid md:grid-cols-3 gap-4">
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
-                        <div class="flex items-center gap-2 mb-3">
-                            <i data-lucide="file-code" class="w-4 h-4 text-red-400"></i>
-                            <span class="text-sm font-medium text-slate-400">Lokasi File</span>
-                        </div>
-                        <p class="text-sm font-mono text-slate-200 break-all">{{ $file }}</p>
-                        <p class="text-xs text-slate-500 mt-1">Baris: {{ $line }}</p>
-                    </div>
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
-                        <div class="flex items-center gap-2 mb-3">
-                            <i data-lucide="clock" class="w-4 h-4 text-red-400"></i>
-                            <span class="text-sm font-medium text-slate-400">Waktu Kejadian</span>
-                        </div>
-                        <p class="text-sm text-slate-200">{{ date('d M Y, H:i:s') }}</p>
-                    </div>
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
-                        <div class="flex items-center gap-2 mb-3">
-                            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i>
-                            <span class="text-sm font-medium text-slate-400">Tipe Error</span>
-                        </div>
-                        <p class="text-sm text-slate-200 font-mono">{{ $type_name ?? 'E_ERROR' }}</p>
-                        <p class="text-xs text-slate-500 mt-1">Kode: {{ $type ?? 0 }}</p>
-                    </div>
-                </div>
+            <div class="p-6 bg-red-500/5 border-l-4 border-red-500 rounded-r-xl">
+                <p class="text-xl md:text-2xl text-red-100/70 font-medium leading-relaxed italic">
+                    "{{ $message }}"
+                </p>
+            </div>
+        </div>
 
-                <!-- Code Snippet -->
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Code Preview -->
                 @if (!empty($code_snippet))
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
-                        <div
-                            class="bg-slate-900/50 px-5 py-3 border-b border-slate-700/50 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="code" class="w-4 h-4 text-red-400"></i>
-                                <span class="text-sm font-medium text-slate-300">{{ basename($file) }}</span>
+                    <div class="editor-container shadow-2xl shadow-red-900/20">
+                        <div class="editor-header">
+                            <div class="flex items-center gap-4">
+                                <div class="window-dot bg-[#ff5f56]"></div>
+                                <div class="window-dot bg-[#ffbd2e]"></div>
+                                <div class="window-dot bg-[#27c93f]"></div>
+                                <div class="text-slate-400 text-xs font-bold font-mono ml-2">
+                                    {{ basename($file) }}:{{ $line }}
+                                </div>
                             </div>
-                            <span class="text-xs text-slate-500">Baris
-                                {{ min(array_keys($code_snippet)) }}-{{ max(array_keys($code_snippet)) }}</span>
                         </div>
-                        <div class="p-4 overflow-x-auto max-h-96 overflow-y-auto">
-                            <pre class="text-sm font-mono"><code>@foreach ($code_snippet as $lineNum => $codeLine)
-                                <span class="{{ $lineNum == $line ? 'bg-red-500/20 text-red-300 border-l-2 border-red-500 pl-2 -ml-2' : 'text-slate-300' }}">{{ str_pad($lineNum, 4, ' ', STR_PAD_LEFT) }} | {!! htmlspecialchars(rtrim($codeLine)) !!}</span>
-                            @endforeach</code></pre>
+                        <div class="editor-content scrollbar-hide">
+                            @foreach ($code_snippet as $lineNum => $codeLine)
+                                <div class="code-line {{ $lineNum == $line ? 'error-line' : '' }}">
+                                    <div class="ln-col">{{ $lineNum }}</div>
+                                    <div class="code-col font-medium">{!! htmlspecialchars(rtrim($codeLine)) !!}</div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 @endif
 
-                <!-- Request & Environment Info -->
-                <div class="grid md:grid-cols-2 gap-4">
-                    @if (!empty($request_info))
-                        <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
-                            <div class="bg-slate-900/50 px-5 py-3 border-b border-slate-700/50 flex items-center gap-2">
-                                <i data-lucide="globe" class="w-4 h-4 text-red-400"></i>
-                                <span class="text-sm font-medium text-slate-300">Info Request</span>
-                            </div>
-                            <div class="p-4 space-y-3 text-sm">
-                                <div>
-                                    <span class="text-slate-500">Metode:</span>
-                                    <span class="text-slate-200 ml-2 font-mono">{{ $request_info['method'] }}</span>
+                <!-- Interactive Stack Trace -->
+                @if (!empty($trace_parsed))
+                    <div class="space-y-4">
+                        <h3
+                            class="text-xs font-black uppercase tracking-widest text-red-500/50 flex items-center gap-2 px-2">
+                            <i data-lucide="layers" class="w-4 h-4"></i>
+                            Crash Analysis (Stack Trace)
+                        </h3>
+                        <div class="space-y-3">
+                            @foreach ($trace_parsed as $index => $item)
+                                <div class="premium-card p-4 trace-item {{ $index === 0 ? 'active' : '' }}"
+                                    onclick="this.classList.toggle('active')">
+                                    <div class="flex items-start gap-4">
+                                        <div
+                                            class="w-7 h-7 bg-red-500/10 rounded flex items-center justify-center text-[10px] font-bold text-red-500/50">
+                                            #{{ count($trace_parsed) - $index }}
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="flex items-center gap-3 mb-1 flex-wrap">
+                                                <span
+                                                    class="trace-badge {{ $item['is_app'] ? 'trace-badge-app' : 'trace-badge-vendor' }}">
+                                                    {{ $item['is_app'] ? 'App' : 'Internal' }}
+                                                </span>
+                                                <span class="text-sm font-bold text-white font-mono truncate">
+                                                    @if ($item['class'])
+                                                        {{ $item['class'] }}{{ $item['type'] }}
+                                                    @endif{{ $item['function'] }}()
+                                                </span>
+                                            </div>
+                                            <div class="text-xs text-slate-500 font-mono truncate">
+                                                {{ $item['file'] ?: '[internal]' }}@if ($item['line'])
+                                                    :{{ $item['line'] }}
+                                                @endif
+                                            </div>
+                                            @if ($item['is_app'] && !empty($item['snippet']))
+                                                <div class="code-snippet-trace editor-container mt-4 border-red-500/20">
+                                                    <div class="editor-content !p-0 !py-2 bg-[#0d1117]">
+                                                        @foreach ($item['snippet'] as $sLn => $sCode)
+                                                            <div
+                                                                class="code-line {{ $sLn == $item['line'] ? 'error-line' : '' }}">
+                                                                <div class="ln-col !border-white/5">{{ $sLn }}
+                                                                </div>
+                                                                <div class="code-col !text-xs !pl-4">
+                                                                    {!! htmlspecialchars(rtrim($sCode)) !!}</div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span class="text-slate-500">URI:</span>
-                                    <span
-                                        class="text-slate-200 ml-2 font-mono text-xs break-all">{{ $request_info['uri'] }}</span>
-                                </div>
-                                <div>
-                                    <span class="text-slate-500">IP:</span>
-                                    <span class="text-slate-200 ml-2 font-mono">{{ $request_info['ip'] }}</span>
-                                </div>
-                            </div>
+                            @endforeach
                         </div>
-                    @endif
+                    </div>
+                @endif
+            </div>
 
-                    @if (!empty($environment))
-                        <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
-                            <div class="bg-slate-900/50 px-5 py-3 border-b border-slate-700/50 flex items-center gap-2">
-                                <i data-lucide="server" class="w-4 h-4 text-red-400"></i>
-                                <span class="text-sm font-medium text-slate-300">Lingkungan (Environment)</span>
-                            </div>
-                            <div class="p-4 space-y-3 text-sm">
-                                <div>
-                                    <span class="text-slate-500">Versi PHP:</span>
-                                    <span class="text-slate-200 ml-2 font-mono">{{ $environment['php_version'] }}</span>
-                                </div>
-                                <div>
-                                    <span class="text-slate-500">Mode App:</span>
-                                    <span class="text-slate-200 ml-2 font-mono">{{ $environment['app_env'] }}</span>
-                                </div>
-                            </div>
+            <!-- Sidebars -->
+            <div class="space-y-6">
+                <!-- Location Info -->
+                <div class="premium-card p-6 bg-gradient-to-br from-[#1a0505] to-[#2d0a0a]">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                            <i data-lucide="skull" class="w-6 h-6 text-red-500"></i>
                         </div>
-                    @endif
-                </div>
-
-                <!-- Critical Actions -->
-                <div class="bg-red-500/10 border border-red-500/20 rounded-xl p-5">
-                    <div class="flex items-start gap-3">
-                        <i data-lucide="alert-circle" class="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"></i>
                         <div>
-                            <h3 class="text-red-300 font-semibold mb-2">Tindakan Segera Diperlukan</h3>
-                            <ul class="space-y-2 text-sm text-slate-300">
-                                <li class="flex items-start gap-2">
-                                    <i data-lucide="check-circle" class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5"></i>
-                                    <span>Periksa log error server untuk informasi lebih detail</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <i data-lucide="check-circle" class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5"></i>
-                                    <span>Review perubahan kode terakhir dan deployment</span>
-                                </li>
-                                <li class="flex items-start gap-2">
-                                    <i data-lucide="check-circle" class="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5"></i>
-                                    <span>Restart layanan aplikasi dan bersihkan cache jika perlu</span>
-                                </li>
-                            </ul>
+                            <div class="text-xs font-black text-red-500 uppercase">Emergency Boot</div>
+                            <div class="text-white font-bold">Stalled Operations</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Actions -->
-                <div class="flex flex-wrap gap-3 justify-center pt-4">
+                <div class="flex flex-col gap-3">
                     <a href="{{ url('/') }}"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors">
+                        class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-white text-black font-black rounded-xl hover:bg-slate-200 transition-all uppercase tracking-tighter text-sm">
                         <i data-lucide="home" class="w-4 h-4"></i>
-                        Beranda
-                    </a>
-                    <button onclick="window.location.reload()"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                        Muat Ulang
-                    </button>
-                    <a href="https://github.com/Chandra2004/FRAMEWORK/issues/new" target="_blank"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors">
-                        <i data-lucide="bug" class="w-4 h-4"></i>
-                        Lapor Bug
+                        Emergency Exit
                     </a>
                 </div>
             </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="border-t border-slate-800/50 mt-12 py-6">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-slate-500">
-                <p>&copy; {{ date('Y') }} The Framework. Dibuat dengan ❤️ oleh <a href="https://github.com/Chandra2004"
-                        target="_blank" class="text-cyan-400 hover:underline">Chandra Tri Antomo</a></p>
-            </div>
-        </footer>
+        </div>
     </div>
 
     <script>

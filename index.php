@@ -8,10 +8,12 @@ error_reporting(E_ALL);
 
 define('ROOT_DIR', __DIR__);
 
-// Load Routes
+// 1. Load Environment & Core Services
+require_once __DIR__ . '/bootstrap/app.php';
+
+// 2. Load Routes (Environment is now available)
 require_once __DIR__ . '/routes/web.php';
 require_once __DIR__ . '/routes/system.php';
 
-require_once __DIR__ . '/bootstrap/app.php';
-
+// 3. Run Application
 \TheFramework\App\Router::run();

@@ -1,133 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="icon" type="image/x-icon" href="{{ url('file/public/favicon.ico') }}">
-    <title>Payment Required | The Framework</title>
-    
+    <title>Gagal Pembayaran | The Framework</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
         }
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.2); }
-            50% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.4); }
+
+        .glow-gold {
+            text-shadow: 0 0 30px rgba(210, 153, 34, 0.3);
         }
-        .animate-fade-in { animation: fadeIn 0.8s ease-out; }
-        .animate-pulse-glow { animation: pulseGlow 4s ease-in-out infinite; }
     </style>
 </head>
-<body class="bg-gradient-to-b from-zinc-950 to-black min-h-screen text-zinc-100">
-    <div class="min-h-screen flex items-center justify-center px-6 py-12">
-        <div class="max-w-lg w-full space-y-14 animate-fade-in">
-            <!-- Header with Logo -->
-            <div class="text-center space-y-8">
-                <div class="flex justify-center">
-                    <div class="bg-zinc-900/80 border border-zinc-800 rounded-3xl p-10 shadow-2xl animate-pulse-glow">
-                        <img src="{{ url('file/public/favicon.ico') }}" alt="Logo The Framework" class="w-24 h-24 mx-auto">
-                    </div>
+
+<body
+    class="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_50%_0%,_#1a1505_0%,_#0d1117_100%)]">
+    <div class="max-w-2xl w-full text-center space-y-8">
+        <div class="space-y-4">
+            <div class="relative inline-block">
+                <div class="absolute inset-0 bg-amber-500/10 blur-3xl rounded-full"></div>
+                <i data-lucide="credit-card" class="w-24 h-24 text-amber-500 relative mx-auto mb-6"></i>
+            </div>
+
+            <h1 class="text-4xl md:text-5xl font-black text-white glow-gold tracking-tighter">Pembayaran Gagal</h1>
+            <p class="text-slate-400 text-lg leading-relaxed max-w-lg mx-auto">
+                Transaksi Anda tidak dapat diproses saat ini. Hal ini mungkin dikarenakan saldo tidak mencukupi, limit
+                kartu, atau gangguan pada penyedia layanan pembayaran.
+            </p>
+        </div>
+
+        <div class="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-6 backdrop-blur-sm max-w-md mx-auto">
+            <div class="flex items-start gap-4 text-left">
+                <div class="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="info" class="w-5 h-5 text-amber-400"></i>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-light tracking-wider text-zinc-400 uppercase">The Framework</h1>
-                    <h2 class="text-5xl font-bold mt-4">Payment Required</h2>
-                    <p class="text-zinc-400 mt-4 text-lg">Segera selesaikan pembayaran untuk melanjutkan layanan</p>
+                    <h3 class="text-sm font-bold text-amber-100 mb-1">Pesan Sistem</h3>
+                    <p class="text-xs text-amber-200/60 leading-relaxed italic">
+                        "{{ $message ?? 'Otorisasi pembayaran ditolak oleh bank atau penyedia layanan.' }}"
+                    </p>
                 </div>
             </div>
+        </div>
 
-            <!-- Payment Details Card -->
-            <div class="bg-zinc-900/60 backdrop-blur-md border border-zinc-800 rounded-3xl p-10 space-y-10">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-base">
-                    <div>
-                        <p class="text-zinc-500">Nomor Invoice</p>
-                        <p class="font-mono text-xl font-bold text-zinc-100">SPK/2024/WEB-001</p>
-                    </div>
-                    <div>
-                        <p class="text-zinc-500">Jatuh Tempo</p>
-                        <p class="text-cyan-400 text-xl font-bold">7 April 2025</p>
-                    </div>
-                    <div class="md:col-span-2">
-                        <p class="text-zinc-500">Total Tagihan</p>
-                        <p class="text-5xl font-bold text-zinc-100 mt-2">Rp2.580.000</p>
-                    </div>
-                    <div>
-                        <p class="text-zinc-500">Status</p>
-                        <p class="text-red-400 text-xl font-bold" id="daysOverdue">Terlambat</p>
-                    </div>
-                </div>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <button onclick="window.history.back()"
+                class="w-full sm:w-auto px-8 py-3 bg-amber-500 text-black font-black rounded-full hover:bg-amber-400 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Coba Lagi
+            </button>
+            <a href="{{ url('/') }}"
+                class="w-full sm:w-auto px-8 py-3 bg-slate-900 border border-slate-700 text-white font-black rounded-full hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="home" class="w-4 h-4"></i>
+                Beranda
+            </a>
+        </div>
 
-                <!-- Progress Bar -->
-                <div class="space-y-4">
-                    <div class="flex justify-between text-zinc-400">
-                        <span class="font-medium">Sudah Dibayar • Rp545.000</span>
-                        <span class="font-medium">Belum Dibayar • Rp2.035.000</span>
-                    </div>
-                    <div class="w-full bg-zinc-800 rounded-full h-4 overflow-hidden shadow-inner">
-                        <div class="bg-gradient-to-r from-cyan-500 to-cyan-400 h-4 rounded-full shadow-lg" style="width: 21%; transition: width 1.5s ease;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CTA -->
-            <div class="text-center space-y-6">
-                <a href="https://wa.me/6285730676143?text=Konfirmasi%20Pembayaran%20SPK/2024/WEB-001" target="_blank"
-                   class="inline-flex items-center gap-4 px-12 py-6 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white rounded-2xl font-bold text-xl transition-all shadow-xl">
-                    <i data-lucide="credit-card" class="w-7 h-7"></i>
-                    Bayar Sekarang
-                </a>
-                <p class="text-zinc-400">
-                    Sudah membayar? <a href="https://wa.me/6285730676143?text=Konfirmasi%20Pembayaran%20SPK/2024/WEB-001" target="_blank" class="text-cyan-400 hover:underline font-medium">Konfirmasi di sini</a>
-                </p>
-            </div>
-
-            <!-- Contact -->
-            <div class="bg-zinc-900/60 backdrop-blur-md border border-zinc-800 rounded-3xl p-10">
-                <div class="flex items-center justify-center gap-4 mb-8">
-                    <i data-lucide="help-circle" class="w-6 h-6 text-cyan-400"></i>
-                    <h3 class="text-xl font-bold">Butuh Bantuan?</h3>
-                </div>
-                <div class="space-y-6 text-center">
-                    <div>
-                        <i data-lucide="mail" class="w-5 h-5 text-cyan-400 mb-2"></i>
-                        <a href="mailto:chandratriantomo123@gmail.com" class="block text-cyan-400 hover:underline text-lg">chandratriantomo123@gmail.com</a>
-                    </div>
-                    <div>
-                        <i data-lucide="phone" class="w-5 h-5 text-cyan-400 mb-2"></i>
-                        <a href="tel:+6285730676143" class="block text-cyan-400 hover:underline text-lg">(+62) 857-3067-6143</a>
-                    </div>
-                </div>
-                <p class="text-xs text-zinc-500 mt-8 pt-8 border-t border-zinc-800 text-center">
-                    Keterlambatan pembayaran dapat mengakibatkan penangguhan layanan
-                </p>
-            </div>
-
-            <!-- Footer -->
-            <div class="text-center text-sm text-zinc-600">
-                <p>&copy; 2025 The Framework. Created with ❤️ by 
-                    <a href="https://github.com/Chandra2004" target="_blank" class="text-cyan-400 hover:underline">Chandra Tri Antomo</a>
-                </p>
-            </div>
+        <div class="text-[10px] text-slate-700 font-mono tracking-widest uppercase italic">
+            MIDTRANS_TX_ID: {{ strtoupper(substr(md5(time()), 0, 12)) }}
         </div>
     </div>
 
     <script>
         lucide.createIcons();
-        const dueDate = new Date('2025-04-07');
-        const today = new Date();
-        const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-        const el = document.getElementById('daysOverdue');
-        if (diffDays < 0) {
-            el.textContent = `${Math.abs(diffDays)} Hari Terlambat`;
-            el.classList.add('text-red-400');
-        } else {
-            el.textContent = `${diffDays} Hari Lagi`;
-            el.classList.add('text-cyan-400');
-        }
     </script>
 </body>
+
 </html>

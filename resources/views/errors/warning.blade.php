@@ -4,189 +4,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peringatan - {{ $error_code ?? 200 }} | The Framework</title>
+    <title>{{ $severity_name ?? 'Warning' }} | The Framework</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        :root {
+            --bg-main: #0d1117;
+            --bg-card: #161b22;
+            --border: rgba(210, 153, 34, 0.2);
+            --warning: #d29922;
+            --text-main: #c9d1d9;
         }
 
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-out;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.5;
+            background-image: linear-gradient(180deg, rgba(210, 153, 34, 0.05) 0%, rgba(13, 17, 23, 0) 500px);
+        }
+
+        .premium-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .editor-container {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #0d1117;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .editor-header {
+            background-color: #161b22;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .window-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .editor-content {
+            padding: 16px 0;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+
+        .code-line {
+            display: flex;
+            width: 100%;
+            height: 24px;
+            align-items: center;
+        }
+
+        .ln-col {
+            width: 55px;
+            text-align: right;
+            padding-right: 20px;
+            color: #484f58;
+            user-select: none;
+            flex-shrink: 0;
+            font-size: 12px;
+            border-right: 1px solid var(--border);
+        }
+
+        .code-col {
+            padding-left: 20px;
+            white-space: pre;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+
+        .highlight-line {
+            background: rgba(210, 153, 34, 0.1);
+            position: relative;
+        }
+
+        .highlight-line::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--warning);
+        }
+
+        .highlight-line .ln-col {
+            color: var(--warning);
+            font-weight: bold;
+        }
+
+        .glow-warning {
+            text-shadow: 0 0 20px rgba(210, 153, 34, 0.2);
         }
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-slate-950 via-amber-950/10 to-slate-950 min-h-screen text-gray-100">
-    <div class="min-h-screen flex flex-col">
-        <!-- Header -->
-        <header class="border-b border-slate-800/50 bg-slate-900/30 backdrop-blur-sm">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="alert-triangle" class="w-6 h-6 text-amber-500"></i>
-                        <span
-                            class="text-xl font-semibold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                            The Framework
-                        </span>
+<body class="p-6 md:p-12">
+    <div class="max-w-5xl mx-auto space-y-8">
+        <!-- Header Section -->
+        <div class="space-y-4">
+            <div
+                class="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-black rounded-md uppercase tracking-widest">
+                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                Runtime Warning
+            </div>
+
+            <h1 class="text-3xl md:text-5xl font-bold glow-warning">
+                {{ $severity_name ?? 'E_WARNING' }}
+            </h1>
+
+            <p class="text-lg text-slate-400 max-w-3xl leading-relaxed">
+                {{ $message }}
+            </p>
+        </div>
+
+        <!-- Meta Info -->
+        <div class="grid md:grid-cols-2 gap-4">
+            <div class="premium-card p-5 space-y-2">
+                <div class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Source Context</div>
+                <div class="text-sm font-mono text-slate-300 truncate" title="{{ $file }}">
+                    {{ $file }}
+                </div>
+                <div class="text-xs text-amber-500 font-bold">Line: {{ $line }}</div>
+            </div>
+
+            <div class="premium-card p-5 space-y-2 bg-gradient-to-r from-[#161b22] to-[#1c2128]">
+                <div class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Framework State</div>
+                <div class="flex items-center gap-4">
+                    <div class="text-sm font-bold text-slate-300">Severity: {{ $severity ?? 0 }}</div>
+                    <div class="w-px h-4 bg-slate-700"></div>
+                    <div class="text-sm font-bold text-slate-300">PHP {{ PHP_VERSION }}</div>
+                </div>
+                <div class="text-xs text-slate-500 italic">Execution will continue after this warning.</div>
+            </div>
+        </div>
+
+        <!-- Code Preview -->
+        <div class="editor-container">
+            <div class="editor-header">
+                <div class="flex items-center gap-4">
+                    <div class="flex gap-1.5">
+                        <div class="window-dot bg-[#ff5f56]"></div>
+                        <div class="window-dot bg-[#ffbd2e]"></div>
+                        <div class="window-dot bg-[#27c93f]"></div>
                     </div>
-                    <a href="https://github.com/Chandra2004/FRAMEWORK" target="_blank"
-                        class="text-slate-400 hover:text-cyan-400 transition-colors">
-                        <i data-lucide="github" class="w-5 h-5"></i>
-                    </a>
+                    <div class="text-xs font-medium text-slate-500 font-mono">{{ basename($file) }}</div>
+                </div>
+                <div class="text-[10px] font-black text-slate-700 uppercase">Warning Snapshot</div>
+            </div>
+            <div class="editor-content">
+                @php
+                    if (empty($code_snippet)) {
+                        $lines = @file($file);
+                        $start = max(0, $line - 5);
+                        $end = min(count($lines), $line + 4);
+                        $code_snippet = [];
+                        for ($i = $start; $i < $end; $i++) {
+                            $code_snippet[$i + 1] = $lines[$i];
+                        }
+                    }
+                @endphp
+                @foreach ($code_snippet as $lineNum => $codeLine)
+                    <div class="code-line {{ $lineNum == $line ? 'highlight-line' : '' }}">
+                        <div class="ln-col">{{ $lineNum }}</div>
+                        <div class="code-col">{!! htmlspecialchars(rtrim($codeLine)) !!}</div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <!-- Info Request -->
+        @if (!empty($request_info))
+            <div class="premium-card overflow-hidden">
+                <div class="px-5 py-3 border-b border-white/5 bg-black/20 text-xs font-black uppercase text-slate-500">
+                    Request Trace</div>
+                <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+                    <div>
+                        <span class="block text-slate-600 mb-1">Method</span>
+                        <span class="text-blue-400">{{ $request_info['method'] }}</span>
+                    </div>
+                    <div class="col-span-1 md:col-span-2">
+                        <span class="block text-slate-600 mb-1">Path</span>
+                        <span class="text-slate-300 truncate block">{{ $request_info['uri'] }}</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-600 mb-1">Remote IP</span>
+                        <span class="text-slate-300">{{ $request_info['ip'] }}</span>
+                    </div>
                 </div>
             </div>
-        </header>
+        @endif
 
-        <!-- Main Content -->
-        <main class="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-            <div class="space-y-6 animate-fade-in">
-                <!-- Warning Header -->
-                <div class="text-center space-y-4">
-                    <div
-                        class="inline-flex items-center gap-3 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full">
-                        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i>
-                        <span class="text-amber-400 font-medium">{{ $severity_name ?? 'Peringatan' }}</span>
-                        @if (!empty($error_code))
-                            <span class="text-xs text-amber-500/70">HTTP {{ $error_code }}</span>
-                        @endif
-                    </div>
-                    <h1
-                        class="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
-                        Peringatan Framework
-                    </h1>
-                    <p
-                        class="text-lg text-slate-300 max-w-xl mx-auto bg-amber-500/10 border border-amber-500/20 rounded-xl px-6 py-4">
-                        {{ $message }}
-                    </p>
-                </div>
-
-                <!-- Error Details Grid -->
-                <div class="grid md:grid-cols-2 gap-4">
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
-                        <div class="flex items-center gap-2 mb-3">
-                            <i data-lucide="file-code" class="w-4 h-4 text-amber-400"></i>
-                            <span class="text-sm font-medium text-slate-400">Lokasi File</span>
-                        </div>
-                        <p class="text-sm font-mono text-slate-200 break-all">{{ basename($file) }}</p>
-                        <p class="text-xs text-slate-500 mt-1 break-all">{{ $file }}</p>
-                        <p class="text-xs text-amber-400 mt-2 font-semibold">Baris: {{ $line }}</p>
-                    </div>
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
-                        <div class="flex items-center gap-2 mb-3">
-                            <i data-lucide="alert-circle" class="w-4 h-4 text-amber-400"></i>
-                            <span class="text-sm font-medium text-slate-400">Tingkat Keparahan</span>
-                        </div>
-                        <p class="text-sm text-amber-300 font-mono font-semibold">{{ $severity_name ?? 'E_WARNING' }}
-                        </p>
-                        <p class="text-xs text-slate-500 mt-1">Kode: {{ $severity ?? 0 }}</p>
-                    </div>
-                </div>
-
-                <!-- Code Snippet -->
-                @if (!empty($code_snippet))
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
-                        <div
-                            class="bg-slate-900/50 px-5 py-3 border-b border-slate-700/50 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="code" class="w-4 h-4 text-amber-400"></i>
-                                <span class="text-sm font-medium text-slate-300">{{ basename($file) }}</span>
-                            </div>
-                            <span class="text-xs text-slate-500">Baris
-                                {{ min(array_keys($code_snippet)) }}-{{ max(array_keys($code_snippet)) }}</span>
-                        </div>
-                        <div class="p-4 overflow-x-auto max-h-96 overflow-y-auto">
-                            <pre class="text-sm font-mono"><code>@foreach ($code_snippet as $lineNum => $codeLine)
-                                <span class="{{ $lineNum == $line ? 'bg-amber-500/20 text-amber-300 border-l-2 border-amber-500 pl-2 -ml-2' : 'text-slate-300' }}">{{ str_pad($lineNum, 4, ' ', STR_PAD_LEFT) }} | {!! htmlspecialchars(rtrim($codeLine)) !!}</span>
-                            @endforeach</code></pre>
-                        </div>
-                    </div>
-                @else
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
-                        <div
-                            class="bg-slate-900/50 px-5 py-3 border-b border-slate-700/50 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="code" class="w-4 h-4 text-amber-400"></i>
-                                <span class="text-sm font-medium text-slate-300">{{ basename($file) }}</span>
-                            </div>
-                            <span class="text-xs text-slate-500">Baris {{ $line }}</span>
-                        </div>
-                        <div class="p-4 overflow-x-auto max-h-96 overflow-y-auto">
-                            @php
-                                if (file_exists($file) && is_readable($file)) {
-                                    $lines = file($file);
-                                    $start = max(0, $line - 5);
-                                    $end = min(count($lines), $line + 4);
-                                } else {
-                                    $lines = [];
-                                    $start = $end = 0;
-                                }
-                            @endphp
-                            <pre class="text-sm font-mono"><code>@for ($i = $start; $i <= $end; $i++)
-                                <span class="{{ $i + 1 == $line ? 'bg-amber-500/20 text-amber-300 border-l-2 border-amber-500 pl-2 -ml-2' : 'text-slate-300' }}">{{ str_pad($i + 1, 4, ' ', STR_PAD_LEFT) }} | {!! htmlspecialchars($lines[$i] ?? '') !!}</span>
-                            @endfor</code></pre>
-                        </div>
-                    </div>
-                @endif
-
-                <!-- Request Info -->
-                @if (!empty($request_info))
-                    <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden">
-                        <div class="bg-slate-900/50 px-5 py-3 border-b border-slate-700/50 flex items-center gap-2">
-                            <i data-lucide="globe" class="w-4 h-4 text-amber-400"></i>
-                            <span class="text-sm font-medium text-slate-300">Info Request</span>
-                        </div>
-                        <div class="p-4 grid md:grid-cols-2 gap-3 text-sm">
-                            <div>
-                                <span class="text-slate-500">Metode:</span>
-                                <span class="text-slate-200 ml-2 font-mono">{{ $request_info['method'] }}</span>
-                            </div>
-                            <div>
-                                <span class="text-slate-500">URI:</span>
-                                <span
-                                    class="text-slate-200 ml-2 font-mono text-xs break-all">{{ $request_info['uri'] }}</span>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                <!-- Actions -->
-                <div class="flex flex-wrap gap-3 justify-center pt-4">
-                    <button onclick="history.back()"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors">
-                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                        Kembali
-                    </button>
-                    <button onclick="window.location.reload()"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                        Muat Ulang
-                    </button>
-                    <a href="{{ url('/') }}"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors">
-                        <i data-lucide="home" class="w-4 h-4"></i>
-                        Beranda
-                    </a>
-                </div>
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="border-t border-slate-800/50 mt-12 py-6">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-slate-500">
-                <p>&copy; {{ date('Y') }} The Framework. Dibuat dengan ❤️ oleh <a href="https://github.com/Chandra2004"
-                        target="_blank" class="text-cyan-400 hover:underline">Chandra Tri Antomo</a></p>
-            </div>
-        </footer>
+        <!-- Actions -->
+        <div class="flex items-center justify-center gap-4 pt-4">
+            <button onclick="history.back()"
+                class="px-6 py-2 bg-slate-800 text-slate-300 font-bold rounded hover:bg-slate-700 transition flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Go Back
+            </button>
+            <a href="{{ url('/') }}"
+                class="px-6 py-2 bg-amber-500 text-black font-bold rounded hover:bg-amber-400 transition flex items-center gap-2">
+                <i data-lucide="home" class="w-4 h-4"></i>
+                Home
+            </a>
+        </div>
     </div>
 
     <script>
