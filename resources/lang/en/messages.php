@@ -1,8 +1,7 @@
 <?php
 
-// 'hero_title' => 'Build Scalable Web Apps',
 return [
-    'hero_title' => 'FARREL ANJAY GELOO',
+    'hero_title' => 'Build Scalable Web Apps',
     'hero_subtitle' => 'With Modern PHP Framework',
     'hero_description' => 'THE FRAMEWORK offers developers an elegant toolkit featuring database migrations, REST API support, and enterprise-grade security in a lightweight package.',
     'start_building' => 'Start Building',
