@@ -80,11 +80,11 @@ Perintah ini membuat file boilerplate secara otomatis di folder yang tepat.
 
 ### Config & Optimization
 
-| Perintah       | Deskripsi                                                                             |
-| :------------- | :------------------------------------------------------------------------------------ |
-| `config:cache` | Menggabungkan `.env` dan config lain menjadi satu file PHP cepat.                     |
-| `config:clear` | Menghapus cache konfigurasi.                                                          |
-| `optimize`     | Membersihkan SEMUA cache (Config, Route, View, OpCache). Jalankan ini setelah deploy! |
+| Perintah       | Deskripsi                                                                                                                                  |
+| :------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
+| `config:cache` | Menggabungkan `.env` dan config lain menjadi satu file PHP cepat.                                                                          |
+| `config:clear` | Menghapus cache konfigurasi.                                                                                                               |
+| `optimize`     | Membersihkan SEMUA cache (Config, Route, View, OpCache, Storage Cache, & Rate Limit). Jalankan ini untuk benar-benar me-refresh framework! |
 
 ### Queue & Asset
 

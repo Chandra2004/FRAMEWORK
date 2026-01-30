@@ -113,3 +113,16 @@ if (!function_exists('trans')) {
         return \TheFramework\App\Lang::get($key, $replace, $locale);
     }
 }
+if (!function_exists('base_path')) {
+    function base_path($path = '')
+    {
+        return ROOT_DIR . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : '');
+    }
+}
+
+if (!function_exists('storage_path')) {
+    function storage_path($path = '')
+    {
+        return base_path('storage' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+    }
+}

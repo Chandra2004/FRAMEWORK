@@ -12,7 +12,8 @@ Framework ini dilengkapi dengan kumpulan fungsi bantuan statis melalui class `Th
 4. [Validasi & Input](#validasi--input)
 5. [URL & Navigasi](#url--navigasi)
 6. [Format & Utilitas](#format--utilitas)
-7. [Autentikasi & Role](#autentikasi--role)
+7. [Path Helpers](#path-helpers)
+8. [Autentikasi & Role](#autentikasi--role)
 
 ---
 
@@ -117,9 +118,9 @@ Mengecek apakah request saat ini dikirim via AJAX (`X-Requested-With`).
 
 Mengecek metode HTTP request saat ini.
 
-### `Helper::get_client_ip()`
+### `Helper::get_client_ip()` & `Helper::ip()`
 
-Mendapatkan alamat IP user dengan dukungan proxy (Cloudflare/Load Balancer).
+Mendapatkan alamat IP user dengan dukungan proxy (Cloudflare/Load Balancer). `Helper::ip()` adalah alias yang lebih pendek.
 
 ---
 
@@ -148,6 +149,20 @@ Mengubah kalimat menjadi slug URL (`Judul Artikel Ini` -> `judul-artikel-ini`).
 ### `Helper::current_date($format = 'Y-m-d H:i:s')`
 
 Mendapatkan waktu saat ini dengan default timezone Asia/Jakarta.
+
+---
+
+## 📂 Path Helpers
+
+Kini tersedia fungsi helper global untuk memudahkan akses folder dalam project:
+
+### `base_path($path = '')`
+
+Mengembalikan path absolut ke folder root project. Contoh: `base_path('app/App')`.
+
+### `storage_path($path = '')`
+
+Mengembalikan path absolut ke folder `storage/`. Sangat berguna untuk operasi file cache atau uploads.
 
 ---
 

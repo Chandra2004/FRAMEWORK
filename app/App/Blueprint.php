@@ -11,6 +11,7 @@ class Blueprint
     private $pendingForeign = null;
     private $alterMode = false;
     private $alterStatements = [];
+    private $lastAddedColumn = null;
 
     public function __construct($table)
     {
@@ -118,6 +119,7 @@ class Blueprint
 
     public function increments($column)
     {
+        $this->lastAddedColumn = $column;
         $sql = "`$column` INT UNSIGNED AUTO_INCREMENT";
         $this->addColumnSql($sql);
         if (!$this->alterMode) {
@@ -131,6 +133,7 @@ class Blueprint
 
     public function bigIncrements($column)
     {
+        $this->lastAddedColumn = $column;
         $sql = "`$column` BIGINT UNSIGNED AUTO_INCREMENT";
         $this->addColumnSql($sql);
         if (!$this->alterMode) {
@@ -143,12 +146,14 @@ class Blueprint
 
     public function string($column, $length = 255)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` VARCHAR($length)");
         return $this;
     }
 
     public function integer($column, $unsigned = false)
     {
+        $this->lastAddedColumn = $column;
         $unsigned = $unsigned ? " UNSIGNED" : "";
         $this->addColumnSql("`$column` INT$unsigned");
         return $this;
@@ -161,24 +166,28 @@ class Blueprint
 
     public function text($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` TEXT");
         return $this;
     }
 
     public function longText($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` LONGTEXT");
         return $this;
     }
 
     public function boolean($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` TINYINT(1)");
         return $this;
     }
 
     public function timestamp($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
         return $this;
     }
@@ -192,42 +201,49 @@ class Blueprint
 
     public function date($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` DATE");
         return $this;
     }
 
     public function datetime($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` DATETIME");
         return $this;
     }
 
     public function time($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` TIME");
         return $this;
     }
 
     public function decimal($column, $total = 8, $places = 2)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` DECIMAL($total,$places)");
         return $this;
     }
 
     public function uuid($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` CHAR(36)");
         return $this;
     }
 
     public function json($column)
     {
+        $this->lastAddedColumn = $column;
         $this->addColumnSql("`$column` JSON");
         return $this;
     }
 
     public function enum($column, array $allowedValues)
     {
+        $this->lastAddedColumn = $column;
         $values = implode("','", array_map('addslashes', $allowedValues));
         $this->addColumnSql("`$column` ENUM('$values')");
         return $this;
@@ -288,20 +304,19 @@ class Blueprint
 
     public function unique($column = null)
     {
-        // Jika dipanggil chaining (nullable()->unique()), ambil kolom terakhir
-        if ($column === null) {
-            // Extract nama kolom dari definition terakhir (agak tricky regex-nya)
-            // Simplifikasi: user harus pass nama kolom jika standalone
-            return $this;
+        $column = $column ?: $this->lastAddedColumn;
+        if ($column) {
+            $this->addIndexSql("UNIQUE (`$column`)");
         }
-
-        $this->addIndexSql("UNIQUE (`$column`)");
         return $this;
     }
 
-    public function index($column)
+    public function index($column = null)
     {
-        $this->addIndexSql("INDEX idx_$column (`$column`)");
+        $column = $column ?: $this->lastAddedColumn;
+        if ($column) {
+            $this->addIndexSql("INDEX idx_$column (`$column`)");
+        }
         return $this;
     }
 

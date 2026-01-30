@@ -23,7 +23,9 @@ class OptimizeCommand implements CommandInterface
         $dirs = [
             BASE_PATH . '/storage/framework/views',
             BASE_PATH . '/storage/framework/cache',
-            BASE_PATH . '/storage/logs' // Optional
+            BASE_PATH . '/storage/cache/ratelimit',
+            BASE_PATH . '/storage/cache',
+            BASE_PATH . '/storage/logs'
         ];
 
         foreach ($dirs as $dir) {

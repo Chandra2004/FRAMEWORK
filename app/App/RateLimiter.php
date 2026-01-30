@@ -20,6 +20,11 @@ class RateLimiter
      */
     public static function check($key, $limit = 100, $window = 60)
     {
+        // Bypass rate limiting in development
+        if (Config::get('APP_ENV') === 'local' || Config::get('APP_DEBUG') === 'true') {
+            return true;
+        }
+
         try {
             return self::fallbackCheck($key, $limit, $window);
         } catch (\Exception $e) {

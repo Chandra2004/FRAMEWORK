@@ -82,6 +82,21 @@ Router::get('/api/data', function() {
 
 ---
 
+---
+
+## 🛠️ Developer Experience
+
+Sangat menyebalkan jika kita terkena blokir (Rate Limit) saat sedang melakukan _debug_ atau _coding_ di localhost. Oleh karena itu, Framework v5.0.0 ini memperkenalkan fitur **Bypass**:
+
+Rate Limiting akan secara otomatis **NONAKTIF** jika:
+
+- `.env` memiliki `APP_ENV=local`
+- Atau `.env` memiliki `APP_DEBUG=true`
+
+Ini memungkinkan Anda melakukan refresh halaman berkali-kali tanpa khawatir terkena pesan "Too many requests" di lingkungan pengembangan.
+
+---
+
 ## 🔒 Security Tips
 
 Selalu gunakan kombinasi **IP Address** dan **Action Name** sebagai `key` agar limit tidak tertukar antar pengguna.

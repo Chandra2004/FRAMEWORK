@@ -172,12 +172,13 @@ $users = User::with('posts')->where('active', true)->get();
 
 **Major Security & Stability Release**
 
-### 🔐 Security Enhancements
+### 🔐 Security & DX Enhancements
 
-- ✅ Multi-layer Web Command Center protection
-- ✅ Enhanced WAF (backtick & shell injection)
-- ✅ Model sensitive data hiding
-- ✅ Comprehensive security audit
+- ✅ **Fluent Migrations:** Chaining support for schema building (e.g., `->unique()`, `->index()`).
+- ✅ **Smart Rate Limiting:** Local development bypass (never get blocked on localhost again).
+- ✅ **Enhanced Helpers:** New `base_path()`, `storage_path()`, and `ip()` utilities.
+- ✅ **Deep Optimization:** `php artisan optimize` now clears ratelimit and storage caches.
+- ✅ **Premium Error UI:** Specialized dashboard for Blade errors with source mapping.
 
 ### 📖 [Read Full Changelog](CHANGELOG.md)
 

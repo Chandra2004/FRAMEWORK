@@ -47,9 +47,29 @@ Class `Schema` mendukung berbagai tipe kolom MySQL:
 
 ### Modifiers
 
-Anda tidak bisa menggunakan modifier _fluent_ (seperti `->nullable()`) di versi Framework 4.0 ini. Sebagai gantinya, argumen tambahan digunakan pada beberapa fungsi tertentu atau Anda perlu melakukan query SQL manual (`Schema::execute`) untuk constraint yang sangat spesifik.
+Di versi **5.0.0**, Schema Builder kini mendukung penulisan _fluent_ (chaining) yang mempermudah Anda dalam menambahkan constraint tanpa harus menuliskan nama kolom berulang kali:
 
-Namun, untuk kebutuhan standar (CRUD), method di atas sudah sangat mencukupi.
+| Modifier           | Deskripsi                                             |
+| :----------------- | :---------------------------------------------------- |
+| `->nullable()`     | Mengizinkan nilai NULL pada kolom.                    |
+| `->default(value)` | Menetapkan nilai default.                             |
+| `->unique()`       | Menambahkan index UNIQUE pada kolom tersebut.         |
+| `->index()`        | Menambahkan index biasa pada kolom tersebut.          |
+| `->primary()`      | Menjadikan kolom tersebut sebagai Primary Key.        |
+| `->unsigned()`     | Menetapkan tipe integer sebagai UNSIGNED (hanya pos). |
+
+**Contoh Chaining:**
+
+```php
+Schema::create('products', function($table) {
+    $table->id();
+    $table->string('sku')->unique();
+    $table->string('name')->index();
+    $table->integer('stock')->unsigned()->default(0);
+    $table->text('description')->nullable();
+    $table->timestamps();
+});
+```
 
 ### Menghapus Tabel
 

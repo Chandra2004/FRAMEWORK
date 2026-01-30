@@ -90,6 +90,11 @@ class Helper
                 $pattern = str_replace('*', '.*', $pattern);
                 return preg_match("#^/?" . ltrim($pattern, '/') . "$#", $currentPath);
             }
+
+            public function ip()
+            {
+                return Helper::get_client_ip();
+            }
         };
     }
 
