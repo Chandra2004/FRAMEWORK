@@ -21,9 +21,32 @@ class ServeCommand implements CommandInterface
         Config::loadEnv();
         $env = strtoupper(Config::get('APP_ENV', 'LOCAL'));
 
-        // Get user inputs
-        $host = $args[0] ?? '127.0.0.1';
-        $port = $args[1] ?? '8080';
+        // Parse BASE_URL to extract host and port dynamically
+        $defaultHost = '127.0.0.1';
+        $defaultPort = '8080';
+        $displayUrl = '';
+
+        $baseUrl = Config::get('BASE_URL', '');
+        if (!empty($baseUrl)) {
+            $parsed = parse_url($baseUrl);
+
+            // Extract host (domain/hostname)
+            if (isset($parsed['host'])) {
+                $displayUrl = $parsed['host'];
+            }
+
+            // Extract port or use scheme default
+            if (isset($parsed['port'])) {
+                $defaultPort = (string) $parsed['port'];
+            } elseif (isset($parsed['scheme'])) {
+                // Use default ports based on scheme
+                $defaultPort = ($parsed['scheme'] === 'https') ? '443' : '80';
+            }
+        }
+
+        // Get user inputs (can override BASE_URL settings)
+        $host = $args[0] ?? $defaultHost;
+        $port = $args[1] ?? $defaultPort;
 
         // ✅ SECURITY FIX: Validate IP address to prevent command injection
         if (!filter_var($host, FILTER_VALIDATE_IP)) {
@@ -43,8 +66,16 @@ class ServeCommand implements CommandInterface
             exit(1);
         }
 
+        // Display dynamic information based on BASE_URL
         echo "\033[38;5;39m➤ INFO  TheFramework $env Server\033[0m\n";
+
+        if (!empty($displayUrl)) {
+            // Show BASE_URL website/domain if available
+            echo "\033[38;5;39m  Website: {$displayUrl}\033[0m\n";
+        }
+
         echo "\033[38;5;39m  Server berjalan di http://$host:$port\033[0m\n";
+        echo "\033[38;5;39m  Port: {$port}\033[0m\n";
         echo "\033[38;5;39m  Tekan Ctrl+C untuk menghentikan\033[0m\n\n";
 
         // ✅ SECURITY FIX: Use escapeshellarg() to prevent command injection
