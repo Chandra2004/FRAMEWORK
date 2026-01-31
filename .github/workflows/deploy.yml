@@ -48,6 +48,12 @@ jobs:
       - name: 🚀 Publish Assets
         run: php artisan asset:publish
 
+      - name: 🚀 Re-run migrate
+        run: php artisan migrate:rollback
+
+      - name: 🚀 Run migrate
+        run: php artisan migrate
+
       - name: 📂 Sync files to InfinityFree
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
