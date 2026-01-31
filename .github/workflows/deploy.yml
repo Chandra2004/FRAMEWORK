@@ -45,6 +45,9 @@ jobs:
           echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
           echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
 
+      - name: 🚀 Publish Assets
+        run: php artisan asset:publish
+
       - name: 📂 Sync files to InfinityFree
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
