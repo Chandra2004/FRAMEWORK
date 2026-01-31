@@ -29,6 +29,28 @@
                     </a>
                 </li>
                 <li>
+                    <a href="{{ url('_system/migrate/rollback') }}" class="group flex items-start gap-4">
+                        <span class="text-slate-600 group-hover:text-amber-500 font-bold transition-colors">1a.</span>
+                        <div>
+                            <span
+                                class="text-slate-300 group-hover:text-white font-bold transition-colors">migrate:rollback</span>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Revert last migration batch</p>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/migrate/fresh') }}" class="group flex items-start gap-4"
+                        onclick="return confirm('DANGER ZONE: DATA LOSS WARNING!\n\nThis will DELETE ALL TABLES and DATA in your database.\nAction cannot be undone.\n\nAre you sure you want to proceed?')">
+                        <span class="text-slate-600 group-hover:text-rose-500 font-bold transition-colors">1b.</span>
+                        <div>
+                            <span
+                                class="text-slate-300 group-hover:text-white font-bold transition-colors">migrate:fresh</span>
+                            <p class="text-[11px] text-slate-500 mt-0.5 text-rose-500/70 group-hover:text-rose-400">⚠️ Drop
+                                all tables & re-migrate</p>
+                        </div>
+                    </a>
+                </li>
+                <li>
                     <a href="{{ url('_system/seed') }}" class="group flex items-start gap-4">
                         <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">02.</span>
                         <div>
@@ -82,6 +104,16 @@
                             <span
                                 class="text-slate-300 group-hover:text-white font-bold transition-colors">storage:link</span>
                             <p class="text-[11px] text-slate-500 mt-0.5">Create storage symbolic link</p>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/asset-publish') }}" class="group flex items-start gap-4">
+                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">07.</span>
+                        <div>
+                            <span
+                                class="text-slate-300 group-hover:text-white font-bold transition-colors">asset:publish</span>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Copy resources to public/assets</p>
                         </div>
                     </a>
                 </li>

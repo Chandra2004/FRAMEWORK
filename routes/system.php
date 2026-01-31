@@ -156,6 +156,120 @@ Router::add('GET', '/_system/migrate', function () {
     });
 });
 
+// 1.b MIGRATE ROLLBACK
+Router::add('GET', '/_system/migrate/rollback', function () {
+    checkSystemKey();
+    return renderTerminal('migrate:rollback', function () {
+        echo "⏪ SYSTEM MIGRATION ROLLBACK\n==============================\n";
+        $migrator = new Migrator();
+        $migrations = $migrator->getLastBatch();
+
+        if (empty($migrations)) {
+            echo "ℹ No migrations to rollback.\n";
+            return;
+        }
+
+        foreach ($migrations as $migration) {
+            $file = BASE_PATH . '/database/migrations/' . $migration . '.php';
+            if (file_exists($file)) {
+                require_once $file;
+                // Fix namespace detection if simple class name
+                $baseName = basename($file, '.php');
+                $class = 'Database\\Migrations\\Migration_' . $baseName;
+
+                if (class_exists($class)) {
+                    (new $class())->down();
+                    $migrator->delete($migration);
+                    echo "✔ Rolled back: $migration\n";
+                } else {
+                    echo "⚠ Skipped: Class $class not found.\n";
+                }
+            } else {
+                echo "❌ File missing: $migration.php\n";
+            }
+        }
+        echo "\n✨ Rollback Completed!";
+    });
+});
+
+// 1.c MIGRATE FRESH
+Router::add('GET', '/_system/migrate/fresh', function () {
+    checkSystemKey();
+    return renderTerminal('migrate:fresh', function () {
+        echo "☢️ SYSTEM MIGRATION FRESH (DROP ALL)\n==============================\n";
+        $migrator = new Migrator();
+
+        echo "Dropping all tables...\n";
+        $migrator->dropAllTables();
+        echo "✔ All tables dropped.\n\n";
+
+        // Call standard migrate script logic
+        $migrationDir = BASE_PATH . '/database/migrations/';
+        $files = glob($migrationDir . '*.php');
+        $migrator->ensureTableExists(); // Re-create migrations table
+
+        if (empty($files)) {
+            echo "ℹ No migration files found to re-run.\n";
+            return;
+        }
+
+        $batch = 1; // Start fresh
+        usort($files, fn($a, $b) => filemtime($a) - filemtime($b));
+
+        foreach ($files as $file) {
+            $baseName = basename($file, '.php');
+            require_once $file;
+            $class = 'Database\\Migrations\\Migration_' . $baseName;
+
+            if (class_exists($class)) {
+                (new $class())->up();
+                $migrator->log($baseName, $batch);
+                echo "✔ Migrated: $baseName\n";
+            }
+        }
+        echo "\n✨ Fresh Migration Completed!";
+    });
+});
+
+// 1.d ASSET PUBLISH
+Router::add('GET', '/_system/asset-publish', function () {
+    checkSystemKey();
+    return renderTerminal('asset:publish', function () {
+        echo "📦 ASSET PUBLISHER\n==============================\n";
+        $src = BASE_PATH . '/resources';
+        $dest = BASE_PATH . '/public/assets';
+        $folders = ['css', 'js', 'fonts', 'images'];
+
+        foreach ($folders as $folder) {
+            $s = "$src/$folder";
+            $d = "$dest/$folder";
+
+            if (!is_dir($s))
+                continue;
+
+            if (!is_dir($d))
+                mkdir($d, 0755, true);
+
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($s, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $item) {
+                $sub = $iterator->getSubPathName();
+                if ($item->isDir()) {
+                    if (!is_dir("$d/$sub"))
+                        mkdir("$d/$sub");
+                } else {
+                    copy($item, "$d/$sub");
+                }
+            }
+            echo "✔ Published: $folder\n";
+        }
+        echo "\n✨ Assets successfully published to public/assets!";
+    });
+});
+
 // 2. SEED DATABASE (Web Seeder)
 Router::add('GET', '/_system/seed', function () {
     checkSystemKey();
@@ -310,17 +424,21 @@ Router::add('GET', '/_system/my-ip', function () {
 // 7. SYSTEM STATUS
 Router::add('GET', '/_system/status', function () {
     checkSystemKey();
-    return renderTerminal('status', function () {
-        echo "📊 SYSTEM STATUS\n==============================\n";
-        echo "PHP Version: " . phpversion() . "\n";
-        echo "Server Software: " . $_SERVER['SERVER_SOFTWARE'] . "\n\n";
 
-        $required = ['pdo_mysql', 'mbstring', 'openssl', 'json', 'ctype', 'xml'];
-        foreach ($required as $ext) {
-            $status = extension_loaded($ext) ? "OK" : "MISSING";
-            echo str_pad($ext, 15) . ": $status\n";
-        }
-    });
+    $required = ['pdo_mysql', 'mbstring', 'openssl', 'json', 'ctype', 'xml', 'curl', 'gd'];
+    $extensions = [];
+    foreach ($required as $ext) {
+        $extensions[$ext] = extension_loaded($ext);
+    }
+
+    return \TheFramework\App\View::render('Internal::_system.status', [
+        'php_version' => phpversion(),
+        'server' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
+        'extensions' => $extensions,
+        'memory_limit' => ini_get('memory_limit'),
+        'upload_max' => ini_get('upload_max_filesize'),
+        'post_max' => ini_get('post_max_size')
+    ]);
 });
 
 // 8. SYSTEM DIAGNOSIS
@@ -363,22 +481,32 @@ Router::add('GET', '/_system/diagnose', function () {
 // 9. LOGS
 Router::add('GET', '/_system/logs', function () {
     checkSystemKey();
-    return renderTerminal('logs', function () {
-        echo "📜 SYSTEM LOGS (Last 50 lines)\n==============================\n";
-        $logFile = BASE_PATH . '/storage/logs/app.log';
-        if (!file_exists($logFile)) {
-            echo "ℹ No log file found.\n";
-            return;
-        }
+
+    $logFile = BASE_PATH . '/storage/logs/app.log';
+    $logs = [];
+
+    if (file_exists($logFile)) {
+        // Read last 100 lines efficiently
         $file = new \SplFileObject($logFile, 'r');
         $file->seek(PHP_INT_MAX);
         $totalLines = $file->key();
-        $file->seek(max(0, $totalLines - 50));
+        $startLine = max(0, $totalLines - 100);
+
+        $file->seek($startLine);
         while (!$file->eof()) {
-            echo $file->current();
+            $line = trim($file->current());
+            if (!empty($line)) {
+                $logs[] = $line;
+            }
             $file->next();
         }
-    });
+        $logs = array_reverse($logs); // Show newest first
+    }
+
+    return \TheFramework\App\View::render('Internal::_system.logs', [
+        'logs' => $logs,
+        'path' => $logFile
+    ]);
 });
 
 // 10. OPTIMIZE
@@ -406,47 +534,37 @@ Router::add('GET', '/_system/optimize', function () {
 // 11. ROUTES
 Router::add('GET', '/_system/routes', function () {
     checkSystemKey();
-    return renderTerminal('routes', function () {
-        echo "🛣️ REGISTERED ROUTES\n==============================\n";
 
-        $routes = Router::getRoutes();
-        $internal = [];
-        $developer = [];
+    $rawRoutes = Router::getRoutes();
+    $routes = [];
 
-        foreach ($routes as $route) {
-            $path = $route['path'];
-            $handler = $route['handler'];
-
-            // Logic Kategori: Internal vs Developer
-            $isInternal = false;
-            if (
-                strpos($path, '/_system') === 0 ||
-                strpos($path, '/file/') === 0 ||
-                $path === '/sitemap.xml' ||
-                (is_string($handler) && strpos($handler, 'TheFramework\\Http\\Controllers\\Services\\') !== false)
-            ) {
-                $isInternal = true;
-            }
-
-            if ($isInternal) {
-                $internal[] = $route;
-            } else {
-                $developer[] = $route;
-            }
+    foreach ($rawRoutes as $r) {
+        $handlerStr = 'Closure';
+        if (is_string($r['handler'])) {
+            $handlerStr = $r['handler'] . '@' . ($r['function'] ?? 'index');
+        } elseif (is_array($r['handler'])) {
+            $handlerStr = 'Array Controller';
         }
 
-        echo "\n🚀 [ DEVELOPER ROUTES ]\n";
-        echo "------------------------------\n";
-        foreach ($developer as $route) {
-            echo str_pad($route['method'], 8) . " : " . $route['path'] . "\n";
-        }
+        // Detect Type
+        $type = 'App';
+        if (strpos($r['path'], '/_system') === 0)
+            $type = 'System';
+        elseif (strpos($r['path'], '/file/') === 0)
+            $type = 'Asset';
 
-        echo "\n🛡️ [ INTERNAL / SYSTEM ROUTES ]\n";
-        echo "------------------------------\n";
-        foreach ($internal as $route) {
-            echo str_pad($route['method'], 8) . " : " . $route['path'] . "\n";
-        }
-    });
+        $routes[] = [
+            'method' => $r['method'],
+            'uri' => $r['path'],
+            'handler' => $handlerStr,
+            'middleware' => implode(', ', array_map(fn($m) => is_string($m) ? basename(str_replace('\\', '/', $m)) : 'Closure', $r['middleware'])),
+            'type' => $type
+        ];
+    }
+
+    return \TheFramework\App\View::render('Internal::_system.routes', [
+        'routes' => $routes
+    ]);
 });
 
 // 12. PHPINFO
