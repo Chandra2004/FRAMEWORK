@@ -46,6 +46,10 @@ Ini adalah tempat kerja utama Anda.
   - _Contoh: `AuthMiddleware` menendang user yang belum login._
 - **`Helpers/`**: Kumpulan fungsi statis global.
 - **`Services/`**: (Opsional) Tempat logika bisnis yang rumit agar Controller tetap bersih.
+- **`App/Internal/Views/`**: **Internal framework views** (tidak untuk developer):
+  - **`errors/`**: Halaman error sistem (403, 404, 500, maintenance, payment, dll).
+  - **`_system/`**: Dashboard dan UI untuk Web Command Center.
+  - **`layout.blade.php`**: Layout master untuk internal views.
 
 ---
 
@@ -68,11 +72,11 @@ Satu-satunya folder yang bisa diakses langsung oleh browser User.
 
 ## Bedah Folder `resources/`
 
-Tempat kode Frontend.
+Tempat kode Frontend (**user-facing views**).
 
-- **`views/`**: File template HTML (Blade-like).
+- **`views/`**: File template HTML (Blade-like) untuk aplikasi Anda.
   - `layouts/`: Master template (Header/Footer).
-  - `errors/`: Halaman error kustom (404.php, 500.php).
+  - `interface/`: Komponen UI dan halaman aplikasi.
 
 ---
 

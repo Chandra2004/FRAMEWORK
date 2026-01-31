@@ -34,13 +34,13 @@ class Handler
             $status = ($code >= 400 && $code < 600) ? $code : 500;
             http_response_code($status);
 
-            if ($e instanceof DatabaseException || str_contains(get_class($e), 'PDOException')) {
-                self::renderDatabaseError($e, $env);
+            if ($env === 'production') {
+                self::renderProductionError($status);
                 return;
             }
 
-            if ($env === 'production') {
-                self::renderProductionError($status);
+            if ($e instanceof DatabaseException || str_contains(get_class($e), 'PDOException')) {
+                self::renderDatabaseError($e, $env);
                 return;
             }
 
@@ -56,7 +56,7 @@ class Handler
                 http_response_code(500);
 
                 if ($env === 'production') {
-                    View::render('errors.500');
+                    View::render('Internal::errors.500');
                     return;
                 }
 
@@ -116,7 +116,7 @@ class Handler
             'error_code' => 500
         ];
 
-        $view = $isBlade ? 'errors.viewfails' : ($isFatal ? 'errors.fatal' : 'errors.warning');
+        $view = $isBlade ? 'Internal::errors.viewfails' : ($isFatal ? 'Internal::errors.fatal' : 'Internal::errors.warning');
 
         try {
             View::render($view, $data);
@@ -192,7 +192,7 @@ class Handler
             'error_code' => http_response_code()
         ];
 
-        $view = $isBlade ? 'errors.viewfails' : 'errors.exception';
+        $view = $isBlade ? 'Internal::errors.viewfails' : 'Internal::errors.exception';
 
         try {
             if (ob_get_length())
@@ -206,7 +206,7 @@ class Handler
     private static function renderDatabaseError($e, $env)
     {
         try {
-            View::render('errors.database', [
+            View::render('Internal::errors.database', [
                 'message' => $e->getMessage(),
                 'env_values' => $_ENV,
                 'request_info' => self::getRequestInfo(),
@@ -220,9 +220,9 @@ class Handler
     private static function renderProductionError($status)
     {
         $view = match ($status) {
-            404 => 'errors.404',
-            403 => 'errors.403',
-            default => 'errors.500'
+            404 => 'Internal::errors.404',
+            403 => 'Internal::errors.403',
+            default => 'Internal::errors.500'
         };
         try {
             View::render($view);

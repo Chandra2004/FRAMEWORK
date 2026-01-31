@@ -5,6 +5,7 @@ namespace TheFramework\App;
 use TheFramework\Http\Controllers\Services\ErrorController;
 use TheFramework\Http\Controllers\Services\DebugController;
 use TheFramework\App\DatabaseException;
+use TheFramework\App\View;
 use Exception;
 
 class Router
@@ -219,9 +220,34 @@ class Router
     private static function checkAppMode()
     {
         $mode = Config::get('APP_ENV');
-        // Logic maintenance/payment tetap di sini atau bisa dipindah
-        // Untuk sekarang biarkan saja, tapi pastikan ErrorController ada
-        // Jika ErrorController tidak ada, manual exit
+
+        // Jika APP_ENV = maintenance, tampilkan halaman maintenance untuk semua request
+        if (strtolower($mode) === 'maintenance') {
+            http_response_code(503); // Service Unavailable
+
+            try {
+                // Gunakan View::render() agar Blade syntax dan helper functions berfungsi
+                View::render('Internal::errors.maintenance', []);
+            } catch (\Exception $e) {
+                // Fallback jika View gagal
+                echo "<h1>503 Service Unavailable</h1><p>System is under maintenance. Please try again later.</p>";
+            }
+            exit;
+        }
+
+        // Jika APP_ENV = payment, tampilkan halaman payment reminder untuk semua request
+        if (strtolower($mode) === 'payment') {
+            http_response_code(402); // Payment Required
+
+            try {
+                // Gunakan View::render() agar Blade syntax dan helper functions berfungsi
+                View::render('Internal::errors.payment', []);
+            } catch (\Exception $e) {
+                // Fallback jika View gagal
+                echo "<h1>402 Payment Required</h1><p>Payment is required to access this service.</p>";
+            }
+            exit;
+        }
     }
 
     /**
@@ -308,12 +334,10 @@ class Router
     public static function handleAbort(string $message = "Akses ditolak")
     {
         http_response_code(403);
-        // Gunakan view baru resources/views/errors/403.blade.php
-        $viewFile = __DIR__ . '/../../resources/views/errors/403.blade.php';
-        if (file_exists($viewFile)) {
-            include $viewFile;
-        } else {
-            echo "<h1>403 Forbidden</h1><p>$message</p>";
+        try {
+            View::render('Internal::errors.403', ['message' => $message]);
+        } catch (\Exception $e) {
+            echo "<h1>403 Forbidden</h1><p>" . htmlspecialchars($message) . "</p>";
         }
     }
 
@@ -329,11 +353,9 @@ class Router
             ob_end_clean();
         http_response_code(404);
 
-        // Gunakan view baru resources/views/errors/404.blade.php
-        $viewFile = __DIR__ . '/../../resources/views/errors/404.blade.php';
-        if (file_exists($viewFile)) {
-            include $viewFile;
-        } else {
+        try {
+            View::render('Internal::errors.404');
+        } catch (\Exception $e) {
             echo "<h1>404 Not Found</h1>";
         }
     }

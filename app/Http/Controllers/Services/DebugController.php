@@ -323,7 +323,7 @@ class DebugController
             'DB_PASS' => Config::get('DB_PASS', 'not set') ? '***hidden***' : 'not set',
         ];
 
-        View::render('errors.database', [
+        View::render('Internal::errors.database', [
             'message' => $e->getMessage(),
             'config_errors' => $e->getConfigErrors(),
             'env_errors' => $e->getEnvErrors(),

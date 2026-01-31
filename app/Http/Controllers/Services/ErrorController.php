@@ -12,7 +12,7 @@ class ErrorController
         http_response_code(403);
         $model = [];
 
-        View::render('errors.403', $model);
+        View::render('Internal::errors.403', $model);
     }
 
     public static function error404()
@@ -20,7 +20,7 @@ class ErrorController
         http_response_code(404);
         $model = [];
 
-        View::render('errors.404', $model);
+        View::render('Internal::errors.404', $model);
     }
 
     public static function error500()
@@ -28,13 +28,13 @@ class ErrorController
         http_response_code(500);
         $model = [];
 
-        View::render('errors.500', $model);
+        View::render('Internal::errors.500', $model);
     }
 
     public static function databaseError(\TheFramework\App\DatabaseException $e)
     {
         http_response_code(500);
-        
+
         // Ambil nilai dari .env untuk ditampilkan
         Config::loadEnv();
         $env_values = [
@@ -44,8 +44,8 @@ class ErrorController
             'DB_USER' => Config::get('DB_USER', 'not set'),
             'DB_PASS' => Config::get('DB_PASS', 'not set') ? '***hidden***' : 'not set',
         ];
-        
-        View::render('errors.database', [
+
+        View::render('Internal::errors.database', [
             'message' => $e->getMessage(),
             'config_errors' => $e->getConfigErrors(),
             'env_errors' => $e->getEnvErrors(),
@@ -58,13 +58,13 @@ class ErrorController
     {
         $model = [];
 
-        View::render('errors.payment', $model);
+        View::render('Internal::errors.payment', $model);
     }
 
     public static function maintenance()
     {
         $model = [];
 
-        View::render('errors.maintenance', $model);
+        View::render('Internal::errors.maintenance', $model);
     }
 }

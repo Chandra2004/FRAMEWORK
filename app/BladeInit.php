@@ -82,9 +82,13 @@ class BladeInit
             $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
             $viewPaths = [
                 $root . '/resources/views',
-                $root . '/app/App/Internal/Views', // Internal System Views
+                // $root . '/app/App/Internal/Views', // REMOVED: Use namespace instead to prevent conflicts
             ];
             $finder = new FileViewFinder($filesystem, $viewPaths);
+
+            // Register Internal Namespace
+            // Usage: View::render('Internal::errors.404')
+            $finder->addNamespace('Internal', $root . '/app/App/Internal/Views');
 
             self::$blade = new Factory(
                 $resolver,

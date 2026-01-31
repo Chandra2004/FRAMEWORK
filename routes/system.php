@@ -94,7 +94,7 @@ function renderTerminal($command, $callback)
         echo "\n❌ FATAL ERROR: " . $e->getMessage();
     }
     $output = ob_get_clean();
-    return \TheFramework\App\View::render('terminal_output', [
+    return \TheFramework\App\View::render('Internal::_system.terminal_output', [
         'command' => $command,
         'output' => $output,
         'success' => $success
@@ -104,7 +104,7 @@ function renderTerminal($command, $callback)
 // 0. SYSTEM DASHBOARD (Main Entry Point)
 Router::add('GET', '/_system', function () {
     checkSystemKey();
-    return \TheFramework\App\View::render('dashboard');
+    return \TheFramework\App\View::render('Internal::_system.dashboard');
 });
 
 // 1. MIGRATE DATABASE

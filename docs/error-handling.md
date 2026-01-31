@@ -49,11 +49,18 @@ if ($amount < 0) {
 
 ## 🎨 Kustomisasi Tampilan Error
 
-Tampilan error tersimpan di folder `resources/views/errors/`:
+Tampilan error tersimpan di folder `app/App/Internal/Views/errors/`:
 
 - `403.blade.php`: Tampilan akses ditolak.
 - `404.blade.php`: Tampilan halaman tidak ditemukan.
 - `500.blade.php`: Tampilan error server internal.
+- `maintenance.blade.php`: Tampilan mode maintenance.
+- `payment.blade.php`: Tampilan payment reminder.
+- `database.blade.php`: Tampilan error koneksi database.
+- `exception.blade.php`: Tampilan error exception.
+- `fatal.blade.php`: Tampilan fatal error.
+- `warning.blade.php`: Tampilan warning.
+- `viewfails.blade.php`: Tampilan error di Blade views.
 
 Anda dapat mengubah desain file-file tersebut sesuai dengan tema aplikasi Anda.
 

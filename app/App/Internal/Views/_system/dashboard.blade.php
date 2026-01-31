@@ -1,4 +1,4 @@
-@extends('layout')
+@extends('Internal::layout')
 
 @section('terminal-content')
     <div class="mb-8">

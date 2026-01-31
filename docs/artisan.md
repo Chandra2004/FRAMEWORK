@@ -36,11 +36,50 @@ Berikut adalah penjelasan detail untuk setiap perintah.
 
 ### General
 
-| Perintah | Deskripsi                                                      |
-| :------- | :------------------------------------------------------------- |
-| `serve`  | Menjalankan server lokal PHP di `localhost:8080`.              |
-| `setup`  | Melakukan setup awal (copy .env, generate key, dump autoload). |
-| `test`   | Menjalankan Unit Test (PHPUnit) dengan tampilan yang rapi.     |
+| Perintah | Deskripsi                                                                          |
+| :------- | :--------------------------------------------------------------------------------- |
+| `serve`  | Menjalankan server lokal PHP. Port otomatis dibaca dari `BASE_URL` di file `.env`. |
+| `setup`  | Melakukan setup awal (copy .env, generate key, dump autoload).                     |
+| `test`   | Menjalankan Unit Test (PHPUnit) dengan tampilan yang rapi.                         |
+
+#### Detail Command `serve`
+
+Menjalankan PHP built-in development server.
+
+**Penggunaan:**
+
+```bash
+php artisan serve              # Port otomatis dari BASE_URL
+php artisan serve 127.0.0.1    # Custom host, port dari BASE_URL
+php artisan serve 127.0.0.1 3000  # Custom host & port
+```
+
+**Fitur Dinamis:**
+
+- **Port otomatis dibaca dari `BASE_URL`** di file `.env`
+  - Jika `BASE_URL=http://localhost:3000` → Port **3000**
+  - Jika `BASE_URL=http://localhost:8080` → Port **8080**
+  - Default fallback: **8080**
+- **Informasi CLI yang dinamis:**
+  - Menampilkan hostname dari `BASE_URL`
+  - Menampilkan port yang digunakan
+  - Menampilkan APP_ENV mode (LOCAL, PRODUCTION, MAINTENANCE, PAYMENT)
+
+**Contoh Output:**
+
+```
+➤ INFO  TheFramework LOCAL Server
+  Website: localhost
+  Server berjalan di http://127.0.0.1:3000
+  Port: 3000
+  Tekan Ctrl+C untuk menghentikan
+```
+
+**Keamanan:**
+
+- Validasi IP address untuk mencegah command injection
+- Validasi port (1-65535)
+- Input di-escape dengan `escapeshellarg()`
 
 ### Make (Generator)
 
