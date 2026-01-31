@@ -57,15 +57,24 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+            **/.github/**
+            **/.idx/**
+            **/.cursorrules
+            **/.dockerignore
+            **/docker/**
+            **/Dockerfile
             **/tests/**
             **/node_modules/**
             **/docs/**
-            **/.github/**
             **/phpunit.xml
+            **/.env.example
             **/README.md
-            **/QA_AUDIT.md
-            **/.cursorrules
-            **/.idx/**
+            **/CHANGELOG.md
+            **/CODE_OF_CONDUCT.md
+            **/CONTRIBUTING.md
+            **/SECURITY.md
+            **/UPGRADE.md
+            **/LICENSE
             storage/logs/**
             storage/framework/views/**
             storage/framework/cache/**
