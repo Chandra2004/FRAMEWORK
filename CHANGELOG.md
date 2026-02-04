@@ -28,6 +28,13 @@ All notable changes to **The Framework** will be documented in this file.
 - ✅ **`fullOuterJoin()`** - FULL OUTER JOIN helper method (NEW)
 - ✅ **`crossJoin($table)`** - CROSS JOIN untuk cartesian product (NEW)
 
+#### Interactive Debugger (Tinker)
+
+- ✅ **CLI Tinker** - Interactive shell via `php artisan tinker` (REPL)
+- ✅ **Web Tinker** - Web-based interactive shell di `/_system/tinker`
+- ✅ **Auto-Alias** - Otomatis load Model tanpa namespace full
+- ✅ **Safety Features** - Protected via System Key & IP Whitelist
+
 ### 📝 Enhanced Documentation
 
 - **`docs/migrations.md`** - Added comprehensive Foreign Keys section (125+ lines)

@@ -58,12 +58,13 @@
 ### 🌐 Unique Features
 
 25. [Web Command Center](web-command-center.md) - Manage without SSH ⭐
-26. [Artisan CLI](artisan.md) - Command-line tools
-27. [Queue System](queue.md) - Background jobs
-28. [SEO & Sitemap](seo.md) - Search engine optimization
-29. [Email](email.md) - SMTP sending
-30. [Payments](payment.md) - Midtrans integration
-31. [File Uploads](file-uploads.md) - UploadHandler
+26. [Tinker (Interactive Shell)](tinker.md) - Debug code live (CLI & Web) 💻
+27. [Artisan CLI](artisan.md) - Command-line tools
+28. [Queue System](queue.md) - Background jobs
+29. [SEO & Sitemap](seo.md) - Search engine optimization
+30. [Email](email.md) - SMTP sending
+31. [Payments](payment.md) - Midtrans integration
+32. [File Uploads](file-uploads.md) - UploadHandler
 
 ### 📝 Tutorials
 

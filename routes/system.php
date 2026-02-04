@@ -256,7 +256,11 @@ Router::add('GET', '/_system/asset-publish', function () {
             );
 
             foreach ($iterator as $item) {
-                $sub = $iterator->getSubPathName();
+                // Fix Linter Error: getSubPathName belongs to RecursiveDirectoryIterator, not the wrapper
+                /** @var \RecursiveDirectoryIterator $innerIterator */
+                $innerIterator = $iterator->getInnerIterator();
+                $sub = $innerIterator->getSubPathName();
+
                 if ($item->isDir()) {
                     if (!is_dir("$d/$sub"))
                         mkdir("$d/$sub");
@@ -598,7 +602,98 @@ Router::add('GET', '/_system/test-connection', function () {
     });
 });
 
-// 14. HEALTH (JSON)
+// 14. WEB TINKER
+Router::add('GET', '/_system/tinker', function () {
+    checkSystemKey();
+    return \TheFramework\App\View::render('Internal::_system.tinker');
+});
+
+Router::add('POST', '/_system/tinker', function () {
+    checkSystemKey();
+
+    // Pastikan request AJAX
+    if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {
+        // Optional security check
+    }
+
+    $code = $_POST['code'] ?? '';
+
+    if (trim($code) === '') {
+        echo json_encode(['output' => '', 'result' => null]);
+        return;
+    }
+
+    // 1. Auto-Alias Models (Fix Path Detection)
+    $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2));
+    $modelsDir = $root . '/app/Models';
+
+    // Debug Alias Count
+    $aliasCount = 0;
+
+    if (is_dir($modelsDir)) {
+        foreach (glob($modelsDir . '/*.php') as $file) {
+            $className = basename($file, '.php');
+            $fullClassName = "\\TheFramework\\Models\\$className";
+            if (class_exists($fullClassName) && !class_exists($className)) {
+                class_alias($fullClassName, $className);
+                $aliasCount++;
+            }
+        }
+    }
+
+    // 2. Prepare Code
+    $code = trim($code);
+    if (substr($code, -1) === ';')
+        $code = substr($code, 0, -1);
+
+    // Detect type
+    $isEcho = preg_match('/^(echo|print|var_dump|print_r)\s/', $code);
+    $isAssignment = preg_match('/^\$[a-zA-Z0-9_]+\s*=/', $code);
+
+    if (!$isEcho && !$isAssignment) {
+        $evalCode = "return $code;";
+    } else {
+        $evalCode = "$code;";
+    }
+
+    // 3. Execute
+    ob_start();
+    try {
+        $result = eval ($evalCode);
+        $output = ob_get_clean();
+
+        // Format Result
+        $formattedResult = null;
+        if (!$isEcho && $result !== null) {
+            // Gunakan print_r agar lebih bersih daripada var_dump untuk Web
+            $formattedResult = print_r($result, true);
+
+            // Jika ada circular reference atau terlalu panjang, cegah crash
+            if (strlen($formattedResult) > 50000) {
+                $formattedResult = substr($formattedResult, 0, 5000) . "\n\n... (Output truncated, too long) ...";
+            }
+        }
+
+        // Append alias info jika error class not found terjadi (untuk debugging)
+        if (strpos($output, 'Class not found') !== false) {
+            $output .= "\nDEBUG: $aliasCount models aliased. Script executed in: " . getcwd();
+        }
+
+        echo json_encode([
+            'output' => $output,
+            'result' => $formattedResult
+        ]);
+
+    } catch (\Throwable $e) {
+        ob_end_clean();
+        echo json_encode([
+            'output' => '',
+            'result' => "🔥 Error: " . $e->getMessage() . " in line " . $e->getLine()
+        ]);
+    }
+});
+
+// 15. HEALTH (JSON)
 Router::add('GET', '/_system/health', function () {
     header('Content-Type: application/json');
     $dbConnected = false;

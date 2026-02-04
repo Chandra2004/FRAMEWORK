@@ -91,6 +91,7 @@ Our documentation is comprehensive, well-organized, and beginner-friendly:
 ### **Special Features**
 
 - [🌐 Web Command Center](docs/web-command-center.md) - Manage without SSH
+- [💻 Tinker (Interactive Shell)](docs/tinker.md) - Debug code live (CLI & Web) ⭐
 - [🛠️ Artisan CLI](docs/artisan.md) - Command-line tools
 - [🌍 Localization](docs/localization.md) - Multi-language support
 - [🗺️ SEO & Sitemap](docs/seo.md) - SEO best practices
@@ -125,6 +126,7 @@ X-Frame-Options, CSP, HSTS, XSS-Protection
 # No SSH? No problem! Use Web Command Center
 https://yoursite.com/_system/migrate
 https://yoursite.com/_system/seed
+https://yoursite.com/_system/tinker  <-- NEW!
 https://yoursite.com/_system/logs
 ```
 

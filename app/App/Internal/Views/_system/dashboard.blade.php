@@ -129,7 +129,7 @@
             <ul class="space-y-3">
                 <li>
                     <a href="{{ url('_system/diagnose') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">07.</span>
+                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">08.</span>
                         <div>
                             <span class="text-slate-300 group-hover:text-white font-bold transition-colors">diagnose</span>
                             <p class="text-[11px] text-slate-500 mt-0.5">Check Session, CSRF and DB details</p>
@@ -138,7 +138,7 @@
                 </li>
                 <li>
                     <a href="{{ url('_system/logs') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">08.</span>
+                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">09.</span>
                         <div>
                             <span class="text-slate-300 group-hover:text-white font-bold transition-colors">logs</span>
                             <p class="text-[11px] text-slate-500 mt-0.5">View last 50 lines of app.log</p>
@@ -147,10 +147,20 @@
                 </li>
                 <li>
                     <a href="{{ url('_system/health') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">09.</span>
+                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">10.</span>
                         <div>
                             <span class="text-slate-300 group-hover:text-white font-bold transition-colors">health</span>
                             <p class="text-[11px] text-slate-500 mt-0.5">System health status (JSON)</p>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/tinker') }}" class="group flex items-start gap-4">
+                        <span class="text-slate-600 group-hover:text-warning-400 font-bold transition-colors">11.</span>
+                        <div>
+                            <span
+                                class="text-slate-300 group-hover:text-warning-400 font-bold transition-colors">tinker</span>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Interactive PHP Shell (Web REPL)</p>
                         </div>
                     </a>
                 </li>
@@ -166,7 +176,7 @@
             <ul class="space-y-3">
                 <li>
                     <a href="{{ url('_system/routes') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">10.</span>
+                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">12.</span>
                         <div>
                             <span class="text-slate-300 group-hover:text-white font-bold transition-colors">routes</span>
                             <p class="text-[11px] text-slate-500 mt-0.5">List all registered routes</p>
@@ -175,7 +185,7 @@
                 </li>
                 <li>
                     <a href="{{ url('_system/status') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">11.</span>
+                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">13.</span>
                         <div>
                             <span class="text-slate-300 group-hover:text-white font-bold transition-colors">status</span>
                             <p class="text-[11px] text-slate-500 mt-0.5">Check PHP & Extension status</p>
@@ -184,7 +194,7 @@
                 </li>
                 <li>
                     <a href="{{ url('_system/phpinfo') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">12.</span>
+                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">14.</span>
                         <div>
                             <span class="text-slate-300 group-hover:text-white font-bold transition-colors">phpinfo</span>
                             <p class="text-[11px] text-slate-500 mt-0.5">Display complete PHP configuration</p>
