@@ -392,6 +392,115 @@ class Blueprint
         return $this;
     }
 
+    /**
+     * Helper method untuk membuat foreign key column dengan tipe BIGINT UNSIGNED
+     * Mirip dengan Laravel's foreignId()
+     * 
+     * @param string $column Nama kolom (contoh: 'user_id')
+     * @return $this
+     */
+    public function foreignId($column)
+    {
+        $this->lastAddedColumn = $column;
+        $this->addColumnSql("`$column` BIGINT UNSIGNED");
+        return $this;
+    }
+
+    /**
+     * Helper method untuk membuat foreign key dengan konvensi penamaan otomatis
+     * Contoh: $table->foreignId('user_id')->constrained() akan reference ke tabel 'users'
+     * 
+     * @param string|null $table Nama tabel yang direferensikan (opsional, default: auto-detect dari nama kolom)
+     * @param string $column Nama kolom yang direferensikan (default: 'id')
+     * @return $this
+     */
+    public function constrained($table = null, $column = 'id')
+    {
+        if (!$this->lastAddedColumn) {
+            throw new \RuntimeException("constrained() harus dipanggil setelah foreignId() atau method kolom lainnya");
+        }
+
+        // Auto-detect table name dari column name (contoh: user_id -> users)
+        if ($table === null) {
+            // Hapus '_id' dari nama kolom
+            $singularTable = str_replace('_id', '', $this->lastAddedColumn);
+
+            // Simple pluralization (tambah 's')
+            // Untuk pluralization lebih kompleks, bisa tambahkan library inflector
+            $table = $singularTable . 's';
+        }
+
+        // Buat foreign key constraint
+        $this->foreign($this->lastAddedColumn)
+            ->references($column)
+            ->on($table);
+
+        return $this;
+    }
+
+    /**
+     * Shorthand untuk onDelete('CASCADE')
+     */
+    public function cascadeOnDelete()
+    {
+        return $this->onDelete('CASCADE');
+    }
+
+    /**
+     * Shorthand untuk onDelete('RESTRICT')
+     */
+    public function restrictOnDelete()
+    {
+        return $this->onDelete('RESTRICT');
+    }
+
+    /**
+     * Shorthand untuk onDelete('SET NULL')
+     */
+    public function nullOnDelete()
+    {
+        return $this->onDelete('SET NULL');
+    }
+
+    /**
+     * Shorthand untuk onUpdate('CASCADE')
+     */
+    public function cascadeOnUpdate()
+    {
+        return $this->onUpdate('CASCADE');
+    }
+
+    /**
+     * Drop foreign key constraint
+     * 
+     * @param string|array $columns Nama kolom atau array nama kolom yang memiliki foreign key
+     * @return $this
+     */
+    public function dropForeign($columns)
+    {
+        if ($this->alterMode) {
+            // Convert to array jika string
+            $columns = is_array($columns) ? $columns : [$columns];
+
+            foreach ($columns as $column) {
+                // MySQL menggunakan nama foreign key untuk drop
+                // Konvensi nama: {table}_{column}_foreign
+                // Atau user bisa pass nama constraint langsung
+
+                // Jika sudah format constraint name (mengandung '_foreign' atau 'fk_')
+                if (strpos($column, '_foreign') !== false || strpos($column, 'fk_') === 0) {
+                    $constraintName = $column;
+                } else {
+                    // Generate constraint name berdasarkan konvensi
+                    $constraintName = $this->table . '_' . $column . '_foreign';
+                }
+
+                $this->alterStatements[] = "DROP FOREIGN KEY `$constraintName`";
+            }
+        }
+        return $this;
+    }
+
     // Finalize di akhir jika ada sisa
     public function __destruct()
     {

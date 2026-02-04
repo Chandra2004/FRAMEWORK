@@ -135,9 +135,82 @@ class QueryBuilder
     public function join(string $table, string $first, string $operator, string $second, string $type = 'INNER')
     {
         $type = strtoupper($type);
-        if (!in_array($type, ['INNER', 'LEFT', 'RIGHT']))
+        $validTypes = ['INNER', 'LEFT', 'RIGHT', 'LEFT OUTER', 'RIGHT OUTER', 'FULL OUTER', 'CROSS'];
+
+        if (!in_array($type, $validTypes)) {
             $type = 'INNER';
-        $this->joins[] = "$type JOIN $table ON $first $operator $second";
+        }
+
+        // CROSS JOIN tidak memerlukan ON clause
+        if ($type === 'CROSS') {
+            $this->joins[] = "CROSS JOIN $table";
+        } else {
+            $this->joins[] = "$type JOIN $table ON $first $operator $second";
+        }
+
+        return $this;
+    }
+
+    /**
+     * INNER JOIN helper method
+     */
+    public function innerJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'INNER');
+    }
+
+    /**
+     * LEFT JOIN helper method
+     */
+    public function leftJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'LEFT');
+    }
+
+    /**
+     * RIGHT JOIN helper method
+     */
+    public function rightJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'RIGHT');
+    }
+
+    /**
+     * LEFT OUTER JOIN helper method
+     */
+    public function leftOuterJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'LEFT OUTER');
+    }
+
+    /**
+     * RIGHT OUTER JOIN helper method
+     */
+    public function rightOuterJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'RIGHT OUTER');
+    }
+
+    /**
+     * FULL OUTER JOIN helper method
+     * Note: MySQL doesn't support FULL OUTER JOIN directly.
+     * This will use UNION of LEFT and RIGHT joins as a workaround.
+     */
+    public function fullOuterJoin(string $table, string $first, string $operator, string $second)
+    {
+        // MySQL doesn't support FULL OUTER JOIN directly
+        // We'll add a special flag to handle this in toSql()
+        $this->joins[] = "FULL OUTER JOIN $table ON $first $operator $second";
+        return $this;
+    }
+
+    /**
+     * CROSS JOIN helper method
+     * Cross join returns cartesian product of two tables (no ON clause needed)
+     */
+    public function crossJoin(string $table)
+    {
+        $this->joins[] = "CROSS JOIN $table";
         return $this;
     }
 

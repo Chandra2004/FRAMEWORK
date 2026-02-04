@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Complete Guide to The Framework v5.0.0**
+**Complete Guide to The Framework v5.1.0**
 
 [Home](../README.md) • Documentation • [Get Started](#getting-started)
 
@@ -35,6 +35,13 @@
 13. [Migrations](migrations.md) - Database version control
 14. [ORM & Models](orm.md) - Eloquent-like ORM
 15. [Relationships](relationships.md) - Model relations
+16. [Query Builder](query-builder.md) - Advanced queries
+
+**✨ New in v5.1.0:**
+
+- 🔑 [Foreign Keys & JOINs Guide](foreign-keys-joins-guide.md) - Visual guide with examples
+- 📋 [Foreign Keys & JOINs Reference](foreign-keys-joins-reference.md) - Quick reference cheat sheet
+- 🚀 [Foreign Keys & JOINs Implementation](foreign-keys-joins-implementation.md) - Implementation details
 
 ### 🔧 Advanced Topics
 
@@ -179,7 +186,8 @@ Visit `/hello/World` → See "Hello, World!"
 
 | Version   | Status           | PHP  | Release Date | End of Life |
 | --------- | ---------------- | ---- | ------------ | ----------- |
-| **5.0.0** | ✅ **Current**   | 8.3+ | Jan 2026     | Jan 2028    |
+| **5.1.0** | ✅ **Current**   | 8.3+ | Feb 2026     | Feb 2028    |
+| 5.0.0     | ✅ Supported     | 8.3+ | Jan 2026     | Jan 2028    |
 | 4.0.0     | ⚠️ Security only | 8.3+ | Jan 2026     | Jul 2026    |
 | 3.x       | ❌ End of life   | 8.1+ | -            | -           |
 

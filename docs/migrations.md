@@ -71,6 +71,131 @@ Schema::create('products', function($table) {
 });
 ```
 
+---
+
+## Foreign Keys (Relational Constraints)
+
+Framework mendukung pembuatan **foreign key constraints** untuk menjaga integritas relasi antar tabel.
+
+### Sintaks Lengkap
+
+```php
+Schema::create('posts', function($table) {
+    $table->id();
+    $table->integer('user_id')->unsigned();
+    $table->string('title');
+    $table->text('content');
+    $table->timestamps();
+    
+    // Membuat foreign key constraint
+    $table->foreign('user_id')
+          ->references('id')
+          ->on('users')
+          ->onDelete('cascade')    // Aksi saat parent dihapus
+          ->onUpdate('cascade');   // Aksi saat parent diupdate
+});
+```
+
+### Shorthand Helper Methods (Recommended)
+
+Untuk sintaks yang lebih ringkas dan modern (mirip Laravel):
+
+```php
+Schema::create('posts', function($table) {
+    $table->id();
+    
+    // Method 1: foreignId() + constrained()
+    // Auto-detect: 'user_id' -> references 'id' on 'users' table
+    $table->foreignId('user_id')
+          ->constrained()
+          ->cascadeOnDelete();
+    
+    $table->string('title');
+    $table->text('content');
+    $table->timestamps();
+});
+```
+
+**Penjelasan:**
+- `foreignId('user_id')` → Membuat kolom `BIGINT UNSIGNED`
+- `constrained()` → Auto-detect nama tabel dari kolom (`user_id` → `users`)
+- `cascadeOnDelete()` → Shorthand untuk `onDelete('cascade')`
+
+### Opsi Foreign Key Actions
+
+| Method | Aksi | Deskripsi |
+|:-------|:-----|:----------|
+| `cascadeOnDelete()` | `ON DELETE CASCADE` | Hapus child records saat parent dihapus |
+| `restrictOnDelete()` | `ON DELETE RESTRICT` | Cegah penghapusan parent jika masih ada child |
+| `nullOnDelete()` | `ON DELETE SET NULL` | Set foreign key jadi NULL saat parent dihapus |
+| `cascadeOnUpdate()` | `ON UPDATE CASCADE` | Update child records saat parent ID berubah |
+
+### Contoh Penggunaan Lengkap
+
+```php
+// Migration: Create users table
+Schema::create('users', function($table) {
+    $table->id();
+    $table->string('name');
+    $table->string('email')->unique();
+    $table->timestamps();
+});
+
+// Migration: Create posts table with foreign key
+Schema::create('posts', function($table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+    $table->string('title');
+    $table->text('content');
+    $table->timestamps();
+});
+
+// Migration: Create comments table
+Schema::create('comments', function($table) {
+    $table->id();
+    $table->foreignId('post_id')->constrained()->cascadeOnDelete();
+    $table->foreignId('user_id')->constrained()->restrictOnDelete();
+    $table->text('comment');
+    $table->timestamps();
+});
+```
+
+### Custom Table Name
+
+Jika nama tabel tidak mengikuti konvensi:
+
+```php
+// Kolom 'author_id' reference ke tabel 'users'
+$table->foreignId('author_id')
+      ->constrained('users')  // Specify table name
+      ->cascadeOnDelete();
+
+// Atau menggunakan foreign() manual
+$table->integer('author_id')->unsigned();
+$table->foreign('author_id')
+      ->references('id')
+      ->on('users')
+      ->onDelete('cascade');
+```
+
+### Menghapus Foreign Key
+
+Untuk menghapus foreign key constraint di migration `down()`:
+
+```php
+public function down() {
+    Schema::table('posts', function($table) {
+        // Method 1: Menggunakan nama kolom
+        $table->dropForeign(['user_id']);
+        
+        // Method 2: Menggunakan constraint name
+        // $table->dropForeign('posts_user_id_foreign');
+    });
+    
+    Schema::dropIfExists('posts');
+}
+```
+
 ### Menghapus Tabel
 
 ```php

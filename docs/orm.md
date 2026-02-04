@@ -390,10 +390,108 @@ try {
 
 ### Joins
 
+Framework mendukung berbagai tipe JOIN untuk menggabungkan data dari multiple tables.
+
+#### INNER JOIN (Default)
+
+Mengambil data yang cocok di kedua tabel:
+
 ```php
 $posts = Post::query()
     ->join('users', 'posts.user_id', '=', 'users.id')
     ->select('posts.*', 'users.name as author_name')
+    ->get();
+
+// Atau menggunakan helper method
+$posts = Post::query()
+    ->innerJoin('users', 'posts.user_id', '=', 'users.id')
+    ->select('posts.*', 'users.name as author_name')
+    ->get();
+```
+
+#### LEFT JOIN
+
+Mengambil semua data dari tabel kiri, dan data yang cocok dari tabel kanan:
+
+```php
+// Semua posts, dengan atau tanpa user
+$posts = Post::query()
+    ->leftJoin('users', 'posts.user_id', '=', 'users.id')
+    ->select('posts.*', 'users.name as author_name')
+    ->get();
+```
+
+#### RIGHT JOIN
+
+Mengambil semua data dari tabel kanan, dan data yang cocok dari tabel kiri:
+
+```php
+// Semua users, dengan atau tanpa posts
+$users = User::query()
+    ->rightJoin('posts', 'users.id', '=', 'posts.user_id')
+    ->select('users.*', 'posts.title')
+    ->get();
+```
+
+#### OUTER JOIN
+
+Left Outer Join dan Right Outer Join (alias dari LEFT/RIGHT JOIN):
+
+```php
+// LEFT OUTER JOIN
+$posts = Post::query()
+    ->leftOuterJoin('users', 'posts.user_id', '=', 'users.id')
+    ->get();
+
+// RIGHT OUTER JOIN
+$posts = Post::query()
+    ->rightOuterJoin('users', 'posts.user_id', '=', 'users.id')
+    ->get();
+```
+
+#### FULL OUTER JOIN
+
+Mengambil semua data dari kedua tabel (kombinasi LEFT dan RIGHT):
+
+```php
+// Note: MySQL tidak support FULL OUTER JOIN secara native
+// Framework akan menggunakan UNION dari LEFT dan RIGHT JOIN
+$results = Post::query()
+    ->fullOuterJoin('users', 'posts.user_id', '=', 'users.id')
+    ->get();
+```
+
+#### CROSS JOIN
+
+Cartesian product - setiap row dari tabel pertama dikombinasikan dengan setiap row dari tabel kedua:
+
+```php
+// Kombinasi semua products dengan semua categories
+$combinations = Product::query()
+    ->crossJoin('categories')
+    ->select('products.name as product', 'categories.name as category')
+    ->get();
+```
+
+#### Multiple Joins
+
+```php
+$posts = Post::query()
+    ->join('users', 'posts.user_id', '=', 'users.id')
+    ->leftJoin('categories', 'posts.category_id', '=', 'categories.id')
+    ->leftJoin('comments', 'posts.id', '=', 'comments.post_id')
+    ->select('posts.*', 'users.name as author', 'categories.name as category')
+    ->groupBy('posts.id')
+    ->get();
+```
+
+#### Join dengan WHERE Conditions
+
+```php
+$posts = Post::query()
+    ->join('users', 'posts.user_id', '=', 'users.id')
+    ->where('users.active', '=', true)
+    ->where('posts.published', '=', true)
     ->get();
 ```
 

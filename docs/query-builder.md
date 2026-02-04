@@ -44,9 +44,49 @@ $builder->whereRaw('age > ? AND points < ?', [18, 100]);
 
 ### Joins
 
+Framework mendukung berbagai tipe JOIN:
+
 ```php
+// INNER JOIN (default) - hanya data yang cocok di kedua tabel
 $builder->join('profiles', 'users.id', '=', 'profiles.user_id');
-$builder->join('posts', 'users.id', '=', 'posts.user_id', 'LEFT');
+$builder->innerJoin('profiles', 'users.id', '=', 'profiles.user_id');
+
+// LEFT JOIN - semua data dari tabel kiri
+$builder->leftJoin('posts', 'users.id', '=', 'posts.user_id');
+
+// RIGHT JOIN - semua data dari tabel kanan
+$builder->rightJoin('posts', 'users.id', '=', 'posts.user_id');
+
+// LEFT OUTER JOIN (sama dengan LEFT JOIN)
+$builder->leftOuterJoin('posts', 'users.id', '=', 'posts.user_id');
+
+// RIGHT OUTER JOIN (sama dengan RIGHT JOIN)
+$builder->rightOuterJoin('posts', 'users.id', '=', 'posts.user_id');
+
+// FULL OUTER JOIN - semua data dari kedua tabel
+// Note: MySQL tidak support native, framework akan gunakan UNION
+$builder->fullOuterJoin('posts', 'users.id', '=', 'posts.user_id');
+
+// CROSS JOIN - cartesian product (tidak perlu ON clause)
+$builder->crossJoin('categories');
+```
+
+**Contoh Praktis:**
+
+```php
+// Contoh: Ambil semua posts dengan nama author
+$posts = Post::query()
+    ->join('users', 'posts.user_id', '=', 'users.id')
+    ->select('posts.*', 'users.name as author')
+    ->get();
+
+// Multiple joins
+$posts = Post::query()
+    ->leftJoin('users', 'posts.user_id', '=', 'users.id')
+    ->leftJoin('categories', 'posts.category_id', '=', 'categories.id')
+    ->select('posts.*', 'users.name as author', 'categories.name as category')
+    ->where('posts.published', '=', true)
+    ->get();
 ```
 
 ### Ordering & Grouping
