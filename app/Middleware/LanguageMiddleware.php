@@ -23,4 +23,9 @@ class LanguageMiddleware implements Middleware
         // 3. Set Locale di App
         Lang::setLocale($locale);
     }
+
+    public function after()
+    {
+        // Logic after controller (optional)
+    }
 }

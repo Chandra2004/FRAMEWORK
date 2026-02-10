@@ -54,4 +54,9 @@ class CsrfMiddleware implements Middleware
             }
         }
     }
+
+    public function after()
+    {
+        // Logic after controller (optional)
+    }
 }

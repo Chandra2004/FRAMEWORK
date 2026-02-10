@@ -83,4 +83,9 @@ class ApiAuthMiddleware implements Middleware
         ], 401);
         exit;
     }
+
+    public function after()
+    {
+        // Logic after controller (optional)
+    }
 }

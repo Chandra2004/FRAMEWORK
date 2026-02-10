@@ -143,11 +143,14 @@ class Router
                     continue;
 
                 if (preg_match($route['path'], $path, $matches)) {
+                    $activeMiddlewares = [];
                     foreach ($route['middleware'] as $middleware) {
                         $instance = is_array($middleware)
                             ? new $middleware[0](...array_slice($middleware, 1))
                             : new $middleware();
+
                         $instance->before();
+                        $activeMiddlewares[] = $instance;
                     }
 
                     $params = array_intersect_key($matches, array_flip(array_filter(array_keys($matches), 'is_string')));
@@ -199,6 +202,11 @@ class Router
                         }
 
                         call_user_func_array([$controller, $function], $finalArgs);
+                    }
+
+                    // Jalankan Middleware After secara reverse (LIFO)
+                    foreach (array_reverse($activeMiddlewares) as $instance) {
+                        $instance->after();
                     }
 
                     self::$routeFound = true;

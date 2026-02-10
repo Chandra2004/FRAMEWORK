@@ -36,4 +36,9 @@ class AuthMiddleware implements Middleware
             exit();
         }
     }
+
+    public function after()
+    {
+        // Logic after controller (optional)
+    }
 }

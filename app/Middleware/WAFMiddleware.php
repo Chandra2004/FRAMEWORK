@@ -85,4 +85,9 @@ class WAFMiddleware implements Middleware
             }
         }
     }
+
+    public function after()
+    {
+        // Logic after controller (optional)
+    }
 }
