@@ -55,6 +55,7 @@ QA_AUDIT.md
 QA_CATEGORIZED_ISSUES.md
 SECURITY_AUDIT_REPORT.md
 .AUDIT/
+.BACKUP/
 
 # Google Verification
 google*.html

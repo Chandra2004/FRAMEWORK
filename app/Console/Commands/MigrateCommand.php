@@ -54,10 +54,8 @@ class MigrateCommand implements CommandInterface
         // Tentukan Batch ID baru
         $batch = $migrator->getNextBatchNumber();
 
-        // Urutkan berdasarkan waktu (nama file)
-        usort($pendingMigrations, function ($a, $b) {
-            return filemtime($a) - filemtime($b);
-        });
+        // Urutkan berdasarkan nama file (timestamp yang ada di prefix nama file)
+        sort($pendingMigrations);
 
         foreach ($pendingMigrations as $file) {
             $baseName = basename($file, '.php');
