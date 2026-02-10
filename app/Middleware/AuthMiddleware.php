@@ -19,11 +19,12 @@ class AuthMiddleware implements Middleware
             exit();
         }
 
-        // Validasi token autentikasi
-        $storedToken = $_SESSION['auth_token'];
-        $expectedToken = hash('sha256', $_SESSION['user']['uid'] . Config::get('APP_KEY'));
-        if (!hash_equals($storedToken, $expectedToken)) {
-            error_log("AuthMiddleware: Token mismatch - Stored: $storedToken, Expected: $expectedToken");
+        // Validasi token autentikasi menggunakan Helper
+        $storedToken = Helper::getAuthToken();
+        $userUid = $_SESSION['user']['uid'] ?? '';
+
+        if (!$storedToken || !Helper::validateAuthToken($storedToken, $userUid)) {
+            error_log("AuthMiddleware: Token mismatch or not found.");
             SessionManager::destroySession();
             Helper::redirect('/login', 'error', 'Invalid authentication token.');
             exit();

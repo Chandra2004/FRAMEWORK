@@ -365,10 +365,29 @@ class Helper
         return isset($_SESSION['user']['role_name']) && $_SESSION['user']['role_name'] === $role;
     }
 
+    public static function setAuthToken($value)
+    {
+        $_SESSION['auth_token'] = self::generateAuthToken($value);
+    }
+
+    public static function getAuthToken()
+    {
+        return $_SESSION['auth_token'] ?? null;
+    }
+
+    public static function generateAuthToken($value)
+    {
+        return hash('sha256', $value . Config::get('APP_KEY'));
+    }
+
+    public static function validateAuthToken($storedToken, $value)
+    {
+        return hash_equals($storedToken, self::generateAuthToken($value));
+    }
+
     public static function authToken($data)
     {
-        $_SESSION['auth_token'] = hash('sha256', $data . Config::get('APP_KEY'));
-        // return $_SESSION['auth_token'];
+        self::setAuthToken($data);
     }
 }
 
