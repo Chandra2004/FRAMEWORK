@@ -57,37 +57,48 @@ Menggunakan Model (Disarankan):
 ```php
 use TheFramework\Models\User;
 
-// Cara 1: Create (Otomatis handle timestamp & fillable)
+// Cara 1: Create (Return User object)
 $user = User::create([
     'email' => 'john@example.com',
     'votes' => 0
 ]);
+echo $user->id; // Auto-generated ID
 
-// Cara 2: Insert Manual (Raw)
-User::insert([
-    'email' => 'john@example.com',
-    'votes' => 0
-]);
+// Cara 2: Instance + Save
+$user = new User();
+$user->email = 'jane@example.com';
+$user->save(); // Auto INSERT
+
+// Cara 3: Mass Fill
+$user = new User();
+$user->fill(['email' => 'bob@example.com', 'votes' => 5]);
+$user->save();
 ```
 
 ### Mengupdate Data (Update)
 
 ```php
-// Update berdasarkan Primary Key
-User::update(['votes' => 10], 1);
+// Cara 1: Active Record (Instance Update) - RECOMMENDED
+$user = User::find(1);
+$user->email = 'newemail@example.com';
+$user->votes = 100;
+$user->save(); // Auto UPDATE, return true/false
 
-// Update dengan Kondisi (Where)
-User::where('email', 'john@example.com')->update(['active' => 1]);
+// Cara 2: Batch Update
+$affected = User::where('active', 0)->update(['active' => 1]);
+// Return: integer (jumlah row yang diupdate)
 ```
 
 ### Menghapus Data (Delete)
 
 ```php
-// Hapus berdasarkan ID
-User::delete(1);
+// Cara 1: Active Record (Instance Delete)
+$user = User::find(1);
+$user->delete(); // Return: affected rows
 
-// Hapus dengan kondisi
-User::where('votes', '<', 5)->delete();
+// Cara 2: Batch Delete
+$deleted = User::where('votes', '<', 5)->delete();
+// Return: integer (jumlah row yang dihapus)
 ```
 
 ### Mengambil Data (Read)
@@ -232,17 +243,29 @@ public function roles() {
 
 ## Mengakses Relasi
 
-Saat Anda memanggil relasi sebagai properti dinamis, framework otomatis menjalakan querynya.
+Saat Anda memanggil relasi sebagai properti dinamis, framework otomatis menjalankan querynya.
 
 ```php
 $post = Post::find(1);
 
-// Otomatis query "SELECT * FROM comments WHERE post_id = 1"
-$comments = $post->comments;
+// Lazy Loading: Akses sebagai property
+$comments = $post->comments; // Auto query
 
 foreach ($comments as $comment) {
     echo $comment->body;
 }
+
+// Relation Chaining: Akses sebagai method
+$publishedComments = $post->comments()
+    ->where('approved', 1)
+    ->orderBy('created_at', 'DESC')
+    ->get();
+
+// Create via Relation (Auto set foreign key!)
+$post->comments()->create([
+    'body' => 'Great post!',
+    'user_id' => 1
+]); // Otomatis set post_id = $post->id
 ```
 
 ---

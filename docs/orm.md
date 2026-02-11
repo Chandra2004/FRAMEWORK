@@ -91,22 +91,26 @@ $posts = Post::query()
 ### Update
 
 ```php
-// Update by ID
-Post::update(['title' => 'Updated Title'], 1);
+// Method 1: Active Record (Instance Update)
+$post = Post::find(1);
+$post->title = 'Updated Title';
+$post->content = 'New Content';
+$post->save(); // Detects update automatically
 
-// Update with query
-Post::where('id', '=', 1)
+// Method 2: Batch Update
+Post::where('published', false)
     ->update(['published' => true]);
 ```
 
 ### Delete
 
 ```php
-// Delete by ID
-Post::delete(1);
+// Method 1: Active Record (Instance Delete)
+$post = Post::find(1);
+$post->delete();
 
-// Delete with query
-Post::where('user_id', '=', 1)->delete();
+// Method 2: Delete by Query
+Post::where('user_id', 1)->delete();
 ```
 
 ---
@@ -184,6 +188,26 @@ $titles = Post::query()->pluck('title');
 $ids = Post::where('published', true)->pluck('id');
 // Returns: [1, 2, 3, 4, 5]
 ```
+
+---
+
+## Advanced Active Record
+
+// Create via Relation (Auto sets foreign key)
+$user = User::find(1);
+$user->posts()->create([
+'title' => 'New Post',
+'content' => 'Content via relation...'
+]); // Sets user_id = 1 automatically
+
+// Mass Fill (Protected by $fillable)
+$post = new Post();
+$post->fill([
+    'title' => 'Title',
+    'user_id' => 1,
+    'sensitive_data' => 'secret' // Ignored if not in $fillable
+]);
+$post->save();
 
 ---
 

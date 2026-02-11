@@ -97,20 +97,20 @@ File: `app/Controllers/BlogController.php`
 
 ```php
 <?php
-namespace TheFramework\Http\Controllers;
-use TheFramework\App\View;
+namespace TheFramework\Controllers;
+use TheFramework\Helpers\Helper;
 use TheFramework\Models\Post;
 
 class BlogController {
     // Tampilkan semua postingan
     public function index() {
         $posts = Post::orderBy('created_at', 'DESC')->get();
-        return View::render('blog/index', ['posts' => $posts]);
+        return view('blog/index', ['posts' => $posts]);
     }
 
     // Tampilkan form buat baru
     public function create() {
-        return View::render('blog/create');
+        return view('blog/create');
     }
 }
 ```
@@ -192,30 +192,30 @@ Buat folder `resources/views/blog/`.
 Tambahkan method `store` di `BlogController.php`.
 
 ```php
-use TheFramework\Helpers\Helper;
 use TheFramework\App\Validator;
 
 public function store() {
-    $input = Helper::request()->all();
-
     // 1. Validasi
-    $errors = Validator::validate($input, [
+    $validator = new Validator();
+    $isValid = $validator->validate($_POST, [
         'title'   => 'required|min:5',
         'content' => 'required',
         'author'  => 'required'
     ]);
 
-    if (!empty($errors)) {
+    if (!$isValid) {
+        $errors = $validator->errors();
+        // Flash errors dan redirect
         Helper::set_flash('errors', $errors);
-        Helper::redirect('/blog/create');
-        return;
+        Helper::set_flash('old', $_POST);
+        return Helper::redirect('/blog/create');
     }
 
-    // 2. Simpan ke Database
+    // 2. Simpan ke Database (Active Record)
     Post::create([
-        'title'   => $input['title'],
-        'content' => $input['content'],
-        'author'  => $input['author']
+        'title'   => $_POST['title'],
+        'content' => $_POST['content'],
+        'author'  => $_POST['author']
     ]);
 
     // 3. Redirect
@@ -246,15 +246,16 @@ Untuk mengupdate data, kita butuh rute baru dan method di controller.
    }
 
    public function update($id) {
-       $input = Helper::request()->all();
-       $post = Post::findOrFail($id);
+       $post = Post::find($id);
+       if (!$post) abort(404);
 
-       $post->update([
-           'title'   => $input['title'],
-           'content' => $input['content']
-       ]);
+       // Active Record Update
+       $post->title = $_POST['title'];
+       $post->content = $_POST['content'];
+       $post->save();
 
-       Helper::redirect('/blog', 'success', 'Artikel berhasil diupdate!');
+       Helper::set_flash('success', 'Artikel berhasil diupdate!');
+       Helper::redirect('/blog');
    }
    ```
 
