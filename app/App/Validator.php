@@ -190,6 +190,25 @@ class Validator
         }
     }
 
+    /**
+     * Validasi bahwa field harus sama dengan field lain (custom name)
+     * Usage: 'kata_sandi' => 'required|min:6|same:konfirmasi_sandi'
+     */
+    protected function validate_same(string $field, string $label, $value, $param = null): void
+    {
+        if (!$param) {
+            $this->addError($field, "Rule 'same' memerlukan parameter field untuk dibandingkan.");
+            return;
+        }
+
+        $compareValue = $this->inputData[$param] ?? null;
+        $compareLabel = ucfirst(str_replace('_', ' ', $param));
+
+        if ($value !== $compareValue) {
+            $this->addError($field, "{$label} harus sama dengan {$compareLabel}.");
+        }
+    }
+
     // --- RULES BARU ---
 
     protected function validate_date(string $field, string $label, $value, $param = null): void
