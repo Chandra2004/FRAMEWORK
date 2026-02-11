@@ -50,8 +50,14 @@ class QueryBuilder
     // -------------------------
     // WHERE CLAUSES
     // -------------------------
-    public function where(string $column, string $operator, $value)
+    public function where($column, $operator = null, $value = null)
     {
+        // 🔹 Support 2 Arguments: where('id', 1) -> where('id', '=', 1)
+        if (func_num_args() === 2) {
+            $value = $operator;
+            $operator = '=';
+        }
+
         $param = ":where_" . count($this->bindings);
 
         $this->wheres[] = (strpos($column, '.') !== false)
@@ -343,7 +349,11 @@ class QueryBuilder
         $results = $this->db->resultSet();
 
         if ($this->model) {
-            return $this->model->loadRelations($results, $this->withRelations);
+            // Hydrate hasil query menjadi Model objects
+            $models = $this->model->hydrate($results);
+
+            // Load relations ke dalam Model objects
+            return $this->model->loadRelations($models, $this->withRelations);
         }
 
         return $results;

@@ -329,10 +329,10 @@ class Database
      * @param string $table
      * @param array $data
      * @param array $where
-     * @return bool
+     * @return int Jumlah baris yang diupdate
      * @throws DatabaseException
      */
-    public function update(string $table, array $data, array $where): bool
+    public function update(string $table, array $data, array $where): int
     {
         $this->ensureConnection(true);
         if (empty($data)) {
@@ -365,7 +365,8 @@ class Database
             $this->bind(":where_$col", $val);
         }
 
-        return $this->execute();
+        $this->execute();
+        return $this->rowCount();
     }
 
     /**
@@ -373,10 +374,10 @@ class Database
      *
      * @param string $table
      * @param array $where
-     * @return bool
+     * @return int Jumlah baris yang didelete
      * @throws DatabaseException
      */
-    public function delete(string $table, array $where): bool
+    public function delete(string $table, array $where): int
     {
         $this->ensureConnection(true);
         if (empty($where)) {
@@ -394,7 +395,9 @@ class Database
         foreach ($where as $key => $value) {
             $this->bind(":where_$key", $value);
         }
-        return $this->execute();
+
+        $this->execute();
+        return $this->rowCount();
     }
 
     /**

@@ -4,9 +4,11 @@ namespace TheFramework\App;
 use ReflectionClass;
 use Exception;
 
+use ArrayAccess;
+
 /**
  * @method static \TheFramework\App\QueryBuilder query()
- * @method static array all()
+ * @method static array|mixed all()
  * @method static mixed find($id)
  * @method static mixed where($column, $value)
  * @method static mixed insert(array $data)
@@ -17,25 +19,125 @@ use Exception;
  * @method static mixed paginate(int $perPage = 10, int $page = 1)
  * @method static static with(array $relations)
  */
-abstract class Model implements \JsonSerializable
+abstract class Model implements \JsonSerializable, ArrayAccess
 {
 
 
     protected $table;
     protected $primaryKey = 'id';
+    public $exists = false; // Menandakan apakah record ada di database
     protected $db;
     protected $builder;
+
+    /**
+     * The model's attributes.
+     *
+     * @var array
+     */
+    protected $attributes = [];
 
     protected $with = [];
     protected $fillable = [];
     protected $hidden = [];
 
     /**
-     * Alias untuk insert (Gaya Laravel)
+     * Static wrapper untuk create (Laravel style)
+     * Usage: User::create(['name' => 'John', 'email' => 'john@example.com'])
+     * @return static|null
      */
-    public function create(array $data)
+    public static function create(array $data)
+    {
+        $instance = new static;
+        $insertedData = $instance->insert($data);
+
+        if ($insertedData) {
+            // Hydrate model dengan data yang baru diinsert
+            foreach ($insertedData as $key => $value) {
+                $instance->$key = $value;
+            }
+            return $instance;
+        }
+
+        return null;
+    }
+
+    /**
+     * Instance method untuk insert (jika dipanggil via object)
+     */
+    public function createRecord(array $data)
     {
         return $this->insert($data);
+    }
+
+    /**
+     * Get primary key value
+     */
+    public function getKey()
+    {
+        return $this->getAttribute($this->getKeyName());
+    }
+
+    /**
+     * Get primary key column name
+     */
+    public function getKeyName()
+    {
+        return $this->primaryKey;
+    }
+
+    /**
+     * Fill the model with an array of attributes.
+     */
+    public function fill(array $attributes)
+    {
+        $totallyGuarded = $this->fillable === [] && $this->guarded === ['*']; // Logic sederhana
+
+        foreach ($this->filterFillable($attributes) as $key => $value) {
+            $this->setAttribute($key, $value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Save the model to the database.
+     */
+    public function save(array $options = [])
+    {
+        // Jika model sudah ada (exists), lakukan UPDATE
+        if ($this->exists) {
+            $dirty = $this->getDirty(); // (Perlu implementasi getDirty, atau update semua)
+
+            // Untuk saat ini update semua attributes kecuali ID dan timestamps (managed)
+            if (empty($dirty) && count($this->attributes) > 0) {
+                // Update semua jika logic getDirty belum ada
+                $data = $this->attributes;
+            } else {
+                $data = $dirty;
+            }
+
+            // Hapus Primary Key dari data update agar tidak diupdate
+            unset($data[$this->getKeyName()]);
+
+            return $this->update($data, $this->getKey());
+        }
+
+        // Jika belum ada, lakukan INSERT
+        $saved = $this->insert($this->attributes);
+        if ($saved) {
+            $this->exists = true;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Get attributes that have been changed since last sync.
+     * (Placeholder implementation)
+     */
+    public function getDirty()
+    {
+        return $this->attributes; // Sementara return semua, bisa diimprove dgn $original
     }
 
     // ... (kode construct dan lain-lain)
@@ -46,15 +148,11 @@ abstract class Model implements \JsonSerializable
     protected function filterFillable(array $data): array
     {
         if (empty($this->fillable)) {
-            // Jika fillable kosong, anggap semua data boleh (unsafe mode)
-            // Atau bisa diubah policy-nya menjadi 'block all' jika mau strict.
-            // Untuk mirip Laravel, jika fillable didefinisikan, maka strict.
-            // Jika guarded tidak ada (kita pakai logic sederhana fillable saja).
             return $data;
         }
-
         return array_intersect_key($data, array_flip($this->fillable));
     }
+
 
     /**
      * Aktifkan timestamps otomatis (created_at & updated_at)
@@ -100,15 +198,25 @@ abstract class Model implements \JsonSerializable
         // Auto Timestamps
         $this->manageTimestamps($filteredData, 'create');
 
-        $id = $this->query()->insert($filteredData);
+        $success = $this->query()->insert($filteredData);
 
-        // Return data lengkap setelah insert (mirip Laravel)
-        // Gabungkan data input dengan ID baru
-        if ($id && is_string($this->primaryKey)) {
-            $filteredData[$this->primaryKey] = $id;
+        if ($success) {
+            $this->exists = true; // Tandai bahwa record sudah tersimpan
+
+            // Ambil ID terakhir yang diinsert
+            try {
+                $lastId = $this->db->lastInsertId();
+                if ($lastId && is_string($this->primaryKey)) {
+                    $filteredData[$this->primaryKey] = $lastId;
+                    $this->setAttribute($this->primaryKey, $lastId); // Update attribute ID
+                }
+            } catch (\Exception $e) {
+                // Ignore jika tabel tidak punya auto increment id
+            }
+            return $filteredData;
         }
 
-        return $filteredData;
+        return false;
     }
 
     protected function update(array $data, $id)
@@ -142,32 +250,7 @@ abstract class Model implements \JsonSerializable
     /**
      * Convert model to array for JSON serialization
      */
-    public function toArray()
-    {
-        // Karena framework ini belum fully object-mapped (return query masih array/stdClass),
-        // logic ini bekerja jika User memanggil Model sebagai object data (Active Record full).
-        // Tapi jika resultnya masih array mentah dari database, logic hidden ini
-        // harus diterapkan manual atau via Response Helper.
 
-        // Asumsi: Property object adalah data kolom
-        $data = get_object_vars($this);
-
-        // Remove hidden attributes
-        if (!empty($this->hidden)) {
-            $data = array_diff_key($data, array_flip($this->hidden));
-        }
-
-        // Remove internal protected properties (db, builder, etc)
-        $protected = ['db', 'builder', 'table', 'primaryKey', 'fillable', 'hidden', 'with'];
-        $data = array_diff_key($data, array_flip($protected));
-
-        return $data;
-    }
-
-    public function jsonSerialize(): mixed
-    {
-        return $this->toArray();
-    }
 
     public function __construct()
     {
@@ -231,23 +314,24 @@ abstract class Model implements \JsonSerializable
         return $this->loadRelations([$result], $this->with)[0];
     }
 
-    protected function where($column, $value)
+
+
+
+
+
+
+    public function delete($id = null)
     {
         $this->requireDatabase();
-        $results = $this->query()
-            ->where($column, '=', $value)
-            ->get();
 
-        return $this->loadRelations($results, $this->with);
-    }
+        // Jika argumen ID kosong, gunakan ID instance ini
+        if ($id === null) {
+            $id = $this->getKey();
+            if (!$id) {
+                throw new Exception("Tidak bisa delete model tanpa Primary Key.");
+            }
+        }
 
-
-
-
-
-    protected function delete($id)
-    {
-        $this->requireDatabase();
         return $this->query()
             ->where($this->primaryKey, '=', $id)
             ->delete();
@@ -342,7 +426,7 @@ abstract class Model implements \JsonSerializable
 
             // 4. Jika ada nested relations, load recursively
             if (!empty($options['nested'])) {
-                $relatedPrototype = new $relationObj->related();
+                $relatedPrototype = $relationObj->related;
                 $relatedResults = $relatedPrototype->loadRelations($relatedResults, $options['nested']);
             }
 
@@ -361,37 +445,130 @@ abstract class Model implements \JsonSerializable
     {
         $relationObj = $this->$relation();
         if ($relationObj instanceof Relation) {
-            return $relationObj->related;
+            return get_class($relationObj->related);
         }
         throw new Exception("Tidak bisa menentukan class model untuk relasi '$relation'");
     }
 
-    public function __get($name)
+    /* ==================================================
+       🔹 HYDRATION & ATTRIBUTE ACCESS
+    ================================================== */
+
+    /**
+     * Convert raw array results to Model instances.
+     * 
+     * @param array $results
+     * @return array
+     */
+    public function hydrate(array $results)
     {
-        // 1. Cek Method/Relationship (e.g. $user->posts)
-        if (method_exists($this, $name)) {
-            return $this->$name();
+        $models = [];
+        foreach ($results as $result) {
+            $model = new static;
+            $model->setRawAttributes((array) $result, true);
+            $model->exists = true; // Tandai hasil query sebagai exists
+            $models[] = $model;
+        }
+        return $models;
+    }
+
+    /**
+     * Set the array of model attributes.
+     *
+     * @param  array  $attributes
+     * @param  bool  $sync
+     * @return $this
+     */
+    public function setRawAttributes(array $attributes, $sync = false)
+    {
+        $this->attributes = $attributes;
+        return $this;
+    }
+
+    public function __get($key)
+    {
+        return $this->getAttribute($key);
+    }
+
+    public function __set($key, $value)
+    {
+        $this->setAttribute($key, $value);
+    }
+
+    public function getAttribute($key)
+    {
+        if (array_key_exists($key, $this->attributes)) {
+            return $this->attributes[$key];
         }
 
-        // 2. Cek Properti Class (Protected/Public properties)
-        if (property_exists($this, $name)) {
-            return $this->$name;
+        // Check method/relation
+        if (method_exists($this, $key)) {
+            $value = $this->$key();
+            // Jika return value adalah Relation, lakukan Lazy Loading
+            if ($value instanceof Relation) {
+                // Simpan hasil lazy load ke attributes agar query tidak berulang (Caching)
+                $results = $value->getResults();
+                $this->setAttribute($key, $results);
+                return $results;
+            }
+            return $value;
         }
 
-        // 3. Cek Dynamic Attribute (Hasil Query Database)
-        // PDO FETCH_OBJ mengembalikan stdClass/Object, propertinya bersifat publik dinamis.
-        // Namun karena kita ada di dalam class, kita bisa akses $this->name jika itu ada.
-
-        // Trik: Cek apakah properti ini ada di object instance secara runtime
-        // Logika ini menangani kasus FETCH_CLASS atau jika Model di-hydrate manual
-        if (isset($this->$name)) {
-            return $this->$name;
-        }
-
-        // Jika tidak ketemu, return NULL alih-alih Error (Safe Null Object Pattern)
-        // Atau biarkan default PHP behavior (Notice: Undefined property)
-        // Tapi framework modern biasanya return null.
         return null;
+    }
+
+    public function setAttribute($key, $value)
+    {
+        $this->attributes[$key] = $value;
+    }
+
+    /* ==================================================
+       🔹 ARRAY ACCESS IMPLEMENTATION
+    ================================================== */
+
+    public function offsetExists($offset): bool
+    {
+        return isset($this->attributes[$offset]);
+    }
+
+    public function offsetGet($offset): mixed
+    {
+        return $this->getAttribute($offset);
+    }
+
+    public function offsetSet($offset, $value): void
+    {
+        $this->setAttribute($offset, $value);
+    }
+
+    public function offsetUnset($offset): void
+    {
+        unset($this->attributes[$offset]);
+    }
+
+    /**
+     * Convert model to array for JSON serialization
+     */
+    public function toArray()
+    {
+        $data = $this->attributes; // Start with attributes
+
+        // Add relations if loaded (bisa ditambahkan nanti logic ini)
+        // Saat ini relations di-merge ke attributes secara manual oleh loadRelations?
+        // Sebenarnya idealnya relations disimpan di property terpisah $relations.
+        // Tapi untuk kompatibilitas framework simpel ini, kita asumsi relation masuk ke attributes sementara.
+
+        // Remove hidden attributes
+        if (!empty($this->hidden)) {
+            $data = array_diff_key($data, array_flip($this->hidden));
+        }
+
+        return $data;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return $this->toArray();
     }
 
     /**
@@ -403,7 +580,8 @@ abstract class Model implements \JsonSerializable
             return $this->$method(...$parameters);
         }
 
-        throw new Exception("Method '$method' tidak ditemukan di " . get_class($this));
+        // Forward call to QueryBuilder
+        return $this->query()->$method(...$parameters);
     }
 
     /**
