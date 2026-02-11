@@ -6,21 +6,37 @@ Framework menyediakan validator yang powerful dengan 50+ built-in rules untuk me
 
 ## 📋 Daftar Isi
 
-1. [Validasi Dasar](#validasi-dasar)
-2. [Menampilkan Error](#menampilkan-error)
-3. [Daftar Rules Lengkap](#daftar-rules-lengkap)
-4. [Database Validation](#database-validation)
-5. [File Validation](#file-validation)
-6. [Custom Labels](#custom-labels)
+1. [Overview: 2 Cara Validasi](#overview-2-cara-validasi)
+2. [Cara 1: Manual Validation (Controller)](#cara-1-manual-validation-controller)
+3. [Cara 2: Form Request (Recommended)](#cara-2-form-request-recommended)
+4. [Menampilkan Error di View](#menampilkan-error-di-view)
+5. [Daftar Rules Lengkap](#daftar-rules-lengkap)
+6. [Database Validation](#database-validation)
+7. [File Validation](#file-validation)
+8. [Custom Labels](#custom-labels)
 
 ---
 
-## Validasi Dasar
+## Overview: 2 Cara Validasi
 
-Validator dilakukan di Controller atau Request class sebelum menyimpan data.
+Framework ini menyediakan **2 cara** untuk validasi input:
+
+| Cara                  | Lokasi           | Use Case                       | Auto Redirect? |
+| :-------------------- | :--------------- | :----------------------------- | :------------: |
+| **Manual Validation** | Dalam Controller | Simple forms, quick validation |   ❌ Manual    |
+| **Form Request**      | Dedicated class  | Complex forms, reusable rules  |  ✅ **Auto**   |
+
+---
+
+## Cara 1: Manual Validation (Controller)
+
+**Best for:** Simple forms, quick prototyping, one-time validation.
+
+### Step 1: Validate in Controller
 
 ```php
 use TheFramework\App\Validator;
+use TheFramework\Helpers\Helper;
 
 public function store() {
     $validator = new Validator();
@@ -29,25 +45,191 @@ public function store() {
         'username' => 'required|alpha_dash|min:4|max:20',
         'email'    => 'required|email|unique:users,email',
         'password' => 'required|min:8|confirmed',
-        'age'      => 'numeric|between:17,99'
+        'age'      => 'nullable|numeric|between:17,99'
     ]);
 
     if (!$isValid) {
-        $errors = $validator->errors();
-        // Redirect dengan error
-        return redirect('/register')
-            ->withErrors($errors)
-            ->withInput();
+        // Manual flash errors & old input
+        $_SESSION['errors'] = $validator->errors();
+        $_SESSION['old'] = $_POST;
+
+        return Helper::redirect('/register');
     }
 
-    // Sukses! Lanjut simpan database
-    User::create($_POST);
+    // Validation passed
+    User::create([
+        'username' => $_POST['username'],
+        'email' => $_POST['email'],
+        'password' => Helper::hash_password($_POST['password'])
+    ]);
+
+    return Helper::redirect('/users', 'success', 'User created!');
 }
 ```
 
+### Step 2: Display Errors in View
+
+```php
+<!-- Display all errors -->
+<?php if ($errors = $_SESSION['errors'] ?? null): ?>
+    <div class="alert alert-danger">
+        <?php foreach ($errors as $error): ?>
+            <li><?= Helper::e($error) ?></li>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
+<!-- Repopulate form -->
+<input type="text" name="username" value="<?= Helper::old('username') ?>">
+
+<?php
+// Clean up session
+unset($_SESSION['errors'], $_SESSION['old']);
+?>
+```
+
+**Pros:**
+
+- ✅ Simple, straightforward
+- ✅ No extra files needed
+
+**Cons:**
+
+- ❌ Manual error flashing
+- ❌ Manual redirect
+- ❌ Code duplication jika form sama dipakai di banyak tempat
+
 ---
 
-## Menampilkan Error
+## Cara 2: Form Request (Recommended)
+
+**Best for:** Complex forms, reusable validation, production apps.
+
+### Step 1: Generate Form Request
+
+```bash
+php artisan make:request CreateUserRequest
+```
+
+**Output:**
+
+```
+★ SUCCESS  Request dibuat: CreateUserRequest (app/Http/Requests/CreateUserRequest.php)
+```
+
+### Step 2: Define Rules
+
+File: `app/Http/Requests/CreateUserRequest.php`
+
+```php
+<?php
+
+namespace TheFramework\Http\Requests;
+
+use TheFramework\App\FormRequest;
+
+class CreateUserRequest extends FormRequest
+{
+    /**
+     * Authorization check (optional)
+     */
+    public function authorize(): bool
+    {
+        return true; // or check user permission
+    }
+
+    /**
+     * Validation rules
+     */
+    public function rules(): array
+    {
+        return [
+            'username' => 'required|alpha_dash|min:4|max:20|unique:users,username',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:8|confirmed',
+            'age'      => 'nullable|numeric|between:13,120',
+        ];
+    }
+
+    /**
+     * Custom labels for error messages
+     */
+    public function labels(): array
+    {
+        return [
+            'username' => 'Nama Pengguna',
+            'email'    => 'Alamat Email',
+            'password' => 'Kata Sandi',
+            'age'      => 'Umur',
+        ];
+    }
+}
+```
+
+### Step 3: Use in Controller
+
+```php
+use TheFramework\Http\Requests\CreateUserRequest;
+use TheFramework\Models\User;
+use TheFramework\Helpers\Helper;
+
+class UserController
+{
+    /**
+     * ✨ MAGIC: Validation happens AUTOMATICALLY!
+     * If validation fails, auto redirects back with errors.
+     * If we reach here, validation PASSED!
+     */
+    public function store(CreateUserRequest $request)
+    {
+        // No need to check validation!
+        // Get only validated data (safe from mass assignment)
+        $data = $request->validated();
+
+        // Hash password
+        $data['password'] = Helper::hash_password($data['password']);
+
+        // Create user
+        User::create($data);
+
+        return Helper::redirect('/users', 'success', 'User created!');
+    }
+}
+```
+
+### Step 4: Display Errors in View (Same)
+
+```php
+<!-- Errors automatically flashed by FormRequest -->
+<?php if ($errors = $_SESSION['errors'] ?? null): ?>
+    <div class="alert alert-danger">
+        <?php foreach ($errors as $error): ?>
+            <li><?= Helper::e($error) ?></li>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
+<!-- Old input automatically flashed -->
+<input type="text" name="username" value="<?= Helper::old('username') ?>">
+```
+
+**Pros:**
+
+- ✅ **Auto validation** on controller injection
+- ✅ **Auto redirect back** jika error
+- ✅ **Auto flash errors & old input**
+- ✅ **Reusable** (bisa dipakai di update, store, dll)
+- ✅ **Clean controller** - no validation clutter
+- ✅ **Type safety** - IDE autocomplete
+- ✅ **Authorization** built-in
+
+**Cons:**
+
+- ❌ Satu file ekstra (tapi worth it!)
+
+---
+
+## Menampilkan Error di View
 
 Di View (`resources/views/register.php`), tampilkan pesan error:
 

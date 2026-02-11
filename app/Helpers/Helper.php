@@ -9,27 +9,13 @@ use TheFramework\App\Database;
 
 class Helper
 {
+    /**
+     * Ensure session is started.
+     * Delegates to SessionManager for consistent session handling.
+     */
     private static function ensureSession()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            // SECURITY HARDENING: Mencegah Session Hijacking via XSS
-            // HttpOnly: Cookie tidak bisa diakses JS document.cookie
-            // SameSite: Mencegah CSRF dari cross-site
-            // Secure: Hanya kirim cookie via HTTPS (aktifkan jika di production)
-
-            $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
-
-            session_set_cookie_params([
-                'lifetime' => 7200, // 2 Jam
-                'path' => '/',
-                'domain' => '', // Current domain
-                'secure' => $secure,
-                'httponly' => true,
-                'samesite' => 'Lax'
-            ]);
-
-            session_start();
-        }
+        \TheFramework\App\SessionManager::startSecureSession();
     }
 
     public static function url($path = '')

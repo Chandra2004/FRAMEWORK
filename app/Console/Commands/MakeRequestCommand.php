@@ -42,33 +42,61 @@ class MakeRequestCommand implements CommandInterface
 
 namespace $namespace;
 
-use TheFramework\\App\\Request;
+use TheFramework\\App\\FormRequest;
 
-class $className extends Request
+/**
+ * Request validation untuk $className
+ * 
+ * Auto-validates when used in controller!
+ * No need to call validate() manually.
+ * 
+ * Usage:
+ * public function store($className \$request) {
+ *     // Validation already done automatically
+ *     // If we reach here, validation passed
+ *     Model::create(\$request->validated());
+ * }
+ */
+class $className extends FormRequest
 {
     /**
-     * Aturan validasi untuk request ini.
+     * Determine if the user is authorized to make this request.
+     * Return false to deny access (403 Forbidden).
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     * 
+     * Available rules: required, email, min, max, unique, exists,
+     * alpha, numeric, confirmed, in, between, mimes, image, etc.
+     * 
+     * @return array
      */
     public function rules(): array
     {
         return [
-            // 'field_name' => 'required|min:3|max:100',
+            // Example: 'email' => 'required|email|unique:users,email',
+            // Example: 'password' => 'required|min:8|confirmed',
+            // Example: 'age' => 'nullable|numeric|between:13,120',
         ];
     }
 
     /**
-     * Pesan error kustom untuk validasi.
+     * Get custom labels for validation error messages.
+     * Makes error messages more user-friendly in your language.
+     * 
+     * @return array
      */
-    public function messages(): array
+    public function labels(): array
     {
         return [
-            // 'field_name.required' => 'Field ini wajib diisi.',
+            // Example: 'email' => 'Alamat Email',
+            // Example: 'password' => 'Kata Sandi',
         ];
-    }
-
-    public function validated(): array
-    {
-        return \$this->validate(\$this->rules(), \$this->messages());
     }
 }
 PHP;
