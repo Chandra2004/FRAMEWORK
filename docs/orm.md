@@ -193,14 +193,13 @@ $ids = Post::where('published', true)->pluck('id');
 
 ## Advanced Active Record
 
+```php
 // Create via Relation (Auto sets foreign key)
 $user = User::find(1);
 $user->posts()->create([
 'title' => 'New Post',
 'content' => 'Content via relation...'
-]); // Sets user_id = 1 automatically
-
-// Mass Fill (Protected by $fillable)
+]); // Sets user_id = 1 automatically// Mass Fill (Protected by $fillable)
 $post = new Post();
 $post->fill([
     'title' => 'Title',
@@ -208,6 +207,7 @@ $post->fill([
     'sensitive_data' => 'secret' // Ignored if not in $fillable
 ]);
 $post->save();
+```
 
 ---
 
