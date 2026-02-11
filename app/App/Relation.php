@@ -3,26 +3,98 @@ namespace TheFramework\App;
 
 class Relation
 {
-    public $type;
+    public $query;
     public $parent;
     public $related;
+    public $type;
     public $foreignKey;
     public $localKey;
-    public $select = [];
     public $pivotTable;
-    public $relatedKey;
+    public $relatedKey; // Owner Key for BelongsTo or Related Key for Pivot
+    public $select = []; // Kolom yang akan diselect
     public $additionalPivotColumns = [];
 
-    public function __construct($type, $parent, $related, $foreignKey, $localKey = null, $pivotTable = null, $relatedKey = null, $additionalPivotColumns = [])
+    protected static $constraints = true;
+
+    /**
+     * @param string $type HasMany, BelongsTo, etc
+     * @param Model $parent Parent model instance
+     * @param string|Model $related Related model class or instance
+     * @param string $foreignKey
+     * @param string $localKey
+     */
+    public function __construct($type, Model $parent, $related, $foreignKey, $localKey = null, $pivotTable = null, $relatedKey = null, $additionalPivotColumns = [])
     {
         $this->type = $type;
         $this->parent = $parent;
-        $this->related = $related;
+        $this->related = is_string($related) ? new $related : $related;
         $this->foreignKey = $foreignKey;
         $this->localKey = $localKey;
         $this->pivotTable = $pivotTable;
         $this->relatedKey = $relatedKey;
         $this->additionalPivotColumns = $additionalPivotColumns;
+
+        // Initialize Query Builder for the related model
+        $this->query = $this->related->query(); // Asumsi Model punya method query() public/accessible
+
+        // Add constraints only IF parent exists (has ID)
+        if ($parent->exists) {
+            $this->addConstraints();
+        }
+    }
+
+    /**
+     * Add basic WHERE constraints based on the relation type.
+     */
+    public function addConstraints()
+    {
+        if ($this->type === 'hasMany' || $this->type === 'hasOne') {
+            $this->query->where($this->foreignKey, '=', $this->parent->getAttribute($this->localKey));
+        } elseif ($this->type === 'belongsTo') {
+            $this->query->where($this->relatedKey, '=', $this->parent->getAttribute($this->foreignKey));
+        }
+        // TODO: Implement belongsToMany constraints
+    }
+
+    /**
+     * Execute the query and get results.
+     */
+    public function getResults()
+    {
+        if ($this->type === 'hasOne' || $this->type === 'belongsTo') {
+            return $this->query->first();
+        }
+        return $this->query->get();
+    }
+
+    /**
+     * Execute query as get()
+     */
+    public function get()
+    {
+        return $this->query->get();
+    }
+
+    /**
+     * Execute query as first()
+     */
+    public function first()
+    {
+        return $this->query->first();
+    }
+
+    /**
+     * Create a new instance of the related model.
+     * Automatically sets foreign keys.
+     */
+    public function create(array $attributes = [])
+    {
+        // Set Foreign Key automatic assignment
+        if ($this->type === 'hasMany' || $this->type === 'hasOne') {
+            $attributes[$this->foreignKey] = $this->parent->getAttribute($this->localKey);
+        }
+
+        return $this->related->create($attributes);
     }
 
     public function select(array $columns)
@@ -121,7 +193,13 @@ class Relation
             if ($this->type === 'hasMany' || $this->type === 'hasOne') {
                 $keyVal = is_object($result) ? $result->{$this->foreignKey} : $result[$this->foreignKey];
             } elseif ($this->type === 'belongsTo') {
-                $keyVal = is_object($result) ? $result->{$this->localKey} : $result[$this->localKey];
+                $keyVal = is_object($result) ? $result->{$this->localKey} : $result[$this->localKey]; // FIX: localKey relations adalah ownerKey (primary key parent usually)
+                // Wait, logic ini membingungkan di Relation.php karena naming localKey/foreignKey sering tertukar.
+                // Standard:
+                // hasMany: FK ada di Child. LocalKey ada di Parent.
+                // belongsTo: FK ada di Parent (this). OwnerKey ada di Child (related).
+                // Di Constructor kita, $relatedKey adalah ownerKey untuk belongsTo.
+                $keyVal = is_object($result) ? $result->{$this->relatedKey} : $result[$this->relatedKey];
             }
 
             if (!is_null($keyVal)) {
@@ -129,5 +207,19 @@ class Relation
             }
         }
         return $dictionary;
+    }
+
+    /**
+     * Handle dynamic method calls to the relationship.
+     */
+    public function __call($method, $parameters)
+    {
+        $result = $this->query->$method(...$parameters);
+
+        if ($result === $this->query) {
+            return $this;
+        }
+
+        return $result;
     }
 }
