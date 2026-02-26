@@ -1,6 +1,6 @@
-# 📧 Email Handler
+# 📧 Mail Handler
 
-The Framework menyediakan class `EmailHandler` untuk memudahkan pengiriman email via SMTP menggunakan library **PHPMailer**.
+The Framework menyediakan class `MailHandler` yang sangat bertenaga untuk memudahkan pengiriman email via SMTP menggunakan library **PHPMailer**, lengkap dengan dukungan antrean (Queue) dan lampiran ganda.
 
 ---
 
@@ -14,66 +14,77 @@ composer require phpmailer/phpmailer
 
 ---
 
-## ⚙️ Konfigurasi `.env`
+## ⚙️ Konfigurasi
 
-Tambahkan kredensial SMTP Anda ke file `.env`:
+Berbeda dengan sistem lama, konfigurasi kini terpusat di file `config/mail.php` yang mengambil data dari `.env`:
 
+**File `.env`:**
 ```env
 MAIL_HOST=smtp.mailtrap.io
-MAIL_PORT=2525
+MAIL_PORT=587
 MAIL_USERNAME=your_username
 MAIL_PASSWORD=your_password
 MAIL_FROM=noreply@example.com
-MAIL_FROM_NAME="My App Name"
+MAIL_FROM_NAME="The Framework App"
 ```
 
 ---
 
 ## 🚀 Cara Penggunaan
 
-Gunakan method statis `EmailHandler::send()` untuk mengirim email.
-
-### Penggunaan Dasar
+### 1. Pengiriman Instan
+Gunakan instance `MailHandler` untuk mengirim email secara langsung.
 
 ```php
-use TheFramework\Config\EmailHandler;
+use TheFramework\Handlers\MailHandler;
 
 try {
-    $to = 'user@example.com';
-    $subject = 'Selamat Datang!';
-    $body = '<h1>Halo!</h1><p>Terima kasih telah mendaftar di aplikasi kami.</p>';
+    $mailer = new MailHandler();
+    $status = $mailer->send(
+        'user@example.com', 
+        'Selamat Datang!', 
+        '<h1>Halo!</h1><p>Terima kasih telah bergabung.</p>'
+    );
 
-    $status = EmailHandler::send($to, $subject, $body);
-
-    if ($status) {
-        echo "Email berhasil dikirim!";
-    }
+    if ($status) echo "Email terkirim!";
 } catch (\Exception $e) {
-    echo "Gagal mengirim email: " . $e->getMessage();
+    echo "Error: " . $e->getMessage();
 }
 ```
 
-### Opsi Tambahan (Lampiran, CC, BCC)
+### 2. Pengiriman via Antrean (Queue)
+Untuk performa aplikasi yang lebih cepat, Anda bisa memasukkan pengiriman email ke dalam antrean sehingga pengguna tidak perlu menunggu proses SMTP selesai.
 
-Anda bisa menyertakan opsi tambahan melalui argumen keempat:
+```php
+use TheFramework\Handlers\MailHandler;
+
+// Gunakan syntax fluent 'to' -> 'queue'
+MailHandler::to('user@example.com')->queue(
+    'Konfirmasi Pesanan',
+    'Pesanan Anda sedang kami proses.'
+);
+```
+
+### 3. Lampiran & Opsi Lanjutan
+Anda bisa menyertakan lampiran file, CC, dan BCC dengan mudah:
 
 ```php
 $options = [
-    'cc'          => ['manager@example.com'],
-    'bcc'         => ['admin@example.com'],
+    'cc'  => 'manager@example.com',
+    'bcc' => ['admin@example.com', 'audit@example.com'],
     'attachments' => [
-        'path/to/invoice.pdf',
-        'path/to/image.jpg'
-    ]
+        'storage/app/invoices/INV-001.pdf', // Path string biasa
+        ['path' => 'storage/app/photos/user.jpg', 'name' => 'FotoProfil.jpg'] // Dengan nama kustom
+    ],
+    'reply_to' => 'support@example.com'
 ];
 
-EmailHandler::send($to, $subject, $body, $options);
+$mailer->send($to, $subject, $body, $options);
 ```
 
 ---
 
-## 🛠️ Troubleshooting
-
-- **Connection Timeout:** Pastikan port (misal: 465 atau 587) tidak diblokir oleh firewall hosting Anda.
-- **Gmail SMTP:** Jika menggunakan Gmail, Anda harus menggunakan _App Password_ dan mengaktifkan 2FA.
-- **Shared Hosting:** Beberapa hosting gratis (seperti InfinityFree) membatasi fungsi SMTP eksternal. Gunakan webmail bawaan hosting jika perlu.
+## 🛠️ Analisis Fitur (BEYOND Laravel)
+- **Queue Simulation**: Otomatis mendeteksi jika Driver Queue aktif. Jika tidak aktif, dia akan otomatis *fallback* ke pengiriman instan tanpa merusak kode Anda.
+* **Auto-AltBody**: Secara otomatis membuat versi teks murni (strip tags) dari body HTML Anda untuk kompatibilitas email client lama.
+* **Global Config**: Tidak perlu memasukkan kredensial berkali-kali, cukup setting sekali di `config/mail.php`.

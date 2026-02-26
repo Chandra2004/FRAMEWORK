@@ -1,6 +1,6 @@
 <?php
 // ROUTER
-use TheFramework\App\Router;
+use TheFramework\App\Http\Router;
 
 // MIDDLEWARE
 use TheFramework\Middleware\ApiAuthMiddleware;
@@ -49,40 +49,3 @@ Router::group(
         Router::add('POST', '/users/delete/{uid}', ApiHomeController::class, 'DeleteUser');
     }
 );
-
-// --- 🛠️ ERROR PAGE PREVIEW (LOCAL ONLY) 🛠️ ---
-if (\TheFramework\App\Config::get('APP_ENV') === 'local') {
-    Router::group(['prefix' => '/test-error'], function () {
-        Router::add('GET', '/403', function () {
-            \TheFramework\Http\Controllers\Services\ErrorController::error403();
-        });
-        Router::add('GET', '/404', function () {
-            \TheFramework\Http\Controllers\Services\ErrorController::error404();
-        });
-        Router::add('GET', '/500', function () {
-            \TheFramework\Http\Controllers\Services\ErrorController::error500();
-        });
-        Router::add('GET', '/payment', function () {
-            \TheFramework\Http\Controllers\Services\ErrorController::payment();
-        });
-        Router::add('GET', '/maintenance', function () {
-            \TheFramework\Http\Controllers\Services\ErrorController::maintenance();
-        });
-        Router::add('GET', '/database', function () {
-            throw new \TheFramework\App\DatabaseException(
-                "Koneksi gagal ke 'framework_test'",
-                500,
-                null,
-                ['DB_HOST' => 'localhost', 'DB_PORT' => '3306'],
-                ['DB_NAME' => 'Kemungkinan Typo di .env']
-            );
-        });
-        Router::add('GET', '/exception', function () {
-            throw new Exception("Ini adalah contoh Pengecualian Sistem (Exception).");
-        });
-        Router::add('GET', '/fatal', function () {
-            // Memicu ParseError (Fatal)
-            eval ('syntax error here');
-        });
-    });
-}

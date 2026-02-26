@@ -2,87 +2,77 @@
 
 namespace TheFramework\Console\Commands;
 
-use TheFramework\App\Config;
-use TheFramework\Console\CommandInterface;
+use TheFramework\App\Core\Config;
+use TheFramework\Console\BaseCommand;
 
-class ServeCommand implements CommandInterface
+class ServeCommand extends BaseCommand
 {
     public function getName(): string
     {
         return 'serve';
     }
+
     public function getDescription(): string
     {
-        return 'Menjalankan aplikasi pada server pengembangan PHP';
+        return 'Jalankan server pengembangan dengan deteksi IP & Auto-Port';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
         Config::loadEnv();
         $env = strtoupper(Config::get('APP_ENV', 'LOCAL'));
 
-        // Parse BASE_URL to extract host and port dynamically
-        $defaultHost = '127.0.0.1';
-        $defaultPort = '8080';
-        $displayUrl = '';
+        // Auto-detect host & port from BASE_URL in .env
+        $baseUrl = Config::get('BASE_URL', 'http://127.0.0.1:8080');
+        $parsedUrl = parse_url($baseUrl);
+        $envHost = $parsedUrl['host'] ?? '127.0.0.1';
+        $envPort = $parsedUrl['port'] ?? 8080;
 
-        $baseUrl = Config::get('BASE_URL', '');
-        if (!empty($baseUrl)) {
-            $parsed = parse_url($baseUrl);
+        // Manual args override .env values
+        $host = $args[0] ?? $envHost;
+        $port = $args[1] ?? $envPort;
 
-            // Extract host (domain/hostname)
-            if (isset($parsed['host'])) {
-                $displayUrl = $parsed['host'];
-            }
+        // Resolve hostname ke IP (PHP built-in server butuh IP, bukan hostname)
+        $hostnameMap = [
+            'localhost' => '127.0.0.1',
+            '0.0.0.0'  => '0.0.0.0',
+        ];
+        $displayHost = $host; // Simpan hostname asli untuk display
+        $host = $hostnameMap[strtolower($host)] ?? $host;
 
-            // Extract port or use scheme default
-            if (isset($parsed['port'])) {
-                $defaultPort = (string) $parsed['port'];
-            } elseif (isset($parsed['scheme'])) {
-                // Use default ports based on scheme
-                $defaultPort = ($parsed['scheme'] === 'https') ? '443' : '80';
-            }
-        }
-
-        // Get user inputs (can override BASE_URL settings)
-        $host = $args[0] ?? $defaultHost;
-        $port = $args[1] ?? $defaultPort;
-
-        // ✅ SECURITY FIX: Validate IP address to prevent command injection
+        // Jika masih bukan IP valid, coba resolve via DNS
         if (!filter_var($host, FILTER_VALIDATE_IP)) {
-            echo "\033[31m✖ ERROR  Invalid IP address: {$host}\033[0m\n";
-            echo "\033[33mUsage: php artisan serve [host] [port]\033[0m\n";
-            echo "\033[33mExample: php artisan serve 127.0.0.1 8080\033[0m\n";
-            exit(1);
+            $resolved = gethostbyname($host);
+            if ($resolved !== $host) {
+                $displayHost = $host;
+                $host = $resolved;
+            } else {
+                $this->error("Host tidak dapat di-resolve: $host");
+                exit(1);
+            }
         }
 
-        // ✅ SECURITY FIX: Validate port number (1-65535)
-        $port = filter_var($port, FILTER_VALIDATE_INT, [
-            'options' => ['min_range' => 1, 'max_range' => 65535]
-        ]);
+        $port = filter_var($port, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
         if ($port === false) {
-            echo "\033[31m✖ ERROR  Invalid port number. Must be between 1-65535\033[0m\n";
-            echo "\033[33mUsage: php artisan serve [host] [port]\033[0m\n";
+            $this->error("Port harus angka (1-65535)");
             exit(1);
         }
 
-        // Display dynamic information based on BASE_URL
-        echo "\033[38;5;39m➤ INFO  TheFramework $env Server\033[0m\n";
+        $this->clear();
+        $this->line("──────────────────────────────────────────────────", self::COLOR_MAGENTA);
+        $this->line("  THE FRAMEWORK v5.0 DEVELOPMENT SERVER", self::STYLE_BOLD . self::COLOR_CYAN);
+        $this->line("──────────────────────────────────────────────────", self::COLOR_MAGENTA);
+        
+        $this->info("Environment : " . self::STYLE_BOLD . $env);
+        $this->info("Server Host : " . self::STYLE_BOLD . "http://$host:$port");
+        $this->info("Base URL    : " . self::STYLE_BOLD . $baseUrl);
+        $this->warn("Tekan Ctrl+C untuk menghentikan server.");
+        echo PHP_EOL;
 
-        if (!empty($displayUrl)) {
-            // Show BASE_URL website/domain if available
-            echo "\033[38;5;39m  Website: {$displayUrl}\033[0m\n";
-        }
-
-        echo "\033[38;5;39m  Server berjalan di http://$host:$port\033[0m\n";
-        echo "\033[38;5;39m  Port: {$port}\033[0m\n";
-        echo "\033[38;5;39m  Tekan Ctrl+C untuk menghentikan\033[0m\n\n";
-
-        // ✅ SECURITY FIX: Use escapeshellarg() to prevent command injection
         $cmd = sprintf(
             'php -S %s:%s index.php',
             escapeshellarg($host),
-            escapeshellarg((string) $port)
+            escapeshellarg((string)$port)
         );
 
         passthru($cmd);

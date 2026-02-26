@@ -3,7 +3,7 @@
 namespace TheFramework\Console\Commands;
 
 use TheFramework\Console\CommandInterface;
-use TheFramework\App\Router;
+use TheFramework\App\Http\Router;
 
 class RouteCacheCommand implements CommandInterface
 {

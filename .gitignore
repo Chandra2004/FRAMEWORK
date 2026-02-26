@@ -2,6 +2,7 @@
 .env
 .env.backup
 .env.production
+testing.txt
 
 # Dependencies
 /vendor/
@@ -21,6 +22,7 @@ composer.phar
 /storage/app/*
 !/storage/app/.gitignore
 
+/.PENILAIAN/*
 # User Uploads (Ignore file uploads)
 /private-uploads/*
 !/private-uploads/.gitignore

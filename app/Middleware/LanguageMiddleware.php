@@ -2,25 +2,26 @@
 
 namespace TheFramework\Middleware;
 
-use TheFramework\App\Lang;
+use TheFramework\App\Core\Lang;
 
 class LanguageMiddleware implements Middleware
 {
     public function before()
     {
-        // 1. Check Query Parameter (?lang=id)
-        if (isset($_GET['lang'])) {
-            $lang = $_GET['lang'];
-            // Validasi input (hanya izinkan 'en' atau 'id' untuk keamanan)
-            if (in_array($lang, ['en', 'id'])) {
-                $_SESSION['app_locale'] = $lang;
-            }
+        // 1. Ambil daftar bahasa yang didukung dari config
+        $supportedLocales = config('app.supported_locales', ['en', 'id']);
+        $defaultLocale = config('app.locale', 'id');
+
+        // 2. Cek Query Parameter (?lang=id)
+        $requestedLang = request('lang');
+        if ($requestedLang && in_array($requestedLang, $supportedLocales)) {
+            session(['app_locale' => $requestedLang]);
         }
 
-        // 2. Check Session
-        $locale = $_SESSION['app_locale'] ?? 'en'; // Default English
+        // 3. Ambil dari Session atau Default
+        $locale = session('app_locale', $defaultLocale);
 
-        // 3. Set Locale di App
+        // 4. Set Locale di App Engine
         Lang::setLocale($locale);
     }
 

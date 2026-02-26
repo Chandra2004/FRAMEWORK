@@ -38,7 +38,7 @@ class MakeViewCommand implements CommandInterface
 
 namespace Database\Migrations;
 
-use TheFramework\App\Schema;
+use TheFramework\App\Schema\Schema;
 use TheFramework\Models\User; // Contoh Model
 
 class {$className} {

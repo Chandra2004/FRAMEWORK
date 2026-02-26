@@ -2,22 +2,20 @@
 
 namespace TheFramework\Middleware;
 
-use TheFramework\App\Logging;
-use TheFramework\App\Config;
+use TheFramework\App\Core\Logging;
 
 class WAFMiddleware implements Middleware
 {
     public function before()
     {
         // Regex yang lebih spesifik untuk mengurangi false positive
-        // Mencegah blokir kata umum seperti "select", "update" dalam kalimat biasa
         $patterns = [
             'sql_injection' => [
                 'pattern' => '/(\b(union\s+select|insert\s+into.+values|delete\s+from|update\s+\w+\s+set|drop\s+table|alter\s+table|truncate\s+table)\b)/i',
                 'description' => 'SQL Injection Attempt'
             ],
             'sql_logic' => [
-                'pattern' => '/(\b(1\s*=\s*1|1\s*=\s*2)\b|--\s|\/\*.*\*\/)/',
+                'pattern' => '/(\b(1\s*=\s*1|1\s*=\s*0|1\s*=\s*2)\b|--\s|\/\*.*\*\/|#\s)/',
                 'description' => 'SQL Logic Injection'
             ],
             'xss' => [
@@ -29,26 +27,20 @@ class WAFMiddleware implements Middleware
                 'description' => 'Path Traversal'
             ],
             'command_injection' => [
-                'pattern' => '/(\b(exec|system|shell_exec|passthru|proc_open|popen)\s*\(|`)/i',
-                'description' => 'Command Injection'
+                'pattern' => '/(\b(exec|system|shell_exec|passthru|proc_open|popen|eval|assert)\s*\(|`)/i',
+                'description' => 'Command/Code Injection'
             ]
         ];
 
-        // Helper untuk scan
         // Helper recursive scanning
         $scan = function ($data, $sourceName) use ($patterns, &$scan) {
             foreach ($data as $key => $value) {
-                // Scan Key
-                // ... (scan key logic if needed)
-
                 if (is_array($value)) {
-                    // Recursive call
                     $scan($value, $sourceName . "[$key]");
                     continue;
                 }
 
-                if (!is_string($value))
-                    continue;
+                if (!is_string($value)) continue;
 
                 foreach ($patterns as $type => $rule) {
                     if (preg_match($rule['pattern'], $value)) {
@@ -60,29 +52,23 @@ class WAFMiddleware implements Middleware
                             'key' => $key
                         ];
 
-                        http_response_code(403);
-
-                        if (Config::get('APP_ENV') === 'production') {
-                            exit;
+                        if (config('APP_ENV') === 'production') {
+                            return abort(403, 'Sistem keamanan kami mendeteksi aktivitas mencurigakan.');
                         } else {
-                            die(json_encode($response));
+                            return json($response, 403);
                         }
                     }
                 }
             }
         };
 
-        $scan($_GET, 'GET');
-        $scan($_POST, 'POST');
-        // Scan COOKIE if necessary
-
+        // Scan All Inputs
+        $scan(request()->all(), 'REQUEST');
+        
         // Scan specific helper to check URI for XSS too
-        $uri = $_SERVER['REQUEST_URI'] ?? '';
-        foreach ($patterns as $type => $rule) {
-            if ($type === 'xss' && preg_match($rule['pattern'], urldecode($uri))) {
-                http_response_code(403);
-                exit;
-            }
+        $uri = request()->path();
+        if (preg_match($patterns['xss']['pattern'], urldecode($uri))) {
+            return abort(403, 'Akses ditolak: URI mengandung karakter tidak aman.');
         }
     }
 

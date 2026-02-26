@@ -1,6 +1,6 @@
 {
   "name": "chandra2004/the-framework",
-  "description": "Secure MVC Native PHP Framework - Version 5.0.0 (Major Security & Stability Release)",
+  "description": "Secure MVC Native PHP Framework - Version 5.0.1 (Patch Update & Stability)",
   "license": "MIT",
   "authors": [
     {
@@ -20,6 +20,9 @@
       "TheFramework\\Models\\": "app/Models/",
       "Database\\Seeders\\": "database/seeders/"
     },
+    "files": [
+      "app/Helpers/helpers.php"
+    ],
     "classmap": [
       "database/migrations/",
       "database/seeders/"
@@ -50,7 +53,7 @@
       "@php vendor/bin/phpunit"
     ],
     "post-autoload-dump": [
-      "TheFramework\\App\\Router::cacheRoutes"
+      "TheFramework\\App\\Http\\Router::cacheRoutes"
     ]
   },
   "config": {

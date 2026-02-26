@@ -2,64 +2,41 @@
 
 namespace TheFramework\Console\Commands;
 
-use TheFramework\Console\CommandInterface;
+use TheFramework\Console\BaseCommand;
 
-class MakeMigrationCommand implements CommandInterface
+class MakeMigrationCommand extends BaseCommand
 {
     public function getName(): string
     {
         return 'make:migration';
     }
+
     public function getDescription(): string
     {
-        return 'Membuat file migrasi baru';
+        return 'Buat file migrasi database baru';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
-        $name = $args[0] ?? 'new_migration';
+        $name = $args[0] ?? null;
+        if (!$name) $name = $this->ask("Masukkan nama migrasi (Contoh: create_users_table)");
+
+        $tableName = 'table_name';
+        if (preg_match('/^create_(.*)_table$/', $name, $matches)) {
+            $tableName = $matches[1];
+        }
+
         $timestamp = date('Y_m_d_His');
-        $className = "Migration_{$timestamp}_" . str_replace(' ', '_', ucwords(str_replace(['-', '_'], ' ', $name)));
-        $filename = "{$timestamp}_{$name}.php";
-        $path = BASE_PATH . "/database/migrations/{$filename}";
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+        $fileName = "{$timestamp}_{$name}.php";
+        $targetFile = BASE_PATH . "/database/migrations/$fileName";
 
-        // Ekstrak nama tabel berdasarkan logika lama
-        $tableName = $this->getTableName($name);
+        $stubPath = BASE_PATH . "/app/Console/Stubs/migration.stub";
+        $content = file_get_contents($stubPath);
+        $content = str_replace('{{table}}', $tableName, $content);
 
-        $content = <<<PHP
-<?php
+        if (!is_dir(dirname($targetFile))) mkdir(dirname($targetFile), 0755, true);
 
-namespace Database\Migrations;
-
-use TheFramework\App\Schema;
-
-class {$className} {
-    public function up()
-    {
-        Schema::create('{$tableName}', function (\$table) {
-            \$table->increments('id');
-            \$table->string('uid', 36)->unique();
-            
-            \$table->timestamps();
-        });
-    }
-
-    public function down()
-    {
-        Schema::dropIfExists('{$tableName}');
-    }
-}
-PHP;
-        file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Migrasi dibuat: $filename (database/migrations/$filename)\033[0m\n";
-    }
-
-    private function getTableName($name)
-    {
-        // Hapus 'Create' dan 'Table', lalu konversi ke lower case dengan garis bawah
-        $baseName = str_replace(['Create', 'Table'], '', $name);
-        $tableName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $baseName));
-        return trim($tableName, '_') ?: 'table';
+        file_put_contents($targetFile, $content);
+        $this->success("Migrasi dibuat: $fileName");
     }
 }

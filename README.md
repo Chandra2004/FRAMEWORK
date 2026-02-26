@@ -8,7 +8,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D%208.3-8892BF.svg)](https://php.net/)
-[![Version](https://img.shields.io/badge/version-5.0.0-red.svg)](https://github.com/chandra2004/the-framework/releases)
+[![Version](https://img.shields.io/badge/version-5.0.2-red.svg)](https://github.com/chandra2004/the-framework/releases)
 [![Security](https://img.shields.io/badge/security-A%2B--grade-brightgreen.svg)](SECURITY.md)
 
 [Website](https://framework.rf.gd) • [Documentation](#-documentation) • [Get Started](#-quick-start) • [Changelog](CHANGELOG.md)
@@ -24,15 +24,25 @@
 ### Why The Framework?
 
 ```
-✅ No VPS required          ✅ Laravel-like syntax
+✅ No VPS required          ✅ Laravel-style DX
 ✅ Works on free hosting    ✅ Built-in security (WAF, CSRF)
-✅ Zero configuration        ✅ Comprehensive documentation
-✅ Web-based management     ✅ Production-ready
+✅ Centralized Config       ✅ Comprehensive documentation
+✅ Handlers Architecture    ✅ Web-based management
+✅ Auto-WebP Uploads        ✅ Production-ready
+✅ Fluent Helpers           ✅ Clean Internal Split
 ```
 
 ---
 
-## 🚀 Quick Start
+## 🔄 What's New in v5.0.2?
+
+**The "Fluent DX" Update**
+
+- ✅ **Modern Internal Split:** All framework-internal controllers (Error, Debug, Sitemap, etc.) moved to `App\Internal` to keep the developer's space clean.
+- ✅ **Fluent Syntax Engine:** New global helpers allowing `return view()`, `return redirect()`, and `return json()` for a much smoother coding experience.
+- ✅ **Premium Flash Helper:** New `flash('notification')` utility for elegant transient message handling.
+- ✅ **Trait Logic Migration:** System traits moved to `App\Traits` to prevent accidental modification.
+- ✅ **Enhanced Redirects:** Fluent redirect builder supporting `redirect()->back()`.
 
 ### Installation
 
@@ -69,7 +79,8 @@ Our documentation is comprehensive, well-organized, and beginner-friendly:
 ### **The Basics**
 
 - [🛣️ Routing](docs/routing.md) - URL routing and parameters
-- [🎨 Views &amp; Blade](docs/views.md) - Templating engine
+- [🌍 HTTP Module (New!)](docs/http.md) - Request, Router, Session & Validator
+- [🎨 Views & Blade](docs/views.md) - Templating engine
 - [🔐 Security](docs/security.md) - CSRF, XSS, WAF protection
 - [✅ Validation](docs/validation.md) - Input validation rules
 
@@ -77,11 +88,14 @@ Our documentation is comprehensive, well-organized, and beginner-friendly:
 
 - [🗄️ Database](docs/database.md) - Query Builder & connections
 - [📊 Migrations](docs/migrations.md) - Database version control
+- [🏗️ Schema Builder](docs/schema-builder.md) - Column types, indexes & introspection ⭐ NEW
 - [🔗 ORM &amp; Relations](docs/orm.md) - Eloquent-like ORM
 
 ### **Advanced Topics**
 
 - [🏗️ Architecture](docs/architecture.md) - MVC pattern explained
+- [⚡ Cache](docs/cache.md) - Caching system (File, Array, Database) ⭐ NEW
+- [🔧 Core](docs/core.md) - Config, Container, Lang, Logging ⭐ NEW
 - [🚀 Performance](docs/performance.md) - Caching & optimization
 - [🧪 Testing](docs/testing-guide.md) - Unit & feature testing
 - [🚢 Deployment](docs/deployment.md) - Deploy to production
@@ -95,9 +109,9 @@ Our documentation is comprehensive, well-organized, and beginner-friendly:
 - [🛠️ Artisan CLI](docs/artisan.md) - Command-line tools
 - [🌍 Localization](docs/localization.md) - Multi-language support
 - [🗺️ SEO & Sitemap](docs/seo.md) - SEO best practices
-- [📧 Email](docs/email.md) - SMTP sending
-- [💳 Payments](docs/payment.md) - Midtrans integration
-- [📤 File Uploads](docs/file-uploads.md) - UploadHandler
+- [📧 Email Handler](docs/email.md) - SMTP & Queue Support ⭐
+- [💳 Payment Handler](docs/payment.md) - Midtrans API Wrapper ⭐
+- [📤 Upload Handler](docs/file-uploads.md) - Auto-WebP & Resize Engine ⭐
 
 📖 **[View Full Documentation](docs/README.md)**
 
@@ -170,9 +184,9 @@ $users = User::with('posts')->where('active', true)->get();
 
 ---
 
-## 🔄 What's New in v5.0.0?
+## 🔄 What's New in v5.0.1?
 
-**Major Security & Stability Release**
+**Patch Update & Stability Build**
 
 ### 🔐 Security & DX Enhancements
 

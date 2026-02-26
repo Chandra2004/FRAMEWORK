@@ -1,204 +1,387 @@
-# 🏗️ Migrations & Schema Builder
+# 📊 Migrations — Database Version Control
 
 Migrasi adalah cara terbaik mengelola perubahan struktur database. Anggap saja sebagai _version control_ (seperti Git) untuk tabel database Anda.
 
+---
+
+## 📑 Daftar Isi
+
+- [Struktur File Migrasi](#struktur-file-migrasi)
+- [Membuat File Migrasi](#membuat-file-migrasi)
+- [Menjalankan Migrasi](#menjalankan-migrasi)
+- [Rollback & Reset](#rollback--reset)
+- [Status Migrasi](#status-migrasi)
+- [Artisan Commands](#artisan-commands)
+- [Fitur Lanjutan](#fitur-lanjutan)
+
+---
+
 ## Struktur File Migrasi
 
-File migrasi yang dibuat oleh `php artisan make:migration` memiliki dua method utama:
+Setiap file migrasi memiliki dua method utama:
 
-- `up()`: Eksekusi perubahan (misal: buat tabel).
-- `down()`: Batalkan perubahan (misal: hapus tabel).
+- **`up()`** — Eksekusi perubahan (buat tabel, tambah kolom, dll)
+- **`down()`** — Batalkan perubahan (hapus tabel, hapus kolom, dll)
 
 ```php
-use TheFramework\Database\Schema;
+<?php
 
-class Migration_CreateUsersTable {
-    public function up() {
-        Schema::create('users', function($table) {
+use TheFramework\App\Schema\Schema;
+use TheFramework\App\Schema\Blueprint;
+use TheFramework\Database\Migration;
+
+class CreateUsersTable extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username', 100);
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->rememberToken();
             $table->timestamps();
         });
     }
 
-    public function down() {
+    public function down(): void
+    {
         Schema::dropIfExists('users');
     }
 }
 ```
 
-## Schema Builder Method
+### Konvensi Penamaan File
 
-Class `Schema` mendukung berbagai tipe kolom MySQL:
+File migrasi menggunakan format timestamp:
 
-| Method                             | Syntax SQL yang Dihasilkan                             |
-| :--------------------------------- | :----------------------------------------------------- |
-| `$table->id()`                     | `id INT AUTO_INCREMENT PRIMARY KEY`                    |
-| `$table->string('col', length)`    | `col VARCHAR(length)`                                  |
-| `$table->text('body')`             | `body TEXT`                                            |
-| `$table->integer('count')`         | `count INT`                                            |
-| `$table->bigInteger('amount')`     | `amount BIGINT`                                        |
-| `$table->float('price')`           | `price FLOAT`                                          |
-| `$table->double('precise')`        | `precise DOUBLE`                                       |
-| `$table->boolean('active')`        | `active TINYINT(1)`                                    |
-| `$table->date('birthday')`         | `birthday DATE`                                        |
-| `$table->dateTime('published_at')` | `published_at DATETIME`                                |
-| `$table->timestamps()`             | Membuat kolom `created_at` dan `updated_at` (DATETIME) |
+```
+YYYY_MM_DD_HHMMSS_nama_migrasi.php
+```
 
-### Modifiers
+Contoh:
 
-Di versi **5.0.0**, Schema Builder kini mendukung penulisan _fluent_ (chaining) yang mempermudah Anda dalam menambahkan constraint tanpa harus menuliskan nama kolom berulang kali:
-
-| Modifier           | Deskripsi                                             |
-| :----------------- | :---------------------------------------------------- |
-| `->nullable()`     | Mengizinkan nilai NULL pada kolom.                    |
-| `->default(value)` | Menetapkan nilai default.                             |
-| `->unique()`       | Menambahkan index UNIQUE pada kolom tersebut.         |
-| `->index()`        | Menambahkan index biasa pada kolom tersebut.          |
-| `->primary()`      | Menjadikan kolom tersebut sebagai Primary Key.        |
-| `->unsigned()`     | Menetapkan tipe integer sebagai UNSIGNED (hanya pos). |
-
-**Contoh Chaining:**
-
-```php
-Schema::create('products', function($table) {
-    $table->id();
-    $table->string('sku')->unique();
-    $table->string('name')->index();
-    $table->integer('stock')->unsigned()->default(0);
-    $table->text('description')->nullable();
-    $table->timestamps();
-});
+```
+2026_02_26_100000_create_users_table.php
+2026_02_26_100001_create_posts_table.php
+2026_02_26_100002_add_avatar_to_users_table.php
 ```
 
 ---
 
-## Foreign Keys (Relational Constraints)
+## Membuat File Migrasi
 
-Framework mendukung pembuatan **foreign key constraints** untuk menjaga integritas relasi antar tabel.
+### Via Artisan CLI
 
-### Sintaks Lengkap
+```bash
+# Migrasi kosong
+php artisan make:migration create_posts_table
 
-```php
-Schema::create('posts', function($table) {
-    $table->id();
-    $table->integer('user_id')->unsigned();
-    $table->string('title');
-    $table->text('content');
-    $table->timestamps();
-    
-    // Membuat foreign key constraint
-    $table->foreign('user_id')
-          ->references('id')
-          ->on('users')
-          ->onDelete('cascade')    // Aksi saat parent dihapus
-          ->onUpdate('cascade');   // Aksi saat parent diupdate
-});
+# Migrasi dengan opsi --create (auto-generate stub create)
+php artisan make:migration create_posts_table --create=posts
+
+# Migrasi untuk modify tabel (auto-generate stub table)
+php artisan make:migration add_slug_to_posts_table --table=posts
 ```
 
-### Shorthand Helper Methods (Recommended)
-
-Untuk sintaks yang lebih ringkas dan modern (mirip Laravel):
+### Via Migrator (Programmatic)
 
 ```php
-Schema::create('posts', function($table) {
-    $table->id();
-    
-    // Method 1: foreignId() + constrained()
-    // Auto-detect: 'user_id' -> references 'id' on 'users' table
-    $table->foreignId('user_id')
-          ->constrained()
-          ->cascadeOnDelete();
-    
-    $table->string('title');
-    $table->text('content');
-    $table->timestamps();
-});
+use TheFramework\App\Schema\Migrator;
+
+$migrator = new Migrator();
+
+// Generate file migrasi baru (CREATE stub)
+$migrator->createMigrationFile('create_products_table', 'products', create: true);
+
+// Generate file migrasi baru (ALTER stub)
+$migrator->createMigrationFile('add_price_to_products', 'products');
 ```
 
-**Penjelasan:**
-- `foreignId('user_id')` → Membuat kolom `BIGINT UNSIGNED`
-- `constrained()` → Auto-detect nama tabel dari kolom (`user_id` → `users`)
-- `cascadeOnDelete()` → Shorthand untuk `onDelete('cascade')`
+---
 
-### Opsi Foreign Key Actions
+## Menjalankan Migrasi
 
-| Method | Aksi | Deskripsi |
-|:-------|:-----|:----------|
-| `cascadeOnDelete()` | `ON DELETE CASCADE` | Hapus child records saat parent dihapus |
-| `restrictOnDelete()` | `ON DELETE RESTRICT` | Cegah penghapusan parent jika masih ada child |
-| `nullOnDelete()` | `ON DELETE SET NULL` | Set foreign key jadi NULL saat parent dihapus |
-| `cascadeOnUpdate()` | `ON UPDATE CASCADE` | Update child records saat parent ID berubah |
+### Via Artisan CLI
 
-### Contoh Penggunaan Lengkap
+```bash
+# Jalankan semua migrasi yang belum dijalankan
+php artisan migrate
 
-```php
-// Migration: Create users table
-Schema::create('users', function($table) {
-    $table->id();
-    $table->string('name');
-    $table->string('email')->unique();
-    $table->timestamps();
-});
-
-// Migration: Create posts table with foreign key
-Schema::create('posts', function($table) {
-    $table->id();
-    $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-    $table->string('title');
-    $table->text('content');
-    $table->timestamps();
-});
-
-// Migration: Create comments table
-Schema::create('comments', function($table) {
-    $table->id();
-    $table->foreignId('post_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('user_id')->constrained()->restrictOnDelete();
-    $table->text('comment');
-    $table->timestamps();
-});
+# Jalankan dengan output detail
+php artisan migrate --verbose
 ```
 
-### Custom Table Name
+### Via Web Command Center
 
-Jika nama tabel tidak mengikuti konvensi:
+Untuk shared hosting tanpa SSH:
 
-```php
-// Kolom 'author_id' reference ke tabel 'users'
-$table->foreignId('author_id')
-      ->constrained('users')  // Specify table name
-      ->cascadeOnDelete();
-
-// Atau menggunakan foreign() manual
-$table->integer('author_id')->unsigned();
-$table->foreign('author_id')
-      ->references('id')
-      ->on('users')
-      ->onDelete('cascade');
+```
+https://yoursite.com/_system/migrate
 ```
 
-### Menghapus Foreign Key
-
-Untuk menghapus foreign key constraint di migration `down()`:
+### Via Kode (Programmatic)
 
 ```php
-public function down() {
-    Schema::table('posts', function($table) {
-        // Method 1: Menggunakan nama kolom
-        $table->dropForeign(['user_id']);
-        
-        // Method 2: Menggunakan constraint name
-        // $table->dropForeign('posts_user_id_foreign');
-    });
-    
-    Schema::dropIfExists('posts');
+use TheFramework\App\Schema\Migrator;
+
+$migrator = new Migrator();
+
+// Jalankan semua migrasi pending
+$count = $migrator->run();
+echo "Dijalankan: $count migrasi";
+
+// Lihat output detail
+foreach ($migrator->getOutput() as $line) {
+    echo $line . "\n";
 }
 ```
 
-### Menghapus Tabel
+**Output contoh:**
+
+```
+⬆️  Migrating: 2026_02_26_100000_create_users_table.php
+   ✅ Migrated: 2026_02_26_100000_create_users_table.php (12.5ms)
+⬆️  Migrating: 2026_02_26_100001_create_posts_table.php
+   ✅ Migrated: 2026_02_26_100001_create_posts_table.php (8.3ms)
+✅ 2 migrasi berhasil dijalankan (Batch #1).
+```
+
+---
+
+## Rollback & Reset
+
+### Rollback Batch Terakhir
+
+```bash
+php artisan migrate:rollback
+```
 
 ```php
-Schema::drop('nama_tabel');
-Schema::dropIfExists('nama_tabel');
+$migrator = new Migrator();
+
+// Rollback 1 batch terakhir
+$migrator->rollback();
+
+// Rollback 3 batch terakhir
+$migrator->rollback(steps: 3);
 ```
+
+### Reset (Rollback Semua)
+
+```bash
+php artisan migrate:reset
+```
+
+```php
+$migrator->reset(); // Rollback semua migrasi dari yang terakhir
+```
+
+### Fresh (Drop All + Migrate)
+
+```bash
+php artisan migrate:fresh
+```
+
+```php
+// ⚠️ DANGER: DROP SEMUA tabel, lalu jalankan ulang semua migrasi
+$migrator->fresh();
+```
+
+> ⚠️ **PERHATIAN:** `fresh()` memiliki guard produksi. Jika `APP_ENV=production`, method ini akan throw RuntimeException untuk mencegah kehilangan data.
+
+### Refresh (Reset + Migrate)
+
+```bash
+php artisan migrate:refresh
+```
+
+```php
+// Rollback semua, lalu jalankan ulang semua
+$migrator->refresh();
+```
+
+### Rollback Specific
+
+```php
+// Rollback migrasi tertentu saja
+$migrator->rollbackSpecific('2026_02_26_100002_add_slug_to_posts_table.php');
+
+// Jalankan migrasi tertentu saja
+$migrator->runSpecific('2026_02_26_100002_add_slug_to_posts_table.php');
+```
+
+---
+
+## Status Migrasi
+
+### Via Artisan
+
+```bash
+php artisan migrate:status
+```
+
+### Via Kode
+
+```php
+$migrator = new Migrator();
+
+// Dapatkan status semua migrasi
+$status = $migrator->getStatus();
+foreach ($status as $s) {
+    echo "{$s['status']}: {$s['migration']} (Batch #{$s['batch']})\n";
+}
+
+// Output:
+// Ran: 2026_02_26_100000_create_users_table.php (Batch #1)
+// Ran: 2026_02_26_100001_create_posts_table.php (Batch #1)
+// Pending: 2026_02_26_100002_add_slug_to_posts_table.php (Batch #)
+```
+
+### Summary (Formatted Report)
+
+```php
+echo $migrator->summary();
+```
+
+```
+📊 Migration Summary
+──────────────────────────────────────────────────
+   Total:   3
+   Ran:     2
+   Pending: 1
+──────────────────────────────────────────────────
+   ✅ 2026_02_26_100000_create_users_table.php [Batch #1]
+   ✅ 2026_02_26_100001_create_posts_table.php [Batch #1]
+   ⏳ 2026_02_26_100002_add_slug_to_posts_table.php
+```
+
+### Pending Count
+
+```php
+$pending = $migrator->getPendingCount();     // 1
+$files = $migrator->getPendingMigrations();  // ['filename' => 'path']
+```
+
+---
+
+## Artisan Commands
+
+| Command                             | Deskripsi                      |
+| ----------------------------------- | ------------------------------ |
+| `php artisan migrate`               | Jalankan semua migrasi pending |
+| `php artisan migrate:rollback`      | Rollback batch terakhir        |
+| `php artisan migrate:reset`         | Rollback semua migrasi         |
+| `php artisan migrate:fresh`         | Drop semua tabel + migrate     |
+| `php artisan migrate:refresh`       | Reset + migrate                |
+| `php artisan migrate:status`        | Lihat status migrasi           |
+| `php artisan make:migration <name>` | Buat file migrasi baru         |
+
+---
+
+## Fitur Lanjutan
+
+### Pretend Mode (Dry Run)
+
+Jalankan migrasi tanpa benar-benar mengeksekusi SQL:
+
+```php
+$migrator = new Migrator();
+$migrator->pretend();
+$migrator->run();
+
+// Output akan menampilkan apa yang AKAN dijalankan tanpa benar-benar menjalankannya
+foreach ($migrator->getOutput() as $line) {
+    echo "$line\n";
+}
+```
+
+### Custom Migration Path
+
+```php
+$migrator = new Migrator('/path/to/custom/migrations');
+// atau
+$migrator->setPath('/another/path');
+```
+
+### Squash (Export SQL Dump)
+
+Gabungkan semua migrasi yang sudah ada menjadi satu SQL dump file:
+
+```php
+$filepath = $migrator->squash();
+// Output: database/migrations/2026_02_26_110000_squashed_schema.sql
+```
+
+### Tabel Migrations
+
+Migrator secara otomatis membuat tabel `migrations` yang berisi:
+
+| Kolom         | Tipe            | Deskripsi         |
+| ------------- | --------------- | ----------------- |
+| `id`          | INT UNSIGNED PK | Auto-increment ID |
+| `migration`   | VARCHAR(255)    | Nama file migrasi |
+| `batch`       | INT             | Nomor batch       |
+| `executed_at` | TIMESTAMP       | Waktu eksekusi    |
+
+---
+
+## Contoh Lengkap: CRUD Migrasi
+
+### 1. Buat Tabel
+
+```php
+Schema::create('products', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+    $table->string('name');
+    $table->slug();                           // VARCHAR + UNIQUE INDEX
+    $table->text('description')->nullable();
+    $table->money('price');                   // DECIMAL(19,4)
+    $table->integer('stock')->unsigned()->default(0);
+    $table->status();                         // ENUM + INDEX + DEFAULT
+    $table->boolean('featured')->default(false);
+    $table->json('metadata')->nullable();
+    $table->softDeletes();
+    $table->timestamps();
+    $table->auditColumns();                   // created_by, updated_by
+});
+```
+
+### 2. Modifikasi Tabel
+
+```php
+Schema::table('products', function (Blueprint $table) {
+    $table->string('barcode', 50)->nullable()->after('sku');
+    $table->decimal('weight', 8, 2)->nullable()->after('price');
+    $table->index(['name', 'category_id']);   // Composite index
+});
+```
+
+### 3. Cek Sebelum Modifikasi
+
+```php
+// Conditional schema changes
+if (!Schema::hasColumn('products', 'barcode')) {
+    Schema::table('products', function (Blueprint $table) {
+        $table->string('barcode', 50)->nullable();
+    });
+}
+
+// Atau pakai helper
+Schema::whenTableDoesntHaveColumn('products', 'barcode', function () {
+    Schema::table('products', function (Blueprint $table) {
+        $table->string('barcode', 50)->nullable();
+    });
+});
+```
+
+### 4. Drop Tabel
+
+```php
+Schema::dropIfExists('products');
+```
+
+---
+
+📖 **Selanjutnya:** [Schema Builder Reference](schema-builder.md) — Dokumentasi lengkap semua tipe kolom, modifiers, dan indexes.

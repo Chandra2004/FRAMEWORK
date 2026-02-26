@@ -49,27 +49,46 @@ class BladeInit
 
                 // @csrf
                 $compiler->directive('csrf', function () {
-                    return "<?php echo '<input type=\"hidden\" name=\"_token\" value=\"' . \\TheFramework\\Helpers\\Helper::generateCsrfToken() . '\">'; ?>";
+                    return "<?php echo '<input type=\"hidden\" name=\"_token\" value=\"' . csrf_token() . '\">'; ?>";
                 });
 
                 // @auth
                 $compiler->if('auth', function () {
-                    // Cek session user login standar
-                    return isset($_SESSION['user']);
+                    return session('user') !== null;
                 });
 
                 // @guest
                 $compiler->if('guest', function () {
-                    return !isset($_SESSION['user']);
+                    return session('user') === null;
                 });
 
                 // @error('field_name')
                 $compiler->directive('error', function ($expression) {
-                    return "<?php if (\\TheFramework\\Helpers\\Helper::has_error($expression)): ?>";
+                    return "<?php if (has_error($expression)): ?>";
                 });
 
                 $compiler->directive('enderror', function () {
                     return "<?php endif; ?>";
+                });
+
+                // --- NEW POWERFUL DIRECTIVES ---
+
+                // @rupiah($amount)
+                $compiler->directive('rupiah', function ($expression) {
+                    return "<?php echo rupiah($expression); ?>";
+                });
+
+                // @session('key') ... @endsession
+                $compiler->directive('session', function ($expression) {
+                    return "<?php if (session($expression)): ?>";
+                });
+                $compiler->directive('endsession', function () {
+                    return "<?php endif; ?>";
+                });
+
+                // @config('app.name')
+                $compiler->directive('config', function ($expression) {
+                    return "<?php echo config($expression); ?>";
                 });
 
                 return new CompilerEngine($compiler, $filesystem);

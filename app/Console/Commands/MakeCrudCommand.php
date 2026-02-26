@@ -133,7 +133,7 @@ class MakeCrudCommand implements CommandInterface
 
 namespace TheFramework\\Http\\Controllers;
 
-use TheFramework\\Http\\Controllers\\Traits\\BaseCrudTrait;
+use TheFramework\\App\\Traits\\BaseCrudTrait;
 use TheFramework\\Models\\{$model};
 use TheFramework\\Http\\Requests\\{$request};
 

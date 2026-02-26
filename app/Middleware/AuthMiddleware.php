@@ -2,38 +2,31 @@
 
 namespace TheFramework\Middleware;
 
-use TheFramework\App\Config;
-use TheFramework\App\SessionManager;
+use TheFramework\App\Http\SessionManager;
 use TheFramework\Helpers\Helper;
 
 class AuthMiddleware implements Middleware
 {
     public function before()
     {
+        // Pastikan session aktif
         if (session_status() === PHP_SESSION_NONE) {
             SessionManager::startSecureSession();
         }
 
-        if (!isset($_SESSION['user']['uid']) || !isset($_SESSION['auth_token'])) {
-            Helper::redirect('/login', 'error', 'You must be logged in to access this page.');
-            exit();
+        // Cek login dasar
+        if (!session('user.uid') || !session('auth_token')) {
+            return redirect('/login', 'error', 'Sesi Berakhir. Silakan login kembali.');
         }
 
-        // Validasi token autentikasi menggunakan Helper
+        // Validasi token autentikasi (Keamanan Lapis Kedua)
         $storedToken = Helper::getAuthToken();
-        $userUid = $_SESSION['user']['uid'] ?? '';
+        $userUid = session('user.uid');
 
         if (!$storedToken || !Helper::validateAuthToken($storedToken, $userUid)) {
-            error_log("AuthMiddleware: Token mismatch or not found.");
+            error_log("AuthMiddleware: Token mismatch or not found for UID: $userUid");
             SessionManager::destroySession();
-            Helper::redirect('/login', 'error', 'Invalid authentication token.');
-            exit();
-        }
-
-        if (empty($_SESSION['auth_token']) || empty($_SESSION['user']['uid'])) {
-            SessionManager::destroySession();
-            Helper::redirect('/login', 'error', 'You must be logged in to access this page.');
-            exit();
+            return redirect('/login', 'error', 'Token tidak valid. Silakan login ulang.');
         }
     }
 

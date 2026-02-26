@@ -2,42 +2,34 @@
 <?php
 
 use TheFramework\Console\CommandInterface;
+use TheFramework\Console\BaseCommand;
 
 require __DIR__ . '/vendor/autoload.php';
 
 define('BASE_PATH', __DIR__);
 
-function color($text, $code)
-{
-    return "\033[{$code}m{$text}\033[0m";
-}
+// ANSI Colors for the runner itself
+const C_BLUE    = "\033[38;5;39m";
+const C_GREEN   = "\033[38;5;28m";
+const C_YELLOW  = "\033[38;5;214m";
+const C_RED     = "\033[31m";
+const C_RESET   = "\033[0m";
+const C_BOLD    = "\033[1m";
 
 function showHeader()
 {
-    echo color("═════  TheFramework v1.0.0  ═════", "38;5;39") . PHP_EOL;
-    echo color("═════ BY Chandra Tri Antomo ═════", "38;5;39") . PHP_EOL . PHP_EOL;
+    echo PHP_EOL;
+    echo C_BLUE . C_BOLD . " 🚀 THE FRAMEWORK" . C_RESET . C_BLUE . " Artisan CLI Engine v5.0.3" . C_RESET . PHP_EOL;
+    echo C_BLUE . " ──────────────────────────────────────────────────" . C_RESET . PHP_EOL;
 }
 
-// Load Routes (Agar command route:list bisa membacanya)
-if (file_exists(__DIR__ . '/routes/web.php')) {
-    require_once __DIR__ . '/routes/web.php';
-}
-if (file_exists(__DIR__ . '/routes/system.php')) {
-    require_once __DIR__ . '/routes/system.php';
-}
+// Load routes setup for route:list
+if (file_exists(__DIR__ . '/routes/web.php')) require_once __DIR__ . '/routes/web.php';
 
-// Load all commands dynamically
+// Dynamic Command Loader
 $commandsDir = __DIR__ . '/app/Console/Commands/';
 $commandFiles = glob($commandsDir . '*.php');
-
 $commands = [];
-
-echo color("➤ INFO  Memuat perintah", "38;5;39");
-for ($i = 0; $i < 3; $i++) {
-    echo ".";
-    usleep(200000);
-}
-echo "\033[0m\n";
 
 foreach ($commandFiles as $file) {
     require_once $file;
@@ -50,59 +42,65 @@ foreach ($commandFiles as $file) {
     }
 }
 
+// Global Args
 $args = $argv;
 array_shift($args); // remove script name
 $commandName = $args[0] ?? 'list';
 array_shift($args);
 
+// LIST COMMAND LOGIC
 if ($commandName === 'list') {
     showHeader();
-    echo color("Penggunaan:", "38;5;39") . " php artisan [perintah]\n\n";
-    echo color("Perintah yang tersedia:", "38;5;39") . "\n";
+    echo C_YELLOW . " Penggunaan:" . C_RESET . " php artisan [perintah] [opsi]\n\n";
 
-    ksort($commands); // Sort commands alphabetically
-
-    // Grouping
+    ksort($commands);
     $groups = [];
     foreach ($commands as $name => $cmd) {
         $parts = explode(':', $name);
-        $group = count($parts) > 1 ? $parts[0] : 'General';
+        $group = count($parts) > 1 ? strtoupper($parts[0]) : 'GENERAL';
         $groups[$group][$name] = $cmd;
     }
-
-    // Sort Groups (General first if you want, or alphabetical)
     ksort($groups);
 
     foreach ($groups as $groupName => $groupCommands) {
-        // Tampilkan Header Group
-        echo color($groupName, "1;33") . "\n";
-
+        echo " " . C_BLUE . C_BOLD . $groupName . C_RESET . PHP_EOL;
         foreach ($groupCommands as $name => $cmd) {
-            echo "  " . color(str_pad($name, 25), "38;5;28") . $cmd->getDescription() . "\n";
+            echo "  " . C_GREEN . str_pad($name, 30) . C_RESET . $cmd->getDescription() . PHP_EOL;
         }
-        echo "\n"; // Spacer antar group
+        echo PHP_EOL;
     }
     exit;
 }
 
+// EXECUTE COMMAND
 if (!isset($commands[$commandName])) {
     showHeader();
-    echo color("✖ ERROR  Perintah [$commandName] tidak ditemukan.", "38;5;124") . PHP_EOL . PHP_EOL;
-    // Suggest similar commands
-    $suggestions = [];
+    echo C_RED . " ✖ ERROR  Perintah [$commandName] tidak ditemukan." . C_RESET . PHP_EOL;
+    
+    // Suggestion logic
+    $bestMatch = null;
+    $shortest = -1;
     foreach ($commands as $name => $cmd) {
-        if (levenshtein($commandName, $name) <= 3) {
-            $suggestions[] = $name;
+        $dist = levenshtein($commandName, $name);
+        if ($dist <= 3 && ($shortest < 0 || $dist < $shortest)) {
+            $bestMatch = $name;
+            $shortest = $dist;
         }
     }
-    if (!empty($suggestions)) {
-        echo color("Mungkin Anda maksud:", "38;5;214") . "\n";
-        foreach ($suggestions as $suggestion) {
-            echo "  " . color($suggestion, "38;5;28") . "\n";
-        }
+
+    if ($bestMatch) {
+        echo C_YELLOW . " Mungkin maksud Anda: " . C_RESET . C_GREEN . $bestMatch . C_RESET . PHP_EOL;
     }
-    echo PHP_EOL . color("Jalankan php artisan list untuk melihat perintah yang tersedia", "38;5;214") . PHP_EOL;
+    
+    echo PHP_EOL . " Jalankan " . C_CYAN . "php artisan list" . C_RESET . " untuk melihat daftar perintah." . PHP_EOL;
     exit(1);
 }
 
-$commands[$commandName]->run($args);
+// Actual Execution
+try {
+    $commands[$commandName]->run($args);
+} catch (\Throwable $e) {
+    echo C_RED . " ✖ CRITICAL ERROR: " . $e->getMessage() . C_RESET . PHP_EOL;
+    echo C_YELLOW . " File: " . $e->getFile() . ":" . $e->getLine() . C_RESET . PHP_EOL;
+    exit(1);
+}

@@ -4,6 +4,15 @@ All notable changes to **The Framework** will be documented in this file.
 
 ---
 
+## [5.0.1] - 2026-02-24
+
+### Fixed
+
+- Patch and stability build.
+- Synchronized versioning across core files.
+
+---
+
 ## [5.1.0] - 2026-02-04
 
 ### 🎉 New Features

@@ -35,8 +35,36 @@ class MakeMiddlewareCommand implements CommandInterface
         }
 
         $namespace = "TheFramework\\Middleware" . ($subNamespace ? "\\$subNamespace" : '');
-        $content = "<?php\n\nnamespace $namespace;\n\nclass $className implements Middleware {\n    public function before() {\n        // Logika middleware\n   }\n}\n";
-        if (!is_dir(dirname($path))) mkdir(dirname($path), 0755, true);
+
+        $content = <<<PHP
+<?php
+
+namespace $namespace;
+
+use TheFramework\Helpers\Helper;
+
+class $className implements Middleware
+{
+    public function before()
+    {
+        // Logika middleware dieksekusi SEBELUM Controller
+        
+        // Contoh: Cek Session
+        // \$user = Helper::session_get('user_id');
+        // if (!\$user) {
+        //      Helper::redirect('/login', 'error', 'Silakan login terlebih dahulu.');
+        // }
+    }
+
+    public function after()
+    {
+        // Logika middleware dieksekusi SETELAH Controller (Optional)
+    }
+}
+PHP;
+
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
         echo "\033[38;5;28m★ SUCCESS  Middleware dibuat: $className (app/Middleware/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\033[0m\n";
     }

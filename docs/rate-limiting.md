@@ -86,7 +86,7 @@ Router::get('/api/data', function() {
 
 ## 🛠️ Developer Experience
 
-Sangat menyebalkan jika kita terkena blokir (Rate Limit) saat sedang melakukan _debug_ atau _coding_ di localhost. Oleh karena itu, Framework v5.0.0 ini memperkenalkan fitur **Bypass**:
+Sangat menyebalkan jika kita terkena blokir (Rate Limit) saat sedang melakukan _debug_ atau _coding_ di localhost. Oleh karena itu, Framework v5.0.1 ini memperkenalkan fitur **Bypass**:
 
 Rate Limiting akan secara otomatis **NONAKTIF** jika:
 

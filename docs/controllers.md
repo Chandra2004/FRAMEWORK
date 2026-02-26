@@ -19,10 +19,9 @@ Generated file: `app/Http/Controllers/UserController.php`
 
 namespace TheFramework\Http\Controllers;
 
-use TheFramework\App\Request;
 use TheFramework\Models\User;
 
-class UserController
+class UserController extends Controller
 {
     public function index()
     {
@@ -35,27 +34,36 @@ class UserController
         $user = User::find($id);
 
         if (!$user) {
-            abort(404, "User not found");
+            return abort(404, "User not found");
         }
 
         return view('users.show', ['user' => $user]);
     }
 
-    public function store(Request $request)
+    public function store()
     {
-        $data = $request->input();
+        $data = request()->all();
         $user = User::create($data);
 
-        return redirect('/users');
+        return redirect('/users', 'success', 'User berhasil ditambahkan');
     }
 }
 ```
 
 ---
 
+## 🏛️ Directory Structure
+
+The Framework v5.0 memisahkan secara ketat antara area kerja developer dan inti sistem:
+
+- **`app/Http/Controllers`**: Khusus untuk controller buatan Anda (Application Area).
+- **`app/App/Internal/Controllers`**: Berisi controller inti (Debug, Error, File, Sitemap) yang menangani fitur framework. Area ini tidak boleh diubah untuk menjaga stabilitas sistem.
+
+---
+
 ## Dependency Injection
 
-Framework automatically injects dependencies via Constructor atau Method parameters.
+Framework secara otomatis menyuntikkan (inject) dependensi via Constructor atau Method parameters.
 
 ### Constructor Injection
 
@@ -64,10 +72,9 @@ Framework automatically injects dependencies via Constructor atau Method paramet
 
 namespace TheFramework\Http\Controllers;
 
-use TheFramework\App\Request;
 use TheFramework\Services\UserService;
 
-class UserController
+class UserController extends Controller
 {
     private $userService;
 
@@ -87,12 +94,10 @@ class UserController
 ### Method Injection
 
 ```php
-public function show($id, Request $request, UserService $service)
+public function show($id, UserService $service)
 {
-    // $id from route parameter
-    // $request auto-injected
+    // $id dari route parameter
     // $service auto-injected
-
     $user = $service->findUser($id);
     return view('users.show', ['user' => $user]);
 }
@@ -136,13 +141,14 @@ public function show($postId, $commentId)
 
 ## Request Handling
 
+Anda dapat menggunakan global helper `request()` untuk mengakses input.
+
 ### Get All Input
 
 ```php
-public function store(Request $request)
+public function store()
 {
-    $allData = $request->input();  // All POST/GET data
-
+    $allData = request()->all();  // Semua data POST/GET/JSON
     User::create($allData);
 }
 ```
@@ -150,31 +156,36 @@ public function store(Request $request)
 ### Get Specific Input
 
 ```php
-$name = $request->input('name');
-$email = $request->input('email');
+$name = request('name');
+$email = request('email');
 
-// With default value
-$country = $request->input('country', 'Indonesia');
+// Dengan nilai default
+$country = request('country', 'Indonesia');
 ```
 
 ### Check if Input Exists
 
 ```php
-if ($request->has('email')) {
+if (request()->has('email')) {
     // Process email
 }
 ```
 
 ---
 
-## Responses
+## Responses (Paten v5.0)
+
+Framework mendukung cara pengembalian response yang sangat bersih (fluent).
 
 ### Return View
 
 ```php
 public function index()
 {
-    return view('users.index', ['users' => User::all()]);
+    return view('users.index', [
+        'users' => User::all(),
+        'notification' => flash('notification') // Ambil flash message
+    ]);
 }
 ```
 
@@ -183,12 +194,9 @@ public function index()
 ```php
 public function apiIndex()
 {
-    $users = User::all();
-
-    header('Content-Type: application/json');
-    echo json_encode([
+    return json([
         'success' => true,
-        'data' => $users
+        'data' => User::all()
     ]);
 }
 ```
@@ -196,16 +204,18 @@ public function apiIndex()
 ### Redirect
 
 ```php
-public function store(Request $request)
+public function store()
 {
-    User::create($request->input());
+    User::create(request()->all());
 
-    // Redirect to route
+    // Redirect sederhana
     return redirect('/users');
 
-    // Or with message
-    $_SESSION['success'] = "User created!";
-    return redirect('/users');
+    // Redirect dengan Notifikasi (Premium)
+    return redirect('/users', 'success', 'Data berhasil disimpan!');
+    
+    // Redirect Kembali (Back)
+    return redirect()->back('warning', 'Aksi dibatalkan');
 }
 ```
 

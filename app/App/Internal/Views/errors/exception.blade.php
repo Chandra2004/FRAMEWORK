@@ -1,376 +1,285 @@
 <!DOCTYPE html>
-<html lang="id">
-
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ url('/assets/ico/favicon-debug.ico') }}">
-    <title>{{ $class }} - {{ $error_code ?? 500 }} | The Framework</title>
+    <title>{{ $class }} - The Framework</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            100: '#2A2A2A',
+                            200: '#242424',
+                            300: '#1e1e1e', // Base main content
+                            400: '#18181b', // Base sidebar
+                            500: '#121212', // Darker BG
+                            600: '#09090b', // Header BG
+                            700: '#000000'
+                        },
+                        brand: {
+                            red: '#F43F5E',
+                            red_glow: 'rgba(244, 63, 94, 0.15)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { background-color: #18181b; color: #f4f4f5; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; overflow: hidden; margin: 0; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        .code-container { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85rem; line-height: 1.6; }
+        .code-line { display: flex; padding: 0 1rem; cursor: text; transition: background 0.1s; border-left: 2px solid transparent;}
+        .code-line:hover { background-color: rgba(255, 255, 255, 0.03); }
+        .code-line.active { background-color: var(--tw-color-brand-red_glow, rgba(244, 63, 94, 0.15)); border-left-color: #F43F5E; }
+        .code-line.active .line-num { color: #F43F5E; font-weight: bold; }
+        .line-num { width: 3.5rem; text-align: right; padding-right: 1.5rem; color: #52525b; user-select: none; border-right: 1px solid #3f3f46; margin-right: 1.5rem; }
+        .line-code { white-space: pre; color: #e4e4e7; }
 
-        :root {
-            --bg-main: #0d1117;
-            --bg-card: #161b22;
-            --border: rgba(255, 255, 255, 0.1);
-            --error: #f85149;
-            --warning: #d29922;
-            --text-main: #c9d1d9;
-            --text-muted: #8b949e;
-        }
+        .frame-item { padding: 1rem 1.5rem; cursor: pointer; border-bottom: 1px solid #2a2a2a; border-right: 2px solid transparent; transition: background 0.15s; }
+        .frame-item:hover { background-color: #242424; }
+        .frame-item.active { background-color: #242424; border-right-color: #F43F5E; }
+        
+        .tab-btn { padding: 0.875rem 1.5rem; color: #a1a1aa; font-size: 0.875rem; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; background: transparent; }
+        .tab-btn:hover { color: #f4f4f5; }
+        .tab-btn.active { color: #F43F5E; border-bottom-color: #F43F5E; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            margin: 0;
-            line-height: 1.5;
-        }
-
-        .premium-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-        }
-
-        /* EDITOR DESIGN */
-        .editor-container {
-            font-family: 'JetBrains Mono', monospace;
-            background-color: #0d1117;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        .editor-header {
-            background-color: #161b22;
-            padding: 8px 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .window-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .editor-content {
-            padding: 12px 0;
-            overflow-x: auto;
-        }
-
-        .code-line {
-            display: flex;
-            width: 100%;
-            height: 22px;
-            align-items: center;
-            transition: background 0.1s;
-        }
-
-        .ln-col {
-            width: 50px;
-            text-align: right;
-            padding-right: 16px;
-            color: #484f58;
-            user-select: none;
-            flex-shrink: 0;
-            font-size: 11px;
-            border-right: 1px solid var(--border);
-        }
-
-        .code-col {
-            padding-left: 16px;
-            white-space: pre;
-            color: #c9d1d9;
-            font-size: 13px;
-        }
-
-        .error-line {
-            background: rgba(187, 128, 9, 0.12) !important;
-            position: relative;
-        }
-
-        .error-line::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: var(--warning);
-        }
-
-        .glow-error {
-            text-shadow: 0 0 20px rgba(248, 81, 73, 0.3);
-        }
-
-        /* STACK TRACE ENHANCEMENTS */
-        .trace-item {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .trace-item:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        .trace-badge {
-            font-size: 9px;
-            padding: 1px 6px;
-            border-radius: 4px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .trace-badge-app {
-            background: rgba(35, 134, 54, 0.15);
-            color: #3fb950;
-            border: 1px solid rgba(63, 185, 80, 0.2);
-        }
-
-        .trace-badge-vendor {
-            background: rgba(139, 148, 158, 0.1);
-            color: #8b949e;
-            border: 1px solid rgba(139, 148, 158, 0.2);
-        }
-
-        .trace-args {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            color: #58a6ff;
-        }
-
-        .code-snippet-trace {
-            margin-top: 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            overflow: hidden;
-            display: none;
-            /* Hidden by default */
-        }
-
-        .trace-item.active .code-snippet-trace {
-            display: block;
-        }
-
-        .trace-item.active {
-            border-left: 2px solid #58a6ff;
-        }
+        .key-val { display: flex; border-bottom: 1px solid #2a2a2a; padding: 0.875rem 0; }
+        .key-val:last-child { border-bottom: none; }
+        .key-col { width: 25%; color: #a1a1aa; font-size: 0.875rem; font-weight: 500; }
+        .val-col { width: 75%; font-family: monospace; color: #d4d4d8; word-break: break-all; font-size: 0.85rem; }
     </style>
 </head>
+<body class="flex flex-col h-screen antialiased">
 
-<body class="p-4 md:p-8 bg-[#090c10]">
-    <div class="max-w-6xl mx-auto space-y-8">
-        <!-- Hero Section -->
-        <div class="space-y-4">
-            <div class="flex items-center gap-3">
-                <div
-                    class="px-3 py-1 bg-[#f8514915] border border-[#f8514933] text-[#ff7b72] text-[11px] font-black rounded-full uppercase tracking-[0.1em]">
-                    Runtime Error — HTTP {{ $error_code ?? 500 }}
-                </div>
-                <div class="h-1 w-1 bg-slate-700 rounded-full"></div>
-                <div class="text-slate-500 text-xs font-medium">
-                    {{ date('H:i:s') }}
-                </div>
-            </div>
+    <!-- Header -->
+    <header class="bg-dark-600 border-b border-dark-100 flex-shrink-0 flex items-center justify-between px-10 py-8 relative overflow-hidden shadow-md">
+        <!-- Glow effect -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-brand-red"></div>
+        <div class="absolute top-[-100px] left-[-50px] w-[400px] h-[400px] bg-brand-red/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-            <h1 class="text-4xl md:text-5xl font-black text-white glow-error break-words leading-tight">
+        <div class="flex-1 min-w-0 z-10">
+            <h2 class="text-zinc-400 text-sm font-mono tracking-wider truncate mb-2 flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-brand-red animate-pulse"></span>
                 {{ $class }}
+            </h2>
+            <h1 class="text-3xl font-black text-zinc-100 leading-tight tracking-tight">
+                {{ $message }}
             </h1>
-
-            <div class="p-5 bg-[#f8514910] border-l-4 border-[#f85149] rounded-r-xl">
-                <p class="text-lg md:text-xl text-[#ff7b72] font-medium leading-relaxed italic">
-                    "{{ $message }}"
-                </p>
+        </div>
+        
+        <div class="text-right ml-10 shrink-0 z-10 flex flex-col items-end gap-3">
+            <a href="{{ url('/') }}" class="inline-flex items-center justify-center px-4 py-2 bg-dark-400 hover:bg-dark-200 border border-dark-100 text-zinc-300 text-sm font-bold rounded-lg transition-colors shadow-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Go to Home
+            </a>
+            <div class="flex items-center gap-2 text-zinc-400 font-mono text-xs mt-1">
+                <span class="bg-dark-100 text-zinc-300 px-2.5 py-1 rounded shadow-inner uppercase font-bold">{{ $request_info['method'] ?? 'GET' }}</span>
+                <span>{{ $request_info['uri'] ?? '/' }}</span>
             </div>
         </div>
+    </header>
 
-        <!-- Main Grid -->
-        <div class="grid lg:grid-cols-3 gap-8">
-            <!-- Left Side: Source & Stack -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Main Code Preview -->
-                <div class="editor-container">
-                    <div class="editor-header">
-                        <div class="flex items-center gap-4">
-                            <div class="flex gap-1.5">
-                                <div class="window-dot bg-[#ff5f56]"></div>
-                                <div class="window-dot bg-[#ffbd2e]"></div>
-                                <div class="window-dot bg-[#27c93f]"></div>
-                            </div>
-                            <div class="flex items-center gap-2 text-slate-400 text-xs font-bold font-mono">
-                                <i data-lucide="file-code" class="w-3.5 h-3.5 text-blue-400"></i>
-                                {{ basename($file) }}:{{ $line }}
-                            </div>
+    <!-- Main Layout -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar Stack Trace -->
+        <aside class="w-[450px] bg-dark-400 border-r border-dark-100 flex flex-col shrink-0 z-20 shadow-xl">
+            <div class="px-6 py-4 bg-dark-500 border-b border-dark-100 flex items-center justify-between shrink-0">
+                <h3 class="text-xs font-black text-zinc-400 uppercase tracking-widest">Stack Trace</h3>
+                <span class="text-[10px] bg-dark-100 text-zinc-400 px-2 py-1 rounded-full font-bold">{{ count($trace_parsed) }} FRAMES</span>
+            </div>
+            
+            <div class="overflow-y-auto flex-1 scrollbar-hide pb-10" id="frames-list">
+                @foreach($trace_parsed as $index => $frame)
+                <div class="frame-item {{ $index === 0 ? 'active' : '' }}" onclick="selectFrame({{ $index }}, this)">
+                    <div class="flex justify-between items-start mb-1.5">
+                        <div class="font-mono text-[13px] text-zinc-200 truncate pr-2 font-semibold">
+                            @if($frame['class'])
+                                <span class="text-zinc-500 font-normal">{{ $frame['class'] }}{{ $frame['type'] }}</span>{{ $frame['function'] }}
+                            @else
+                                {{ $frame['function'] }}
+                            @endif
                         </div>
+                        @if($frame['is_app'])
+                            <span class="shrink-0 text-[9px] px-1.5 py-0.5 bg-brand-red/20 text-brand-red rounded font-black uppercase tracking-wider border border-brand-red/20">App</span>
+                        @else
+                            <span class="shrink-0 text-[9px] px-1.5 py-0.5 bg-dark-100 text-zinc-500 rounded font-black uppercase tracking-wider border border-dark-100">Vendor</span>
+                        @endif
                     </div>
-                    <div class="editor-content">
-                        @foreach ($code_snippet as $lineNum => $codeLine)
-                            <div class="code-line {{ $lineNum == $line ? 'error-line' : '' }}">
-                                <div class="ln-col">{{ $lineNum }}</div>
-                                <div class="code-col">{!! htmlspecialchars(rtrim($codeLine)) !!}</div>
-                            </div>
-                        @endforeach
+                    <div class="text-xs text-zinc-500 font-mono truncate flex items-center gap-1.5">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        {{ basename($frame['file']) }}:{{ $frame['line'] ?? '?' }}
                     </div>
                 </div>
+                @endforeach
+            </div>
+        </aside>
 
-                <!-- ENHANCED STACK TRACE -->
-                <div class="space-y-4">
-                    <h3
-                        class="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 px-2">
-                        <i data-lucide="layers" class="w-4 h-4"></i>
-                        Call Stack
-                    </h3>
-
-                    <div class="space-y-3">
-                        @foreach ($trace_parsed as $index => $item)
-                            <div class="premium-card p-4 trace-item cursor-pointer {{ $index === 0 ? 'active' : '' }}"
-                                onclick="this.classList.toggle('active')">
-                                <div class="flex items-start gap-4">
-                                    <div
-                                        class="w-7 h-7 bg-slate-800 rounded flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0">
-                                        #{{ count($trace_parsed) - $index }}
-                                    </div>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex items-center gap-3 mb-1.5 flex-wrap">
-                                            <span
-                                                class="trace-badge {{ $item['is_app'] ? 'trace-badge-app' : 'trace-badge-vendor' }}">
-                                                {{ $item['is_app'] ? 'Application' : 'Vendor' }}
-                                            </span>
-                                            <span class="text-sm font-bold text-white font-mono truncate">
-                                                @if ($item['class'])
-                                                    {{ $item['class'] }}{{ $item['type'] }}
-                                                @endif{{ $item['function'] }}()
-                                            </span>
-                                        </div>
-
-                                        <div class="text-xs text-slate-500 font-mono flex items-center gap-2 truncate">
-                                            <i data-lucide="folder" class="w-3 h-3"></i>
-                                            {{ $item['file'] ?: '[internal]' }}@if ($item['line'])
-                                                :{{ $item['line'] }}
-                                            @endif
-                                        </div>
-
-                                        @if (!empty($item['args']))
-                                            <div
-                                                class="mt-2 text-[11px] text-slate-600 bg-black/20 p-2 rounded border border-white/5 overflow-x-auto scrollbar-hide">
-                                                <span class="text-slate-400 mr-2">Arguments:</span>
-                                                <span class="trace-args">{{ implode(', ', $item['args']) }}</span>
-                                            </div>
-                                        @endif
-
-                                        <!-- Code Snippet for Trace Item -->
-                                        @if ($item['is_app'] && !empty($item['snippet']))
-                                            <div class="code-snippet-trace editor-container mt-4 border-[#58a6ff33]">
-                                                <div class="editor-content !p-0 !py-2 bg-[#0d1117]">
-                                                    @foreach ($item['snippet'] as $sLn => $sCode)
-                                                        <div
-                                                            class="code-line {{ $sLn == $item['line'] ? 'error-line !bg-[#58a6ff1a] !before:bg-[#58a6ff]' : '' }}">
-                                                            <div class="ln-col !border-white/5">{{ $sLn }}
-                                                            </div>
-                                                            <div class="code-col !text-xs !pl-4">{!! htmlspecialchars(rtrim($sCode)) !!}
-                                                            </div>
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
+        <!-- Main Content Pane -->
+        <main class="flex-1 bg-dark-300 flex flex-col overflow-hidden relative">
+            
+            <!-- Code Snippet Viewer -->
+            <div class="h-[60%] flex flex-col bg-[#1e1e1e] border-b border-dark-100">
+                <div class="px-6 py-3 border-b border-dark-100 flex items-center bg-dark-400 shrink-0">
+                    <svg class="w-4 h-4 text-zinc-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    <span class="text-[13px] font-mono text-zinc-400" id="current-file-path">{{ $file }}</span>
+                    <span class="text-[13px] font-mono text-zinc-600 mx-1.5">:</span>
+                    <span class="text-[13px] font-mono text-brand-red font-bold" id="current-file-line">{{ $line }}</span>
+                </div>
+                
+                <div class="flex-1 overflow-auto py-4 code-container scrollbar-hide" id="code-snippet-body">
+                    <!-- Snippet dynamically loaded via JS -->
                 </div>
             </div>
 
-            <!-- Right Side: Meta Info -->
-            <div class="space-y-6">
-                <!-- Request Context -->
-                <div class="premium-card">
-                    <div class="px-4 py-3 border-b border-white/5 bg-white/5 flex items-center gap-2">
-                        <i data-lucide="globe" class="w-4 h-4 text-cyan-400"></i>
-                        <span class="text-xs font-bold uppercase tracking-wider">Request Context</span>
-                    </div>
-                    <div class="p-4 space-y-4">
-                        <div class="space-y-1">
-                            <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest">URL</label>
-                            <div class="text-xs font-mono text-blue-400 break-all bg-black/30 p-2 rounded">
-                                {{ $request_info['method'] }} {{ $request_info['uri'] }}
+            <!-- Detail Tabs -->
+            <div class="flex-1 flex flex-col overflow-hidden bg-dark-400">
+                <div class="flex px-2 bg-dark-500 border-b border-dark-100 shrink-0 shadow-sm">
+                    <button class="tab-btn active uppercase tracking-wider text-xs" onclick="switchTab('request')">Request</button>
+                    <button class="tab-btn uppercase tracking-wider text-xs" onclick="switchTab('environment')">Environment</button>
+                    <button class="tab-btn uppercase tracking-wider text-xs" onclick="switchTab('context')">Context</button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-8 scrollbar-hide">
+                    
+                    <!-- Request Tab -->
+                    <div id="tab-request" class="tab-content block">
+                        <div class="key-val">
+                            <div class="key-col">URL</div>
+                            <div class="val-col"><span class="bg-dark-100 px-1 py-0.5 rounded mr-2 text-zinc-500">{{ $request_info['method'] ?? 'GET' }}</span> <a href="{{ $request_info['uri'] ?? '/' }}" target="_blank" class="text-blue-400 hover:underline">{{ $request_info['uri'] ?? '/' }}</a></div>
+                        </div>
+                        <div class="key-val">
+                            <div class="key-col">Client IP</div>
+                            <div class="val-col">{{ $request_info['ip'] ?? 'Unknown' }}</div>
+                        </div>
+                        <div class="key-val">
+                            <div class="key-col">User Agent</div>
+                            <div class="val-col">{{ $request_info['user_agent'] ?? 'Unknown' }}</div>
+                        </div>
+                        @if(!empty($request_info['query']))
+                        <div class="key-val">
+                            <div class="key-col">Query String</div>
+                            <div class="val-col">
+                                <pre class="bg-dark-100 p-3 rounded font-mono text-xs border border-dark-100">{{ json_encode($request_info['query'], JSON_PRETTY_PRINT) }}</pre>
                             </div>
                         </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Client
-                                IP</label>
-                            <div class="text-xs font-mono text-slate-300">{{ $request_info['ip'] }}</div>
+                        @endif
+                    </div>
+
+                    <!-- Environment Tab -->
+                    <div id="tab-environment" class="tab-content hidden">
+                        <div class="key-val">
+                            <div class="key-col">PHP Version</div>
+                            <div class="val-col font-bold">{{ $environment['php_version'] ?? PHP_VERSION }}</div>
                         </div>
-                        @if (!empty($request_info['query']))
-                            <div class="space-y-1">
-                                <label class="text-[10px] uppercase font-black text-slate-500 tracking-widest">Query
-                                    Params</label>
-                                <pre class="text-[10px] bg-black/20 p-2 rounded border border-white/5 overflow-x-auto text-slate-400">{{ json_encode($request_info['query'], JSON_PRETTY_PRINT) }}</pre>
+                        <div class="key-val">
+                            <div class="key-col">App Environment</div>
+                            <div class="val-col"><span class="bg-brand-red/10 text-brand-red px-2 py-1 rounded text-xs font-bold uppercase">{{ $environment['app_env'] ?? 'local' }}</span></div>
+                        </div>
+                        <div class="key-val">
+                            <div class="key-col">Memory Usage</div>
+                            <div class="val-col">{{ $environment['memory_usage'] ?? 'Unknown' }}</div>
+                        </div>
+                        <div class="key-val">
+                            <div class="key-col">Operating System</div>
+                            <div class="val-col">{{ $environment['os'] ?? PHP_OS }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Context Tab -->
+                    <div id="tab-context" class="tab-content hidden">
+                        @if(!empty($exception_context))
+                            @foreach($exception_context as $key => $val)
+                            <div class="key-val">
+                                <div class="key-col text-brand-red">{{ $key }}</div>
+                                <div class="val-col">
+                                    <pre class="bg-dark-100 p-3 rounded text-[11px] overflow-auto border border-dark-100 text-zinc-300">{{ is_string($val) ? $val : json_encode($val, JSON_PRETTY_PRINT) }}</pre>
+                                </div>
+                            </div>
+                            @endforeach
+                        @else
+                            <div class="flex items-center justify-center h-20 bg-dark-100 rounded border border-dashed border-dark-100">
+                                <span class="text-zinc-500 text-sm font-medium">No exception context provided.</span>
                             </div>
                         @endif
                     </div>
-                </div>
 
-                <!-- Environment -->
-                <div class="premium-card">
-                    <div class="px-4 py-3 border-b border-white/5 bg-white/5 flex items-center gap-2">
-                        <i data-lucide="server" class="w-4 h-4 text-purple-400"></i>
-                        <span class="text-xs font-bold uppercase tracking-wider">System State</span>
-                    </div>
-                    <div class="p-4 space-y-3">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-500">PHP Version</span>
-                            <span class="text-slate-300 font-mono">{{ $environment['php_version'] }}</span>
-                        </div>
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-500">App Mode</span>
-                            <span
-                                class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-md font-bold text-[10px]">{{ $environment['app_env'] }}</span>
-                        </div>
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-500">Memory Usage</span>
-                            <span class="text-slate-300">{{ $environment['memory_usage'] }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- App Details Buttons -->
-                <div class="flex flex-col gap-3">
-                    <a href="{{ url('/') }}"
-                        class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-black font-black rounded-xl hover:bg-slate-200 transition-all text-sm uppercase tracking-tighter">
-                        <i data-lucide="home" class="w-4 h-4"></i>
-                        Back to Home
-                    </a>
-                    <button onclick="location.reload()"
-                        class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 border border-white/10 text-white font-bold rounded-xl hover:bg-slate-700 transition-all text-sm">
-                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                        Retry Request
-                    </button>
                 </div>
             </div>
-        </div>
 
-        <!-- Footer -->
-        <div class="pt-12 text-center text-slate-600 space-y-2">
-            <div class="text-[10px] font-black uppercase tracking-[0.3em]">The Framework Support Engine</div>
-            <div class="text-xs italic">"Debugging is like being the detective in a crime movie where you are also the
-                murderer."</div>
-        </div>
+        </main>
     </div>
 
     <script>
-        lucide.createIcons();
+        const frames = <?php echo json_encode($trace_parsed); ?>;
+        
+        function selectFrame(index, element) {
+            // Update Active Class
+            document.querySelectorAll('.frame-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            
+            const frame = frames[index];
+            
+            // Update Header
+            document.getElementById('current-file-path').innerText = frame.file || 'Unknown File';
+            document.getElementById('current-file-line').innerText = frame.line || '?';
+            
+            // Render Snippet
+            const snippetBody = document.getElementById('code-snippet-body');
+            snippetBody.innerHTML = '';
+            
+            if (frame.snippet && Object.keys(frame.snippet).length > 0) {
+                let html = '';
+                for (const [lineNum, code] of Object.entries(frame.snippet)) {
+                    const isActive = parseInt(lineNum) === parseInt(frame.line) ? 'active' : '';
+                    const safeCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+                    
+                    html += `
+                        <div class="code-line ${isActive}">
+                            <div class="line-num">${lineNum}</div>
+                            <div class="line-code">${safeCode || ' '}</div>
+                        </div>
+                    `;
+                }
+                snippetBody.innerHTML = html;
+                
+                // Keep the active line in center
+                setTimeout(() => {
+                    const activeLine = snippetBody.querySelector('.active');
+                    if(activeLine) {
+                        activeLine.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    }
+                }, 10);
+            } else {
+                snippetBody.innerHTML = `
+                    <div class="flex items-center justify-center h-full text-zinc-500 text-sm font-medium">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                        No code snippet available for this frame.
+                    </div>
+                `;
+            }
+        }
+        
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('block'));
+            
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-' + tabId).classList.add('block');
+        }
+
+        // Initialize First Frame
+        if(frames.length > 0) {
+            selectFrame(0, document.querySelector('.frame-item'));
+        }
     </script>
 </body>
-
 </html>

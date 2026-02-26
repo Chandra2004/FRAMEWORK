@@ -297,7 +297,7 @@ The Framework adalah framework native PHP, sehingga **TIDAK** bisa dideploy lang
 
 ```bash
 php artisan --version
-# Output: The Framework v5.0.0
+# Output: The Framework v5.0.1
 
 php artisan route:list
 # Shows all registered routes

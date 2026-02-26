@@ -3,22 +3,33 @@
 namespace TheFramework\Http\Controllers;
 
 use Exception;
-use TheFramework\App\View;
-use TheFramework\Helpers\Helper;
 use TheFramework\Http\Requests\UserRequest;
 use TheFramework\Services\UserService;
-use TheFramework\Config\UploadHandler;
+use TheFramework\Handlers\UploadHandler;
 
+/**
+ * HomeController — Main Application Controller
+ *
+ * Arsitektur Clean: Controller → Service → Repository → Model
+ * Controller hanya mengatur alur request/response.
+ * Business logic ada di UserService.
+ * Query database ada di UserRepository.
+ *
+ * @package TheFramework\Http\Controllers
+ * @version 5.0.3
+ */
 class HomeController extends Controller
 {
     private UserService $userService;
+
     private const CREATE_ERRORS = [
-        'name_exist' => 'Nama sudah digunakan',
+        'name_exist'  => 'Nama sudah digunakan',
         'email_exist' => 'Email sudah digunakan',
     ];
+
     private const UPDATE_ERRORS = [
-        'not_found' => 'User tidak ditemukan',
-        'name_exist' => 'Nama sudah digunakan',
+        'not_found'   => 'User tidak ditemukan',
+        'name_exist'  => 'Nama sudah digunakan',
         'email_exist' => 'Email sudah digunakan',
     ];
 
@@ -27,126 +38,118 @@ class HomeController extends Controller
         $this->userService = new UserService();
     }
 
+    /**
+     * GET / — Halaman utama.
+     */
     public function Welcome()
     {
-        $notification = Helper::get_flash('notification');
-
-        return View::render('interface.welcome', [
-            'title' => 'THE FRAMEWORK - Modern PHP Framework with Database Migrations & REST API',
-            'notification' => $notification,
-            'status' => $this->userService->status()
+        return view('interface.welcome', [
+            'title'        => 'THE FRAMEWORK - Modern PHP Framework with Database Migrations & REST API',
+            'notification' => flash('notification'),
+            'status'       => $this->userService->status(),
         ]);
     }
 
+    /**
+     * GET /users — Daftar semua user.
+     */
     public function Users()
     {
-        $notification = Helper::get_flash('notification');
-
-        return View::render('interface.users', [
-            'title' => 'THE FRAMEWORK - User Management',
-            'notification' => $notification,
-            'users' => $this->userService->getAllUsers()
+        return view('interface.users', [
+            'title'        => 'THE FRAMEWORK - User Management',
+            'notification' => flash('notification'),
+            'users'        => $this->userService->getAllUsers(),
         ]);
     }
 
+    /**
+     * GET /users/information/{uid} — Detail user.
+     */
     public function InformationUser($uid)
     {
-        $notification = Helper::get_flash('notification');
         $user = $this->userService->getUser($uid);
 
         if (empty($user)) {
-            return Helper::redirectToNotFound();
+            return abort(404, 'User tidak ditemukan');
         }
 
-        return View::render('interface.detail', [
-            'title' => 'THE FRAMEWORK - ' . $user['name'] . ' - User Detail',
-            'notification' => $notification,
-            'user' => $user
+        return view('interface.detail', [
+            'title'        => 'THE FRAMEWORK - ' . $user['name'] . ' - User Detail',
+            'notification' => flash('notification'),
+            'user'         => $user,
         ]);
     }
 
+    /**
+     * POST /users/create — Buat user baru (dengan upload gambar).
+     */
     public function CreateUser()
     {
         try {
             $request = new UserRequest();
-            $resultUser = $this->userService->createFromRequest($request);
+            $result = $this->userService->createFromRequest($request);
 
-            if (is_array($resultUser) && UploadHandler::isError($resultUser)) {
-                $errorMsg = UploadHandler::getErrorMessage($resultUser);
-                return Helper::redirect('/users', 'error', "Upload gambar gagal: " . $errorMsg, 5);
+            // Upload error
+            if (UploadHandler::isError($result)) {
+                return redirect('/users', 'error', 'Upload gambar gagal: ' . UploadHandler::getErrorMessage($result));
             }
 
-            if (!$resultUser) {
-                return Helper::redirect('/users', 'error', 'Failed to create user', 5);
+            // Business logic error (name_exist, email_exist)
+            if (is_string($result) && array_key_exists($result, self::CREATE_ERRORS)) {
+                return redirect('/users', 'error', self::CREATE_ERRORS[$result]);
             }
 
-            if (is_string($resultUser) && array_key_exists($resultUser, self::CREATE_ERRORS)) {
-                return Helper::redirect('/users', 'error', 'error: ' . self::CREATE_ERRORS[$resultUser], 5);
+            // DB insert failed
+            if (!$result) {
+                return redirect('/users', 'error', 'Gagal membuat user');
             }
 
-            return Helper::redirect('/users', 'success', $request->input('name') . ' successfully create', 5);
+            return redirect('/users', 'success', $request->input('name') . ' berhasil dibuat');
         } catch (Exception $e) {
-            return Helper::redirect('/users', 'error', "Terjadi kesalahan: " . $e->getMessage(), 5);
+            return redirect('/users', 'error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
+    /**
+     * POST /users/update/{uid} — Update user (dengan upload gambar).
+     */
     public function UpdateUser($uid)
     {
         try {
             $request = new UserRequest();
             $result = $this->userService->updateFromRequest($uid, $request);
 
-            if (is_array($result) && UploadHandler::isError($result)) {
-                $errorMsg = UploadHandler::getErrorMessage($result);
-                return Helper::redirect("/users/information/{$uid}", 'error', "Upload gambar gagal: " . $errorMsg, 5);
+            // Upload error
+            if (UploadHandler::isError($result)) {
+                return redirect("/users/information/{$uid}", 'error', 'Upload gambar gagal: ' . UploadHandler::getErrorMessage($result));
             }
 
-            if ($result === 'not_found') {
-                return Helper::redirect('/users', 'error', 'User not found', 5);
-            }
-
+            // Business logic error
             if (is_string($result) && array_key_exists($result, self::UPDATE_ERRORS)) {
-                return Helper::redirect("/users/information/{$uid}", 'error', 'error: ' . self::UPDATE_ERRORS[$result], 5);
+                return redirect("/users/information/{$uid}", 'error', self::UPDATE_ERRORS[$result]);
             }
 
+            // DB update failed
             if (!$result) {
-                return Helper::redirect("/users/information/{$uid}", 'error', 'Failed to update user', 5);
+                return redirect("/users/information/{$uid}", 'error', 'Gagal mengupdate user');
             }
 
-            return Helper::redirect("/users/information/{$uid}", 'success', 'User successfully updated', 5);
+            return redirect("/users/information/{$uid}", 'success', 'User berhasil diupdate');
         } catch (Exception $e) {
-            return Helper::redirect("/users/information/{$uid}", 'error', "Terjadi kesalahan: " . $e->getMessage(), 5);
+            return redirect("/users/information/{$uid}", 'error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
 
+    /**
+     * POST /users/delete/{uid} — Hapus user (file cleanup otomatis di Service).
+     */
     public function DeleteUser($uid)
     {
-        $user = $this->userService->getUser($uid);
-        if ($user && ($user['profile_picture'] ?? null) != null) {
-            UploadHandler::delete($user['profile_picture'], '/user-pictures');
+        try {
+            $this->userService->deleteUser($uid);
+            return redirect('/users', 'success', 'User berhasil dihapus');
+        } catch (Exception $e) {
+            return redirect('/users', 'error', 'Gagal menghapus user: ' . $e->getMessage());
         }
-
-        $this->userService->deleteUser($uid);
-        return Helper::redirect('/users', 'success', 'user berhasil terhapus', 5);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

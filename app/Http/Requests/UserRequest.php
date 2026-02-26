@@ -2,7 +2,7 @@
 
 namespace TheFramework\Http\Requests;
 
-use TheFramework\App\Request;
+use TheFramework\App\Http\Request;
 
 class UserRequest extends Request
 {

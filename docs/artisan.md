@@ -1,165 +1,119 @@
-# 🛠️ Artisan Console (Command Line Interface)
+# 🚀 Artisan CLI Engine (v5.0.2 - Premium CLI)
 
-**Artisan** adalah antarmuka command-line yang powerful untuk The Framework. Ia menyediakan banyak perintah bermanfaat untuk mempercepat pengembangan.
-
----
-
-## 📋 Daftar Isi
-
-1.  [Cara Menggunakan](#cara-menggunakan)
-2.  [Daftar Perintah Lengkap](#daftar-perintah-lengkap)
-    - [General](#general)
-    - [Make (Generator)](#make-generator)
-    - [Database & Migration](#database--migration)
-    - [Routing](#routing)
-    - [Config & Optimization](#config--optimization)
-    - [Queue & Asset](#queue--asset)
-3.  [Membuat Command Sendiri](#membuat-command-sendiri)
+Artisan adalah pusat komando baris perintah (CLI) yang disertakan dengan **The Framework**. Didesain untuk memberikan pengalaman developer (DX) yang luar biasa, Artisan membantu mengotomatisasi tugas-tugas repetitif dengan tampilan visual yang premium dan intuitif.
 
 ---
 
-## Cara Menggunakan
+## 🎨 Keunggulan Visual (Premium DX)
 
-Buka terminal di root folder project, lalu jalankan:
+Setiap perintah Artisan dibangun di atas `BaseCommand.php` yang menawarkan:
+- **Rich Level Logging**: Indikator visual untuk `SUCCESS` (green), `INFO` (blue), `WARN` (yellow), dan `ERROR` (red).
+- **Interactive Assistance**: Sarana bantuan cerdas (levenshtein distance) yang memberikan saran perintah jika Anda salah ketik.
+- **Smart Formatting**: Tabel data yang rapi untuk rute dan skema database.
+- **Auto-Alias Tinker**: Mengakses Model tanpa perlu menulis namespace lengkap.
 
+---
+
+## 🏗️ Daftar Perintah Utama
+
+Gunakan `php artisan list` untuk melihat semua perintah. Berikut adalah ringkasan berdasarkan kategori:
+
+### 🌟 GENERAL (Perintah Utama)
+
+| Perintah | Fungsi |
+| :--- | :--- |
+| `serve` | Menjalankan server pengembangan dengan deteksi IP & Auto-Port. |
+| `setup` | Inisialisasi awal aplikasi (Generasi ENV, APP_KEY, & Security). |
+| `optimize` | Mengoptimasi performa (Cache rute, config, dan file) untuk produksi. |
+| `tinker` | Membuka REPL Interaktif untuk debugging kode secara real-time. |
+| `test` | Menjalankan unit & feature testing dengan laporan visual yang cantik. |
+
+---
+
+### 🔨 MAKE (Sistem stub & Generator)
+
+Sistem Generator kami menggunakan **Stub Premium** untuk memastikan kode Anda mengikuti standar arsitektur terbaru.
+
+| Perintah | Deskripsi |
+| :--- | :--- |
+| `make:controller` | Membuat controller baru (Gunakan `--resource` untuk CRUD lengkap). |
+| `make:model` | Membuat model (Opsi `-m` untuk sekalian membuat file migrasi). |
+| `make:migration` | Membuat file migrasi database baru. |
+| `make:crud` | **Killer Feature**: Generate Controller + Model + Request + Views + Routes sekaligus. |
+| `make:service` | Membuat class Service baru untuk logika bisnis (v5.0.2). |
+| `make:middleware` | Membuat class Middleware baru. |
+| `make:job` | Membuat class Job untuk antrean (*Queue*). |
+| `make:repository`| Membuat class Repository untuk abstraksi query database. |
+
+---
+
+### 🗄️ DATABASE & MIGRATE
+
+| Perintah | Deskripsi |
+| :--- | :--- |
+| `migrate` | Menjalankan migrasi database yang belum tereksekusi. |
+| `migrate:rollback`| Membatalkan batch migrasi terakhir. |
+| `migrate:fresh` | Menghapus semua tabel dan menjalankan ulang seluruh migrasi dari nol. |
+| `db:seed` | Mengisi database dengan data dummy dari folder `seeders`. |
+
+---
+
+### 🛣️ ROUTE & CONFIG
+
+| Perintah | Deskripsi |
+| :--- | :--- |
+| `route:list` | Menampilkan daftar seluruh rute aktif dalam tabel premium. |
+| `route:cache` | Membuat file cache rute untuk performa request yang lebih cepat. |
+| `config:cache` | Meng-cache file `.env` ke dalam array PHP agar akses konfigurasi instan. |
+
+---
+
+## ⚡ Pro-Tips Penggunaan
+
+### 1. Mempercepat Setup Awal
+Saat baru men-clone project dari Git, Bapak tidak perlu melakukan setup satu-per-satu. Cukup jalankan:
 ```bash
-php artisan list
+php artisan setup
 ```
+Artisan akan otomatis mendeteksi jika `.env` belum ada, membuatnya, dan men-generate `APP_KEY` yang aman.
 
-Ini akan menampilkan daftar semua perintah yang tersedia, dikelompokkan per kategori.
-
----
-
-## Daftar Perintah Lengkap
-
-Berikut adalah penjelasan detail untuk setiap perintah.
-
-### General
-
-| Perintah | Deskripsi                                                                          |
-| :------- | :--------------------------------------------------------------------------------- |
-| `serve`  | Menjalankan server lokal PHP. Port otomatis dibaca dari `BASE_URL` di file `.env`. |
-| `setup`  | Melakukan setup awal (copy .env, generate key, dump autoload).                     |
-| `test`   | Menjalankan Unit Test (PHPUnit) dengan tampilan yang rapi.                         |
-
-#### Detail Command `serve`
-
-Menjalankan PHP built-in development server.
-
-**Penggunaan:**
-
-```bash
-php artisan serve              # Port otomatis dari BASE_URL
-php artisan serve 127.0.0.1    # Custom host, port dari BASE_URL
-php artisan serve 127.0.0.1 3000  # Custom host & port
-```
-
-**Fitur Dinamis:**
-
-- **Port otomatis dibaca dari `BASE_URL`** di file `.env`
-  - Jika `BASE_URL=http://localhost:3000` → Port **3000**
-  - Jika `BASE_URL=http://localhost:8080` → Port **8080**
-  - Default fallback: **8080**
-- **Informasi CLI yang dinamis:**
-  - Menampilkan hostname dari `BASE_URL`
-  - Menampilkan port yang digunakan
-  - Menampilkan APP_ENV mode (LOCAL, PRODUCTION, MAINTENANCE, PAYMENT)
-
-**Contoh Output:**
-
-```
-➤ INFO  TheFramework LOCAL Server
-  Website: localhost
-  Server berjalan di http://127.0.0.1:3000
-  Port: 3000
-  Tekan Ctrl+C untuk menghentikan
-```
-
-**Keamanan:**
-
-- Validasi IP address untuk mencegah command injection
-- Validasi port (1-65535)
-- Input di-escape dengan `escapeshellarg()`
-
-### Make (Generator)
-
-Perintah ini membuat file boilerplate secara otomatis di folder yang tepat.
-
-| Perintah                 | Deskripsi                                                                   | Output Folder          |
-| :----------------------- | :-------------------------------------------------------------------------- | :--------------------- |
-| `make:controller [Name]` | Membuat Controller baru.                                                    | `app/Controllers/`     |
-| `make:model [Name]`      | Membuat Model baru (opsi `-m` untuk migrasi).                               | `app/Models/`          |
-| `make:view [Name]`       | Membuat View.                                                               | `resources/views/`     |
-| `make:migration [Name]`  | Membuat file Migrasi database.                                              | `database/migrations/` |
-| `make:seeder [Name]`     | Membuat file Seeder database.                                               | `database/seeders/`    |
-| `make:middleware [Name]` | Membuat Middleware baru.                                                    | `app/Middleware/`      |
-| `make:request [Name]`    | Membuat Form Request Validation class.                                      | `app/Requests/`        |
-| `make:service [Name]`    | Membuat Service class (Business Logic layer).                               | `app/Services/`        |
-| `make:repository [Name]` | Membuat Repository class (Data Access layer).                               | `app/Repositories/`    |
-| `make:job [Name]`        | Membuat Job class untuk Queue.                                              | `app/Jobs/`            |
-| `make:crud [Name]`       | **Special:** Membuat Controller, Model, Request, View, dan Route sekaligus! | _(Multiple Folders)_   |
-| `make:db-view [Name]`    | Membuat migrasi khusus untuk Database View (SQL View).                      | `database/migrations/` |
-
-### Database & Migration
-
-| Perintah           | Deskripsi                                                            |
-| :----------------- | :------------------------------------------------------------------- |
-| `migrate`          | Menjalankan migrasi database yang belum dieksekusi.                  |
-| `migrate:rollback` | Membatalkan (undo) batch migrasi terakhir.                           |
-| `migrate:fresh`    | **Hapus semua tabel** lalu jalankan migrasi dari awal (Fresh Start). |
-| `db:seed`          | Menjalankan seeder untuk mengisi data awal/dummy.                    |
-
-### Routing
-
-| Perintah      | Deskripsi                                                            |
-| :------------ | :------------------------------------------------------------------- |
-| `route:list`  | Menampilkan tabel daftar semua URL yang terdaftar.                   |
-| `route:cache` | Mengkompilasi semua rute menjadi satu file array (untuk Production). |
-| `route:clear` | Menghapus file cache rute.                                           |
-
-### Config & Optimization
-
-| Perintah       | Deskripsi                                                                                                                                  |
-| :------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
-| `config:cache` | Menggabungkan `.env` dan config lain menjadi satu file PHP cepat.                                                                          |
-| `config:clear` | Menghapus cache konfigurasi.                                                                                                               |
-| `optimize`     | Membersihkan SEMUA cache (Config, Route, View, OpCache, Storage Cache, & Rate Limit). Jalankan ini untuk benar-benar me-refresh framework! |
-
-### Queue & Asset
-
-| Perintah        | Deskripsi                                                                 |
-| :-------------- | :------------------------------------------------------------------------ |
-| `queue:work`    | Menjalankan worker untuk memproses Job di background.                     |
-| `asset:publish` | Menyalin asset dari path private ke `public/` (jika menggunakan package). |
-| `storage:link`  | Membuat symlink `public/storage` ke `storage/app/public`.                 |
-
----
-
-## Membuat Command Sendiri
-
-Anda bisa menambah perintah custom ke `php artisan`.
-
-1.  Buat file di `app/Console/Commands/NamaCommand.php`.
-2.  Implementasikan interface `TheFramework\Console\CommandInterface`.
-
+### 2. Debugging di Tinker
+Di dalam Tinker, Bapak bisa langsung memanggil model tanpa namespace:
 ```php
-<?php
+>>> User::count();
+=> 150
+```
+
+### 3. Otomatisasi Publikasi Asset
+Jika Bapak baru saja mengunduh framework atau mengubah file di `resources/css` atau `resources/js`, gunakan:
+```bash
+php artisan asset:publish
+```
+Perintah ini akan menyinkronkan file resources ke folder `public/assets` agar bisa diakses oleh browser.
+
+---
+
+## 📝 Tips Membuat Perintah Kustom
+Bapak bisa membuat perintah sendiri dengan mewarisi class `BaseCommand`.
+```php
 namespace TheFramework\Console\Commands;
-use TheFramework\Console\CommandInterface;
 
-class HelloCommand implements CommandInterface {
-    public function getName(): string {
-        return 'app:hello';
-    }
+use TheFramework\Console\BaseCommand;
 
-    public function getDescription(): string {
-        return 'Menyapa dunia';
-    }
+class HaloDunia extends BaseCommand {
+    protected $name = 'halo:dunia';
+    protected $description = 'Perintah percobaan pertama saya';
 
-    public function run(array $args): void {
-        echo "Hello World!\n";
+    public function handle($args) {
+        $this->success("Halo Pak! Perintah kustom berhasil dijalankan.");
     }
 }
 ```
 
-3.  Jalankan `php artisan app:hello`.
+---
+
+<div align="center">
+
+[Back to Documentation](README.md) • [Main README](../README.md)
+
+</div>

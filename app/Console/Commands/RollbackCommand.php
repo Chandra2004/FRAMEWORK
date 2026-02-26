@@ -1,10 +1,11 @@
 <?php
+
 namespace TheFramework\Console\Commands;
 
+use TheFramework\Console\BaseCommand;
 use Throwable;
-use TheFramework\Console\CommandInterface;
 
-class RollbackCommand implements CommandInterface
+class RollbackCommand extends BaseCommand
 {
     public function getName(): string
     {
@@ -13,101 +14,47 @@ class RollbackCommand implements CommandInterface
 
     public function getDescription(): string
     {
-        return 'Membatalkan migrasi database dengan menjalankan method down() dari file migrasi secara berurutan (dari terbaru ke terlama).';
+        return 'Rollback batch migrasi terakhir (menjalankan down() secara berurutan)';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
-        // 1. Konfirmasi User
-        // $this->warn("Apakah kamu setuju untuk rollback batch migrasi terakhir? (y/n): ");
-        // $handle = fopen("php://stdin", "r");
-        // $response = trim(fgets($handle));
-        // fclose($handle);
-        // if (strtolower($response) !== 'y') {
-        //     $this->info("Rollback dibatalkan.");
-        //     return;
-        // }
-        // (Opsional: Bisa dihilangkan jika ingin cepat)
+        $migrator = new \TheFramework\App\Schema\Migrator();
 
-        $migrator = new \TheFramework\App\Migrator();
-        $migrator->ensureTableExists();
-
-        // 2. Dapatkan daftar migrasi batch terakhir dari DB
-        $migrationsToRollback = $migrator->getLastBatch();
-
-        if (empty($migrationsToRollback)) {
-            $this->info("Tidak ada migrasi untuk di-rollback.");
+        try {
+            $migrator->ensureTableExists();
+        } catch (Throwable $e) {
+            $this->error("Koneksi Database Gagal: " . $e->getMessage());
             return;
         }
 
-        $this->infoWait("Rolling back " . count($migrationsToRollback) . " migrasi");
-
-        foreach ($migrationsToRollback as $migrationName) {
-            $file = BASE_PATH . '/database/migrations/' . $migrationName . '.php';
-
-            if (file_exists($file)) {
-                require_once $file;
-                $migrationClass = 'Database\\Migrations\\Migration_' . $migrationName;
-
-                if (class_exists($migrationClass)) {
-                    try {
-                        $migration = new $migrationClass();
-                        $this->info("Rollback: $migrationName...");
-
-                        $migration->down();
-
-                        // Hapus dari log DB
-                        $migrator->delete($migrationName);
-
-                        echo "\033[38;5;28m  ✓ Done\033[0m\n";
-                    } catch (Throwable $e) {
-                        $this->error("Gagal rollback $migrationName: " . $e->getMessage());
-                        // Kita stop rollback jika error, agar state tidak inkonsisten
-                        return;
-                    }
-                } else {
-                    $this->error("Class $migrationClass tidak ditemukan.");
-                }
-            } else {
-                $this->warn("File migrasi tidak ditemukan: $file. Menghapus record dari database saja.");
-                // Jika file hilang, kita asumsikan user ingin menghapus jejaknya dari DB
-                $migrator->delete($migrationName);
+        // Parse --step=N flag
+        $steps = 1;
+        foreach ($args as $arg) {
+            if (str_starts_with($arg, '--step=')) {
+                $steps = max(1, (int) substr($arg, 7));
             }
         }
 
-        $this->success("Rollback selesai.");
-    }
+        $migrationsToRollback = $migrator->getLastBatch();
 
-    /**
-     * Output helper mirip Laravel
-     */
-    private function info(string $message): void
-    {
-        echo "\033[38;5;39m➤ INFO  {$message}\033[0m\n";
-    }
-
-    private function infoWait(string $message): void
-    {
-        echo "\033[38;5;39m➤ INFO  {$message}";
-        for ($i = 0; $i < 3; $i++) {
-            echo ".";
-            usleep(200000);
+        if (empty($migrationsToRollback)) {
+            $this->success("Tidak ada migrasi untuk di-rollback.");
+            return;
         }
-        echo "\033[0m\n";
-    }
 
-    private function warn(string $message): void
-    {
-        echo "\033[38;5;214m⚠ WARNING  {$message}\033[0m";
-    }
+        $this->info("Rolling back " . count($migrationsToRollback) . " migrasi (batch terakhir)...");
 
-    private function error(string $message): void
-    {
-        echo "\033[38;5;124m✖ ERROR  {$message}\033[0m\n";
-    }
+        try {
+            $count = $migrator->rollback($steps);
 
-    private function success(string $message): void
-    {
-        echo "\033[38;5;28m★ SUCCESS  {$message}\033[0m\n";
+            foreach ($migrator->getOutput() as $line) {
+                $this->line("  " . $line);
+            }
+
+            $this->success("Rollback selesai. $count migrasi berhasil di-rollback.");
+        } catch (Throwable $e) {
+            $this->error("Gagal rollback: " . $e->getMessage());
+        }
     }
 }

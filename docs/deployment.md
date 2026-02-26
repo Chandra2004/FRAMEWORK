@@ -50,13 +50,13 @@ Masuk ke **GitHub Repo > Settings > Secrets and variables > Actions**. Tambahkan
 | **DB_PASS**                              | Password database (biasanya sama dengan FTP Password)                                                                                                                                       |
 | **DB_PORT**                              | `3306`                                                                                                                                                                                      |
 | **ALLOW_WEB_MIGRATION**                  | `true` (untuk menyalakan web tools) atau `false` (untuk mematikan)                                                                                                                          |
-| **SYSTEM_ALLOWED_IPS** ⭐ **NEW v5.0.0** | **IP Whitelist** - Comma-separated list IP yang boleh akses `/_system/*`<br>Contoh: `182.8.66.200,103.x.x.x` atau `*` (semua IP - not recommended!)<br>Lihat IP Anda: https://api.ipify.org |
-| **SYSTEM_AUTH_USER** ⭐ **NEW v5.0.0**   | **Basic Auth Username** (Optional tapi recommended)<br>Contoh: `admin` - Browser akan popup login                                                                                           |
-| **SYSTEM_AUTH_PASS** ⭐ **NEW v5.0.0**   | **Basic Auth Password** (Optional tapi recommended)<br>Contoh: `MyStr0ng!P@ssw0rd#2026` - Minimal 12 karakter, kombinasi huruf/angka/simbol                                                 |
+| **SYSTEM_ALLOWED_IPS** ⭐ **NEW v5.0.1** | **IP Whitelist** - Comma-separated list IP yang boleh akses `/_system/*`<br>Contoh: `182.8.66.200,103.x.x.x` atau `*` (semua IP - not recommended!)<br>Lihat IP Anda: https://api.ipify.org |
+| **SYSTEM_AUTH_USER** ⭐ **NEW v5.0.1**   | **Basic Auth Username** (Optional tapi recommended)<br>Contoh: `admin` - Browser akan popup login                                                                                           |
+| **SYSTEM_AUTH_PASS** ⭐ **NEW v5.0.1**   | **Basic Auth Password** (Optional tapi recommended)<br>Contoh: `MyStr0ng!P@ssw0rd#2026` - Minimal 12 karakter, kombinasi huruf/angka/simbol                                                 |
 
-### 🛡️ Web Command Center Security (v5.0.0) - 3-Layer Protection
+### 🛡️ Web Command Center Security (v5.0.1) - 3-Layer Protection
 
-Framework v5.0.0 menggunakan **3-layer security** untuk melindungi Web Command Center (`/_system/*`):
+Framework v5.0.1 menggunakan **3-layer security** untuk melindungi Web Command Center (`/_system/*`):
 
 ```
 REQUEST → Layer 1 → Layer 2 → Layer 3 → ✅ ALLOWED
@@ -121,7 +121,7 @@ REQUEST → Layer 1 → Layer 2 → Layer 3 → ✅ ALLOWED
 
 Karena tidak ada terminal hitam (SSH), kita gunakan **Web Utilities** yang sudah disiapkan di `routes/system.php`.
 
-### Web Command Center (GUI Dashboard) ⭐ **NEW v5.1.0**
+### Web Command Center (GUI Dashboard) ⭐ **NEW v5.0.1**
 
 Kini Anda memiliki antarmuka grafis (GUI) berbasis terminal (CLI Style) untuk menjalankan semua perintah sistem tanpa perlu mengetik URL satu per satu.
 
@@ -178,7 +178,7 @@ Jika Anda punya SSH, lupakan cara di atas. Gunakan cara profesional via terminal
 ## 5. Troubleshooting
 
 **Q: "Invalid Security Key" saat akses Web Utility?**
-A: Fitur ini sudah dihapus di v5.0.0 final release. Anda sekarang hanya butuh Basic Auth (Username & Password) dan IP Whitelist. Pastikan `SYSTEM_AUTH_USER` dan `SYSTEM_AUTH_PASS` (hash) sudah diatur dengan benar di `.env`.
+A: Fitur ini sudah dihapus di v5.0.1 final release. Anda sekarang hanya butuh Basic Auth (Username & Password) dan IP Whitelist. Pastikan `SYSTEM_AUTH_USER` dan `SYSTEM_AUTH_PASS` (hash) sudah diatur dengan benar di `.env`.
 
 **Q: Seeder error "Class not found"?**
 A: Pastikan nama file seeder Anda sudah standar: `Seeder_TIMESTAMP_Nama.php`. Jangan ubah-ubah nama class manual. Gunakan `php artisan make:seeder Nama` untuk membuat file yang valid.

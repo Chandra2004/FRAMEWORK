@@ -45,7 +45,7 @@ class MakeJobCommand implements CommandInterface
 
 namespace TheFramework\Jobs;
 
-use TheFramework\App\Job;
+use TheFramework\App\Queue\Job;
 
 class $className extends Job
 {

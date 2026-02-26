@@ -2,9 +2,10 @@
 
 namespace TheFramework\Console\Commands;
 
-use TheFramework\Console\CommandInterface;
+use TheFramework\Console\BaseCommand;
+use Throwable;
 
-class TinkerCommand implements CommandInterface
+class TinkerCommand extends BaseCommand
 {
     public function getName(): string
     {
@@ -13,117 +14,84 @@ class TinkerCommand implements CommandInterface
 
     public function getDescription(): string
     {
-        return 'Interact with your application';
+        return 'REPL (Read-Eval-Print Loop) Interaktif Premium';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
-        echo "The Framework Tinker (v1.0.0)\n";
-        echo "Type 'exit' or press Ctrl+C to quit.\n\n";
+        $this->clear();
+        $this->line("──────────────────────────────────────────────────", self::COLOR_MAGENTA);
+        $this->line("  THE FRAMEWORK TINKER ENGINE v5.0", self::STYLE_BOLD . self::COLOR_CYAN);
+        $this->line("──────────────────────────────────────────────────", self::COLOR_MAGENTA);
+        $this->comment("Ketik 'exit' atau tekan Ctrl+C untuk keluar.");
+        echo PHP_EOL;
 
-        // 1. Auto-Alias Models
-        // Scan app/Models dan buat alias agar bisa dipanggil tanpa namespace
-        $modelsDir = __DIR__ . '/../../Models';
+        // Auto-Alias Models
+        $modelsDir = BASE_PATH . '/app/Models';
         if (is_dir($modelsDir)) {
-            $files = glob($modelsDir . '/*.php');
+            $files = glob($modelsDir . '/**/*.php');
             foreach ($files as $file) {
                 $className = basename($file, '.php');
-                $fullClassName = "\\TheFramework\\Models\\$className";
+                // Guess namespace from path
+                $relPath = str_replace([$modelsDir, '.php', '/'], ['', '', '\\'], $file);
+                $fullClassName = "TheFramework\\Models" . $relPath;
+                
                 if (class_exists($fullClassName) && !class_exists($className)) {
                     class_alias($fullClassName, $className);
                 }
             }
         }
 
-        // Loop REPL (Read-Eval-Print Loop)
         while (true) {
-            // Read
-            $line = $this->readline(">>> ");
+            $input = $this->readline(self::COLOR_GREEN . ">>> " . self::COLOR_RESET);
 
-            // Cek kondisi keluar
-            if ($line === false || trim($line) === 'exit' || trim($line) === 'quit') {
-                echo "\nGoodbye!\n";
+            if ($input === false || in_array(trim($input), ['exit', 'quit', 'bye'])) {
+                $this->info("Keluar dari Tinker. Sampai jumpa!");
                 break;
             }
 
-            // Skip baris kosong
-            if (trim($line) === '') {
-                continue;
-            }
+            $code = trim($input);
+            if ($code === '') continue;
 
-            // Clean input
-            $code = trim($line);
+            if (substr($code, -1) === ';') $code = substr($code, 0, -1);
 
-            // Hapus semicolon di akhir untuk diproses (nanti kita tambah sendiri jika perlu)
-            if (substr($code, -1) === ';') {
-                $code = substr($code, 0, -1);
-            }
-
-            // Cek apakah ini assignment atau echo statement manual
-            $isEcho = preg_match('/^(echo|print|var_dump|print_r)\s/', $code);
+            // Determine if we should capture return value
+            $isEcho = preg_match('/^(echo|print|var_dump|print_r|dump|die|exit)\b/', $code);
             $isAssignment = preg_match('/^\$[a-zA-Z0-9_]+\s*=/', $code);
+            
+            $evalCode = (!$isEcho && !$isAssignment) ? "return $code;" : "$code;";
 
-            // Jika bukan echo dan bukan assignment, kita coba tambahkan 'return' 
-            // agar eval mengembalikan nilainya untuk di-dump
-            if (!$isEcho && !$isAssignment) {
-                $evalCode = "return $code;";
-            } else {
-                $evalCode = "$code;";
-            }
-
-            // Eval code
             try {
-                // Buffer output (untuk menangkap echo dari user)
                 ob_start();
+                $result = eval($evalCode);
+                $buffer = ob_get_clean();
 
-                // Eksekusi
-                $result = eval ($evalCode);
+                if (!empty($buffer)) echo $buffer . PHP_EOL;
 
-                $output = ob_get_clean();
-
-                // 1. Tampilkan output buffer (jika user pakai echo)
-                if (!empty($output)) {
-                    echo $output . "\n";
-                }
-
-                // 2. Tampilkan return value (jika ada, dan bukan echo manual dari user)
-                // Jika user mengetik ekspresi seperti '1+1' atau 'User::all()', result akan berisi nilainya.
                 if (!$isEcho && $result !== null) {
-                    // Gunakan print_r atau var_dump yang rapi
-                    // Jika ada dump() helper (misal dari symfony/var-dumper), gunakan itu
+                    echo self::COLOR_CYAN . "=> " . self::COLOR_RESET;
                     if (function_exists('dump')) {
                         dump($result);
                     } else {
-                        // Fallback simple dump
-                        echo "=> ";
-                        var_dump($result);
+                        var_export($result);
+                        echo PHP_EOL;
                     }
                 }
-
-            } catch (\Throwable $e) {
-                ob_end_clean(); // bersihkan buffer
-                echo "\033[31m" . get_class($e) . ": " . $e->getMessage() . "\033[0m\n";
+            } catch (Throwable $e) {
+                if (ob_get_level() > 0) ob_end_clean();
+                $this->error(get_class($e) . ": " . $e->getMessage());
             }
         }
     }
 
-    /**
-     * Wrapper untuk readline dengan fallback
-     */
     private function readline($prompt)
     {
         if (function_exists('readline')) {
             $line = readline($prompt);
-            if (!empty($line)) {
-                readline_add_history($line);
-            }
+            if (!empty($line)) readline_add_history($line);
             return $line;
-        } else {
-            echo $prompt;
-            $line = fgets(STDIN);
-            if ($line === false)
-                return false;
-            return rtrim($line, "\r\n");
         }
+        echo $prompt;
+        return rtrim(fgets(STDIN), "\r\n");
     }
 }

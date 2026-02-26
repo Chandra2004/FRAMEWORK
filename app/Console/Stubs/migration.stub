@@ -1,0 +1,29 @@
+<?php
+
+namespace Database\Migrations;
+
+use TheFramework\App\Schema\Schema;
+use TheFramework\App\Schema\Blueprint;
+
+return new class
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('{{table}}', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('{{table}}');
+    }
+};

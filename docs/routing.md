@@ -24,7 +24,7 @@ Definisikan rute di `routes/web.php`.
 The Framework mendukung semua verb HTTP standar.
 
 ```php
-use TheFramework\App\Router;
+use TheFramework\App\Http\Router;
 
 Router::add('GET', '/home', HomeController::class, 'index');
 Router::add('POST', '/post/store', PostController::class, 'store');
@@ -122,3 +122,16 @@ Dalam form `resources/views/edit.php`:
 ```
 
 Framework akan membaca `_method` dan memperlakukannya sebagai request `PUT`.
+
+---
+
+## 🔍 Debugging Rute
+
+Anda dapat melihat daftar semua rute yang terdaftar melalui Artisan CLI:
+
+```bash
+php artisan route:list
+```
+
+Ini akan menampilkan tabel rapi yang berisi Method, URI, Action (Controller), dan Middleware yang terpasang pada rute tersebut.
+

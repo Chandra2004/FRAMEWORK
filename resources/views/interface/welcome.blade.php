@@ -51,7 +51,7 @@
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                 </span>
-                NEW VERSION 5.0.0 RELEASED
+                NEW VERSION 5.0.1 RELEASED
             </div>
 
             <h1 class="text-6xl md:text-7xl font-bold text-white mb-8 tracking-tight leading-[1.1]">

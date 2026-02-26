@@ -1,9 +1,9 @@
 <?php
 
-use TheFramework\App\Router;
-use TheFramework\App\Migrator;
-use TheFramework\App\Container;
-use TheFramework\Http\Controllers\Services\SitemapController;
+use TheFramework\App\Http\Router;
+use TheFramework\App\Schema\Migrator;
+use TheFramework\App\Core\Container;
+use TheFramework\App\Internal\Controllers\SitemapController;
 use TheFramework\Middleware\WAFMiddleware;
 
 /**
@@ -20,18 +20,18 @@ Router::add('GET', '/sitemap.xml', SitemapController::class, 'index', [WAFMiddle
 function checkSystemKey()
 {
     // === LAYER 1: Feature Toggle ===
-    if (\TheFramework\App\Config::get('ALLOW_WEB_MIGRATION') !== 'true') {
+    if (\TheFramework\App\Core\Config::get('ALLOW_WEB_MIGRATION') !== 'true') {
         header('HTTP/1.0 403 Forbidden');
         die("⛔ FEATURE DISABLED: Web migration tools are disabled in configuration.");
     }
 
     // === LAYER 2: IP Whitelist ===
     $clientIp = \TheFramework\Helpers\Helper::get_client_ip();
-    $allowedIps = \TheFramework\App\Config::get('SYSTEM_ALLOWED_IPS', '127.0.0.1');
+    $allowedIps = \TheFramework\App\Core\Config::get('SYSTEM_ALLOWED_IPS', '127.0.0.1');
     $ipWhitelist = array_map('trim', explode(',', $allowedIps));
 
     if (!in_array($clientIp, $ipWhitelist) && !in_array('*', $ipWhitelist)) {
-        \TheFramework\App\Logging::getLogger()->warning(
+        \TheFramework\App\Core\Logging::getLogger()->warning(
             "System route access denied for IP: $clientIp",
             ['uri' => $_SERVER['REQUEST_URI'] ?? '']
         );
@@ -40,8 +40,8 @@ function checkSystemKey()
     }
 
     // === LAYER 3: Basic Auth (Required if configured) ===
-    $sysUser = \TheFramework\App\Config::get('SYSTEM_AUTH_USER');
-    $sysPass = \TheFramework\App\Config::get('SYSTEM_AUTH_PASS');
+    $sysUser = \TheFramework\App\Core\Config::get('SYSTEM_AUTH_USER');
+    $sysPass = \TheFramework\App\Core\Config::get('SYSTEM_AUTH_PASS');
 
     if (!empty($sysUser) && !empty($sysPass)) {
         $authUser = $_SERVER['PHP_AUTH_USER'] ?? '';
@@ -74,7 +74,7 @@ function checkSystemKey()
     }
 
     // Log successful access
-    \TheFramework\App\Logging::getLogger()->info(
+    \TheFramework\App\Core\Logging::getLogger()->info(
         "System route accessed successfully",
         ['ip' => $clientIp, 'uri' => $_SERVER['REQUEST_URI'] ?? '']
     );
@@ -94,7 +94,7 @@ function renderTerminal($command, $callback)
         echo "\n❌ FATAL ERROR: " . $e->getMessage();
     }
     $output = ob_get_clean();
-    return \TheFramework\App\View::render('Internal::_system.terminal_output', [
+    return \TheFramework\App\Http\View::render('Internal::_system.terminal_output', [
         'command' => $command,
         'output' => $output,
         'success' => $success
@@ -104,7 +104,7 @@ function renderTerminal($command, $callback)
 // 0. SYSTEM DASHBOARD (Main Entry Point)
 Router::add('GET', '/_system', function () {
     checkSystemKey();
-    return \TheFramework\App\View::render('Internal::_system.dashboard');
+    return \TheFramework\App\Http\View::render('Internal::_system.dashboard');
 });
 
 // 1. MIGRATE DATABASE
@@ -274,6 +274,35 @@ Router::add('GET', '/_system/asset-publish', function () {
     });
 });
 
+// 1.e DATABASE SCHEMA INSPECTOR (Paten Feature)
+Router::add('GET', '/_system/schema', function () {
+    checkSystemKey();
+    return renderTerminal('db:schema', function () {
+        echo "🔍 DATABASE SCHEMA INSPECTOR\n==============================\n";
+        $db = \TheFramework\App\Database\Database::getInstance();
+        
+        // Get Tables
+        $tables = $db->query("SHOW TABLES")->resultSet(\PDO::FETCH_COLUMN);
+        
+        if (empty($tables)) {
+            echo "ℹ No tables found in the database.\n";
+            return;
+        }
+
+        echo "Found " . count($tables) . " tables:\n\n";
+        printf("%-30s | %-10s\n", "Table Name", "Rows");
+        echo str_repeat("-", 45) . "\n";
+
+        foreach ($tables as $table) {
+            $count = $db->query("SELECT COUNT(*) as total FROM `$table`")->single();
+            printf("%-30s | %-10d\n", $table, $count['total'] ?? 0);
+        }
+        
+        echo str_repeat("-", 45) . "\n";
+        echo "✨ Schema scan completed!";
+    });
+});
+
 // 2. SEED DATABASE (Web Seeder)
 Router::add('GET', '/_system/seed', function () {
     checkSystemKey();
@@ -435,7 +464,7 @@ Router::add('GET', '/_system/status', function () {
         $extensions[$ext] = extension_loaded($ext);
     }
 
-    return \TheFramework\App\View::render('Internal::_system.status', [
+    return \TheFramework\App\Http\View::render('Internal::_system.status', [
         'php_version' => phpversion(),
         'server' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
         'extensions' => $extensions,
@@ -464,8 +493,8 @@ Router::add('GET', '/_system/diagnose', function () {
 
         echo "DATABASE STATUS:\n";
         try {
-            if (\TheFramework\App\Database::isEnabled()) {
-                $db = \TheFramework\App\Database::getInstance();
+            if (\TheFramework\App\Database\Database::isEnabled()) {
+                $db = \TheFramework\App\Database\Database::getInstance();
                 echo str_pad("DB Connection", 25) . ": " . ($db->testConnection() ? "✅ CONNECTED" : "❌ FAILED") . "\n";
             }
         } catch (\Throwable $e) {
@@ -507,7 +536,7 @@ Router::add('GET', '/_system/logs', function () {
         $logs = array_reverse($logs); // Show newest first
     }
 
-    return \TheFramework\App\View::render('Internal::_system.logs', [
+    return \TheFramework\App\Http\View::render('Internal::_system.logs', [
         'logs' => $logs,
         'path' => $logFile
     ]);
@@ -566,7 +595,7 @@ Router::add('GET', '/_system/routes', function () {
         ];
     }
 
-    return \TheFramework\App\View::render('Internal::_system.routes', [
+    return \TheFramework\App\Http\View::render('Internal::_system.routes', [
         'routes' => $routes
     ]);
 });
@@ -586,7 +615,7 @@ Router::add('GET', '/_system/test-connection', function () {
     checkSystemKey();
     return renderTerminal('db:test', function () {
         echo "🔌 DATABASE CONNECTION TEST\n==============================\n";
-        $db = \TheFramework\App\Database::getInstance();
+        $db = \TheFramework\App\Database\Database::getInstance();
         $start = microtime(true);
         if ($db->testConnection()) {
             $end = microtime(true);
@@ -605,7 +634,7 @@ Router::add('GET', '/_system/test-connection', function () {
 // 14. WEB TINKER
 Router::add('GET', '/_system/tinker', function () {
     checkSystemKey();
-    return \TheFramework\App\View::render('Internal::_system.tinker');
+    return \TheFramework\App\Http\View::render('Internal::_system.tinker');
 });
 
 Router::add('POST', '/_system/tinker', function () {
@@ -698,7 +727,7 @@ Router::add('GET', '/_system/health', function () {
     header('Content-Type: application/json');
     $dbConnected = false;
     try {
-        $dbConnected = \TheFramework\App\Database::getInstance()->testConnection();
+        $dbConnected = \TheFramework\App\Database\Database::getInstance()->testConnection();
     } catch (\Throwable $e) {
     }
     echo json_encode([

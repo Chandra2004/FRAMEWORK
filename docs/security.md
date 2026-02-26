@@ -1,12 +1,12 @@
-# 🛡️ Security Guide (v5.0.0)
+# 🛡️ Security Guide (v5.0.1)
 
-The Framework dibangun dengan prinsip **Security First**. Version 5.0.0 memiliki grade keamanan **A+** (98/100) setelah melalui audit keamanan ketat dan perbaikan kerentanan kritis.
+The Framework dibangun dengan prinsip **Security First**. Version 5.0.1 memiliki grade keamanan **A+** (98/100) setelah melalui audit keamanan ketat dan perbaikan kerentanan kritis.
 
 ---
 
 ## 🎯 Security Features Overview
 
-### Built-in Protection (v5.0.0)
+### Built-in Protection (v5.0.1)
 
 | Threat                            | Protection            | Status  |
 | --------------------------------- | --------------------- | ------- |
@@ -163,7 +163,7 @@ User::orderBy($column, 'DESC');
 
 ## 🛡️ Web Application Firewall (WAF)
 
-**NEW in v5.0.0:** Enhanced WAF dengan detection untuk semua attack vectors.
+**NEW in v5.0.1:** Enhanced WAF dengan detection untuk semua attack vectors.
 
 ### Protected Patterns
 
@@ -173,7 +173,7 @@ $patterns = [
     'sql_injection' => '/(\b(union\s+select|insert\s+into|delete\s+from|drop\s+table)\b)/i',
     'xss' => '/(<script|javascript:|on(load|error|click)=)/i',
     'path_traversal' => '/(\.\.\/|\.\.\\)/i',
-    'command_injection' => '/(\b(exec|system|shell_exec)\s*\(|`|\$\()/i' // Enhanced v5.0.0
+    'command_injection' => '/(\b(exec|system|shell_exec)\s*\(|`|\$\()/i' // Enhanced v5.0.1
 ];
 ```
 
@@ -198,9 +198,9 @@ Router::group(['middleware' => []], function() {
 
 ---
 
-## 🌐 Web Command Center Security (NEW in v5.0.0)
+## 🌐 Web Command Center Security (NEW in v5.0.1)
 
-Version 5.0.0 implements **3-layer security** for system routes.
+Version 5.0.1 implements **3-layer security** for system routes.
 
 ### Security Layers
 

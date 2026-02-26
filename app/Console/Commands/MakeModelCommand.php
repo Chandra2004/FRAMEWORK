@@ -2,113 +2,69 @@
 
 namespace TheFramework\Console\Commands;
 
-use TheFramework\Console\CommandInterface;
+use TheFramework\Console\BaseCommand;
 
-class MakeModelCommand implements CommandInterface
+class MakeModelCommand extends BaseCommand
 {
     public function getName(): string
     {
         return 'make:model';
     }
+
     public function getDescription(): string
     {
-        return 'Membuat kelas model baru';
+        return 'Buat model baru dengan auto-pluralization & opsi migrasi';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
-        // Parse arguments
-        $name = null;
-        $createMigration = false;
-
-        foreach ($args as $arg) {
-            if ($arg === '-m' || $arg === '--migration') {
-                $createMigration = true;
-            } elseif (strpos($arg, '-') !== 0) {
-                $name = $arg; // Ambil argumen non-flag sebagai nama model
-            }
-        }
-
+        $name = $args[0] ?? null;
         if (!$name) {
-            echo "\033[38;5;124m✖ ERROR  Harap masukkan nama model\033[0m\n";
-            exit(1);
+            $name = $this->ask("Masukkan nama model (Contoh: Store/Product)");
         }
 
-        $parts = explode('/', $name);
+        $createMigration = in_array('-m', $args) || in_array('--migration', $args);
+        
+        $parts = explode('/', str_replace('\\', '/', $name));
         $className = array_pop($parts);
-        $subNamespace = implode('\\', $parts);
-        $folderPath = implode('/', $parts);
+        $subNamespace = !empty($parts) ? "\\" . implode('\\', $parts) : '';
+        
+        $targetDir = BASE_PATH . "/app/Models" . (empty($parts) ? "" : "/" . implode('/', $parts));
+        $targetFile = $targetDir . "/$className.php";
 
-        $path = BASE_PATH . "/app/Models/" . ($folderPath ? $folderPath . '/' : '') . "$className.php";
-        if (file_exists($path)) {
-            echo "\033[38;5;124m✖ ERROR  Model sudah ada: $className\033[0m\n";
-            // Jangan exit jika cuma model yg ada, mungkin user mau buat migrasi saja?
-            // Tapi standardnya error. Kita exit saja.
-            exit(1);
+        if (file_exists($targetFile)) {
+            $this->error("Model $className sudah ada!");
+            return;
         }
 
-        $namespace = "TheFramework\\Models" . ($subNamespace ? "\\$subNamespace" : '');
-        // Pluralize sederhana: User -> users, Category -> categories
+        if (!is_dir($targetDir)) mkdir($targetDir, 0755, true);
+
+        // Simple Pluralization for table name
         $lowerName = strtolower($className);
-        if (substr($lowerName, -1) === 'y') {
-            $tableName = substr($lowerName, 0, -1) . 'ies';
-        } else if (substr($lowerName, -1) !== 's') {
-            $tableName = $lowerName . 's';
-        } else {
-            $tableName = $lowerName;
-        }
+        $tableName = $lowerName . 's';
+        if (substr($lowerName, -1) === 'y') $tableName = substr($lowerName, 0, -1) . 'ies';
 
-        $content = <<<PHP
-<?php
+        $stubPath = BASE_PATH . "/app/Console/Stubs/model.stub";
+        $content = file_get_contents($stubPath);
+        $content = str_replace([
+            '{{namespace}}', 
+            '{{class}}', 
+            '{{table}}'
+        ], [
+            "TheFramework\\Models$subNamespace", 
+            $className,
+            $tableName
+        ], $content);
 
-namespace $namespace;
+        file_put_contents($targetFile, $content);
+        $this->success("Model $className dibuat di " . str_replace(BASE_PATH, '', $targetFile));
 
-use TheFramework\App\Model;
-
-/**
- * @method static \TheFramework\App\QueryBuilder query()
- * @method static array all()
- * @method static mixed find(\$id)
- * @method static mixed where(\$column, \$value)
- * @method static mixed insert(array \$data)
- * @method static mixed update(array \$data, \$id)
- * @method static mixed delete(\$id)
- * @method static mixed paginate(int \$perPage = 10, int \$page = 1)
- * @method static static with(array \$relations)
- */
-class $className extends Model
-{
-    protected \$table = '$tableName';
-    protected \$primaryKey = 'id';
-
-    protected \$fillable = [
-        // 'name', 'email', ...
-    ];
-
-    protected \$hidden = [
-        // 'password', 'token', ...
-    ];
-}
-PHP;
-
-        if (!is_dir(dirname($path)))
-            mkdir(dirname($path), 0755, true);
-        file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Model dibuat: $className (app/Models/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\033[0m\n";
-
-        // Buat migrasi jika diminta
         if ($createMigration) {
-            $migrationName = "Create{$className}sTable"; // CreateUsersTable
-            // Panggil MakeMigrationCommand secara manual
-            // Kita perlu require file jika belum di-autoload (biasanya sudah via composer/artisan logic)
-            // Asumsi class sudah ter-load
-            if (class_exists(MakeMigrationCommand::class)) {
-                $migrator = new MakeMigrationCommand();
-                echo "\n\033[90m> Generating migration...\033[0m\n";
-                $migrator->run([$migrationName]);
-            } else {
-                echo "\033[33mWarning: MakeMigrationCommand not found.\033[0m\n";
-            }
+            $migrationName = "create_{$tableName}_table";
+            $this->comment("Memicu pembuatan migrasi...");
+            // We use another command instance
+            $makeMigration = new MakeMigrationCommand();
+            $makeMigration->run([$migrationName]);
         }
     }
 }

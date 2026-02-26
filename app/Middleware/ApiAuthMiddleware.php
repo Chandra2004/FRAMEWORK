@@ -2,86 +2,65 @@
 
 namespace TheFramework\Middleware;
 
-use TheFramework\App\RateLimiter;
-use TheFramework\Helpers\Helper;
-use TheFramework\App\Config;
-use TheFramework\App\Database;
+use TheFramework\App\Http\RateLimiter;
+use TheFramework\App\Database\Database;
 
 class ApiAuthMiddleware implements Middleware
 {
     public function before()
     {
-        // 0. Rate Limiting Protection (Anti DDoS / Brute Force)
-        // Batasi 60 request per menit per IP
-        $clientIp = Helper::get_client_ip();
-        RateLimiter::check($clientIp, 60, 60);
+        // 0. Rate Limiting Protection (Anti DDoS)
+        $clientIp = request()->ip();
+        RateLimiter::check($clientIp, config('API_RATE_LIMIT', 60), 60);
 
         // ----------------------------------------------------
         // JALUR 1: INTERNAL WEB APP (via CSRF Token)
         // ----------------------------------------------------
-        // Karena aplikasi ini TANPA LOGIN, kita validasi bahwa request 
-        // berasal dari frontend kita sendiri menggunakan CSRF Token.
-        if (session_status() !== PHP_SESSION_ACTIVE)
-            session_start();
+        $csrfToken = request()->header('X-CSRF-TOKEN') ?? request()->header('X-Csrf-Token');
 
-        $headers = getallheaders();
-        $csrfToken = $headers['X-CSRF-TOKEN'] ?? $headers['X-Csrf-Token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? null);
-
-        if ($csrfToken && isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $csrfToken)) {
-            return; // Lolos! Ini request sah dari website sendiri.
+        if ($csrfToken && session('csrf_token') && hash_equals(session('csrf_token'), $csrfToken)) {
+            return; // OK
         }
-        // ----------------------------------------------------
 
         // ----------------------------------------------------
         // JALUR 2: EKSTERNAL APP (via Bearer Token)
         // ----------------------------------------------------
-        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+        $token = request()->bearerToken();
 
-        // Cek format Bearer Token
-        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            // Jika CSRF gagal DAN Token gagal -> Unauthorized
-            Helper::json([
+        if (!$token) {
+            return json([
                 'status' => 'error',
-                'message' => 'Unauthorized: Invalid access. Use CSRF Token (Web) or Bearer Token (API).'
+                'message' => 'Unauthorized: Gunakan CSRF Token (Web) atau Bearer Token (API).'
             ], 401);
-            exit;
         }
 
-        $token = $matches[1];
-
-        // 3. (OPSI A) Cek Master Key via .env (Simple Protection)
-        // Set API_SECRET_KEY=rahasia123 di .env anda
-        $masterKey = Config::get('API_SECRET_KEY');
+        // 3. Cek Master Key (.env)
+        $masterKey = config('API_SECRET_KEY');
         if (!empty($masterKey) && hash_equals($masterKey, $token)) {
-            return; // Lolos validasi
+            return; // OK
         }
 
-        // 4. (OPSI B) Cek Token di Database User (Advanced Protection)
-        // Pastikan tabel users punya kolom 'api_token'
+        // 4. Database User Check
         try {
             $db = Database::getInstance();
-            // Cek apakah kolom api_token ada biar gak error kalau belum migrate
-            // Note: Ini query check sederhana, idealnya skema sudah pasti
             $db->query("SELECT uid, name, email, role_uid FROM users WHERE api_token = :token LIMIT 1");
             $db->bind(':token', $token);
             $user = $db->single();
 
             if ($user) {
-                // Simpan info user yang login via API agar bisa diakses di Controller
-                // Akses via: Helper::request()->user() (perlu implementasi tambahan) atau $_REQUEST['user']
+                // Injek user ke request array agar bisa diakses di controller
                 $_REQUEST['user_api'] = $user;
-                return; // Lolos
+                return; // OK
             }
         } catch (\Exception $e) {
-            // Abaikan error DB jika kolom belum ada, fallback ke unauthorized
+            // DB Error ignored for safety (likely table/column missing)
         }
 
-        // 5. Jika semua cek gagal
-        Helper::json([
+        // 5. Final Fail
+        return json([
             'status' => 'error',
             'message' => 'Unauthorized: Invalid access token'
         ], 401);
-        exit;
     }
 
     public function after()

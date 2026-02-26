@@ -98,6 +98,23 @@ class $className extends FormRequest
             // Example: 'password' => 'Kata Sandi',
         ];
     }
+
+    /**
+     * (OPTIONAL) Override this method to force JSON response on validation errors.
+     * Uncomment the code below to always return JSON (useful for API endpoints).
+     * 
+     * @param array \$errors
+     * @return void
+     */
+    // protected function failedValidation(array \$errors): void
+    // {
+    //     \\TheFramework\\Helpers\\Helper::json([
+    //         'status' => 'error',
+    //         'errors' => \$errors,
+    //         'input' => \$this->all()
+    //     ], 422);
+    //     exit;
+    // }
 }
 PHP;
 

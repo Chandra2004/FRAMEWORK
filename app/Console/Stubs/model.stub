@@ -1,0 +1,19 @@
+<?php
+
+namespace {{namespace}};
+
+use TheFramework\App\Database\Model;
+
+class {{class}} extends Model
+{
+    protected $table = '{{table}}';
+    protected $primaryKey = 'id';
+
+    protected $fillable = [
+        // 'name', 'email', ...
+    ];
+
+    protected $hidden = [
+        // 'password', 'token', ...
+    ];
+}

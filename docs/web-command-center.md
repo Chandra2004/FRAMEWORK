@@ -16,7 +16,7 @@ Mayoritas hosting gratis (InfinityFree, 000webhost, Hostinger Free) **tidak meny
 
 ---
 
-## 🔐 Security (v5.0.0)
+## 🔐 Security (v5.0.1)
 
 Web Command Center dilindungi dengan **3-layer security**:
 
@@ -112,7 +112,36 @@ https://yoursite.com/_system/seed
 
 ---
 
-### 4. System Status
+### 4. Database Schema Inspector (Paten Feature)
+
+**URL:** `/_system/schema`
+
+**Function:** Melihat daftar tabel dan jumlah baris data secara real-time.
+
+**Example:**
+
+```
+https://yoursite.com/_system/schema
+```
+
+**Response:**
+
+```
+🔍 DATABASE SCHEMA INSPECTOR
+==============================
+Found 2 tables:
+
+Table Name                     | Rows      
+---------------------------------------------
+users                          | 150       
+jobs                           | 25        
+---------------------------------------------
+✨ Schema scan completed!
+```
+
+---
+
+### 5. System Status
 
 **URL:** `/_system/status`
 
@@ -237,9 +266,9 @@ Browser will ask for username/password. Enter:
 - Username: Value dari `SYSTEM_AUTH_USER`
 - Password: Value dari `SYSTEM_AUTH_PASS`
 
-### Error: "Invalid Security Key" (DEPRECATED in v5.0.0)
+### Error: "Invalid Security Key" (DEPRECATED in v5.0.1)
 
-**Note:** APP_KEY requirement was removed in v5.0.0 final release to simplify hosting setup. You only need Basic Auth and IP Whitelist now.
+**Note:** APP_KEY requirement was removed in v5.0.1 final release to simplify hosting setup. You only need Basic Auth and IP Whitelist now.
 
 ---
 

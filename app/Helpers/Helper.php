@@ -4,39 +4,47 @@ namespace TheFramework\Helpers;
 
 use DateTime;
 use DateTimeZone;
-use TheFramework\App\Config;
-use TheFramework\App\Database;
+use TheFramework\App\Core\Config;
+use TheFramework\App\Database\Database;
+use TheFramework\App\Http\SessionManager;
 
+/**
+ * Main Helper Class - The Framework v5.0
+ * Pintu masuk utama untuk semua utilitas framework.
+ */
 class Helper
 {
     /**
-     * Ensure session is started.
-     * Delegates to SessionManager for consistent session handling.
+     * Session Ensure - Paten secure session.
      */
     private static function ensureSession()
     {
-        \TheFramework\App\SessionManager::startSecureSession();
+        SessionManager::startSecureSession();
     }
 
-    public static function url($path = '')
+    /**
+     * Generate URL aplikasi.
+     */
+    public static function url(string $path = ''): string
     {
+        if (preg_match('#^https?://#', $path)) return $path;
         $baseUrl = Config::get('BASE_URL') ?: '/';
         return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
     }
 
-    public static function redirect($url, $status = null, $message = null, $duration = 10)
+    /**
+     * Redirect dengan Flash Message premium.
+     */
+    public static function redirect(string $url, ?string $status = null, ?string $message = null, int $duration = 5): void
     {
         if ($status && $message) {
             $flashData = [
+                'redirect' => $url,
                 'status' => $status,
-                'message' => $message
+                'message' => $message,
+                'expires_at' => time() + $duration,
+                'duration' => $duration * 1000
             ];
-
-            if ($duration > 0) {
-                $flashData['expires_at'] = time() + $duration;
-                $flashData['duration'] = $duration * 1000;
-            }
-
             self::set_flash('notification', $flashData);
         }
 
@@ -48,98 +56,48 @@ class Helper
         }
     }
 
-    public static function redirectToNotFound()
-    {
-        header("Location: " . self::url('/404'));
-        exit();
-    }
-
+    /**
+     * Manipulasi Request (Wrapper).
+     */
     public static function request($key = null, $default = null)
     {
-        $requestData = array_merge($_GET, $_POST);
-        return new class ($requestData) {
+        $data = array_merge($_GET, $_POST);
+        if ($key !== null) return $data[$key] ?? $default;
+
+        return new class ($data) {
             private $data;
-
-            public function __construct($data)
-            {
-                $this->data = $data;
-            }
-
-            public function get($key = null, $default = null)
-            {
-                return $key === null ? $this->data : ($this->data[$key] ?? $default);
-            }
-
-            public function is($pattern)
-            {
-                $currentPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-                $pattern = str_replace('*', '.*', $pattern);
-                return preg_match("#^/?" . ltrim($pattern, '/') . "$#", $currentPath);
-            }
-
-            public function ip()
-            {
-                return Helper::get_client_ip();
-            }
+            public function __construct($data) { $this->data = $data; }
+            public function all() { return $this->data; }
+            public function only(array $keys) { return array_intersect_key($this->data, array_flip($keys)); }
+            public function except(array $keys) { return array_diff_key($this->data, array_flip($keys)); }
+            public function get($key, $default = null) { return $this->data[$key] ?? $default; }
+            public function has($key) { return isset($this->data[$key]); }
+            public function path() { return parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); }
+            public function ip() { return Helper::get_client_ip(); }
+            public function method() { return strtoupper($_SERVER['REQUEST_METHOD']); }
+            public function isMethod($method) { return strtoupper($_SERVER['REQUEST_METHOD']) === strtoupper($method); }
         };
     }
 
-    public static function set_flash($key, $message)
-    {
-        self::ensureSession();
-        $_SESSION[$key] = $message;
-    }
-
-    public static function get_flash($key)
-    {
-        self::ensureSession();
-
-        if (!isset($_SESSION[$key])) {
-            return null;
-        }
-
-        $data = $_SESSION[$key];
-
-        if (isset($data['expires_at']) && time() > $data['expires_at']) {
-            unset($_SESSION[$key]);
-            return null;
-        }
-
-        unset($_SESSION[$key]);
-        return $data;
-    }
-
-    public static function session_get($key, $default = null)
-    {
-        self::ensureSession();
-        return $_SESSION[$key] ?? $default;
-    }
-
     /**
-     * Ambil validation errors dari session
+     * Flash Messages.
      */
-    public static function validation_errors(?string $field = null): array|string|null
+    public static function set_flash(string $key, $value): void
     {
         self::ensureSession();
-        $errors = $_SESSION['validation_errors'] ?? [];
-
-        if ($field === null) {
-            return $errors;
-        }
-
-        return $errors[$field] ?? null;
+        $_SESSION['flash_system'][$key] = $value;
     }
 
-    /**
-     * Cek apakah ada validation error untuk field tertentu
-     */
-    public static function has_error(string $field): bool
+    public static function get_flash(string $key)
     {
-        return self::validation_errors($field) !== null;
+        self::ensureSession();
+        $value = $_SESSION['flash_system'][$key] ?? null;
+        unset($_SESSION['flash_system'][$key]);
+        return $value;
     }
 
     /**
-     * Ambil old input value (untuk form yang gagal validasi)
+     * Validation & Old Input.
      */
     public static function old(string $field, $default = null)
     {
@@ -147,138 +105,71 @@ class Helper
         return $_SESSION['old_input'][$field] ?? $default;
     }
 
-    public static function session_write($key, $value, $overwrite = false)
+    public static function validation_errors(?string $field = null)
     {
         self::ensureSession();
-
-        if ($overwrite || !isset($_SESSION[$key])) {
-            $_SESSION[$key] = $value;
-        } else {
-            $_SESSION[$key] = array_merge($_SESSION[$key], $value);
-        }
+        $errors = $_SESSION['validation_errors'] ?? [];
+        return $field === null ? $errors : ($errors[$field] ?? null);
     }
 
-    public static function session_destroy_all()
+    public static function has_error(string $field): bool
     {
-        self::ensureSession();
-        session_unset();
-        session_destroy();
+        return self::validation_errors($field) !== null;
     }
 
-
-
-    public static function e($string)
+    /**
+     * Formatting Utillities.
+     */
+    public static function rupiah($angka): string
     {
-        return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
+        return "Rp " . number_format((float)$angka, 0, ',', '.');
     }
 
-    public static function hash_password($password)
+    public static function e($string): string
     {
-        return password_hash($password, PASSWORD_BCRYPT);
+        return htmlspecialchars($string ?? '', ENT_QUOTES, 'UTF-8');
     }
 
-    public static function verify_password($password, $hashedPassword)
+    /**
+     * Security.
+     */
+    public static function hash_password(string $password): string
     {
-        return password_verify($password, $hashedPassword);
+        return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
     }
 
-    public static function is_email($email)
+    public static function uuid(): string
     {
-        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+        $data = random_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 
-    public static function current_date($format = 'Y-m-d H:i:s')
+    /**
+     * Networking.
+     */
+    public static function get_client_ip(): string
     {
-        date_default_timezone_set('Asia/Jakarta'); // Set timezone default untuk app Indonesia
-        return date($format);
-    }
-
-    public static function rupiah($angka)
-    {
-        return "Rp " . number_format($angka, 0, ',', '.');
-    }
-
-    public static function random_string($length = 16)
-    {
-        return bin2hex(random_bytes(ceil($length / 2)));
-    }
-
-    public static function is_ajax()
-    {
-        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
-    }
-
-    public static function json_redirect($url)
-    {
-        header('Content-Type: application/json');
-        echo json_encode(['redirect' => self::url($url)]);
-        exit();
-    }
-
-    public static function is_post()
-    {
-        return $_SERVER['REQUEST_METHOD'] === 'POST';
-    }
-
-    public static function is_get()
-    {
-        return $_SERVER['REQUEST_METHOD'] === 'GET';
-    }
-
-    public static function get_client_ip()
-    {
-        $ip_keys = ['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
-        foreach ($ip_keys as $key) {
+        foreach (['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'] as $key) {
             if (!empty($_SERVER[$key])) {
-                return filter_var($_SERVER[$key], FILTER_VALIDATE_IP);
+                $ips = explode(',', $_SERVER[$key]);
+                return filter_var(trim($ips[0]), FILTER_VALIDATE_IP) ?: '0.0.0.0';
             }
         }
         return '0.0.0.0';
     }
 
-    public static function is_csrf()
+    public static function is_ajax(): bool
     {
-        $result = false;
-        if (self::is_post()) {
-            $sessionServer = $_SESSION['csrf_token'];
-            $sessionForm = $_POST['_token'] ?? '';
-
-            if ($sessionServer === $sessionForm) {
-                $result = true;
-            }
-
-            return $result;
-        }
+        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
 
-    public static function is_submit($name, $decision)
-    {
-        return isset($_POST[$name]) && ($_POST[$name] === $decision) ? true : false;
-    }
-
-    public static function uuid(int $length = 36)
-    {
-        // Upgrade ke UUID v4 standar (128-bit, tapi potong jika length <128)
-        $data = random_bytes(16);
-        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // Set version 4
-        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // Set variant
-        $uuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-        return substr($uuid, 0, $length); // Potong jika length lebih pendek
-    }
-
-    public static function updateAt()
-    {
-        $time = Config::get("DB_TIMEZONE") ?: 'UTC';
-        try {
-            $dt = new DateTime('now', new DateTimeZone($time));
-        } catch (\Exception $e) {
-            $dt = new DateTime('now', new DateTimeZone('UTC'));
-        }
-        return $dt->format('Y-m-d H:i:s');
-    }
-
-    public static function json($data = [], $statusCode = 200)
+    /**
+     * JSON Response.
+     */
+    public static function json($data = [], int $statusCode = 200): void
     {
         http_response_code($statusCode);
         header('Content-Type: application/json');
@@ -286,8 +177,73 @@ class Helper
         exit();
     }
 
-    // Fungsi baru: Generate CSRF token
-    public static function generateCsrfToken()
+    /**
+     * JSON Redirect for AJAX requests.
+     */
+    public static function json_redirect(string $url): void
+    {
+        header('Content-Type: application/json');
+        echo json_encode(['redirect' => self::url($url)]);
+        exit();
+    }
+
+    /**
+     * Session Helpers.
+     */
+    public static function session_get(string $key, $default = null)
+    {
+        self::ensureSession();
+        return $_SESSION[$key] ?? $default;
+    }
+
+    public static function session_write(string $key, $value): void
+    {
+        self::ensureSession();
+        $_SESSION[$key] = $value;
+    }
+
+    public static function session_destroy_all(): void
+    {
+        self::ensureSession();
+        session_unset();
+        session_destroy();
+    }
+
+    public static function session_has(string $key): bool
+    {
+        self::ensureSession();
+        return isset($_SESSION[$key]);
+    }
+
+    public static function session_pull(string $key, $default = null)
+    {
+        $value = self::session_get($key, $default);
+        unset($_SESSION[$key]);
+        return $value;
+    }
+
+    /**
+     * Auth Token Helpers.
+     */
+    public static function getAuthToken(): ?string
+    {
+        return self::session_get('auth_token');
+    }
+
+    public static function validateAuthToken(string $token, string $uid): bool
+    {
+        $sessionToken = self::session_get('auth_token');
+        if (!$sessionToken) return false;
+        
+        // Sederhana: Token harus sama dengan di session
+        // Kita bisa tambahkan pengecekan fingerprint IP/User-Agent disini agar LEBIH AMAN.
+        return hash_equals($sessionToken, $token);
+    }
+
+    /**
+     * Security & CSRF.
+     */
+    public static function generateCsrfToken(): string
     {
         self::ensureSession();
         if (empty($_SESSION['csrf_token'])) {
@@ -296,84 +252,17 @@ class Helper
         return $_SESSION['csrf_token'];
     }
 
-    // Fungsi baru: Validate CSRF token
-    public static function validateCsrfToken($token)
+    public static function validateCsrfToken(?string $token): bool
     {
         self::ensureSession();
-        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token ?? '');
     }
 
-    // Fungsi baru: Sanitasi input recursive (untuk array input)
-    public static function sanitizeInput($input)
+    /**
+     * Slug Generation (Proxy to Str).
+     */
+    public static function slug(string $text): string
     {
-        if (is_array($input)) {
-            return array_map([self::class, 'sanitizeInput'], $input);
-        }
-        return trim(strip_tags($input));
-    }
-
-
-
-    // Fungsi baru: Generate pagination links
-    public static function paginate($totalItems, $perPage, $currentPage, $baseUrl)
-    {
-        $totalPages = ceil($totalItems / $perPage);
-        $links = [];
-
-        for ($i = 1; $i <= $totalPages; $i++) {
-            $links[] = [
-                'page' => $i,
-                'url' => $baseUrl . '?page=' . $i,
-                'active' => $i == $currentPage
-            ];
-        }
-
-        return $links;
-    }
-
-
-
-    // Fungsi baru: Generate slug untuk URL (misalnya news title ke slug)
-    public static function slugify($text)
-    {
-        $text = preg_replace('~[^\pL\d]+~u', '-', $text);
-        $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
-        $text = preg_replace('~[^-\w]+~', '', $text);
-        $text = trim($text, '-');
-        $text = preg_replace('~-+~', '-', $text);
-        return strtolower($text);
-    }
-
-    // Fungsi baru: Check user role cepat
-    public static function hasRole($role)
-    {
-        self::ensureSession();
-        return isset($_SESSION['user']['role_name']) && $_SESSION['user']['role_name'] === $role;
-    }
-
-    public static function setAuthToken($value)
-    {
-        $_SESSION['auth_token'] = self::generateAuthToken($value);
-    }
-
-    public static function getAuthToken()
-    {
-        return $_SESSION['auth_token'] ?? null;
-    }
-
-    public static function generateAuthToken($value)
-    {
-        return hash('sha256', $value . Config::get('APP_KEY'));
-    }
-
-    public static function validateAuthToken($storedToken, $value)
-    {
-        return hash_equals($storedToken, self::generateAuthToken($value));
-    }
-
-    public static function authToken($data)
-    {
-        self::setAuthToken($data);
+        return Str::slug($text);
     }
 }
-

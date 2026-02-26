@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Jobs;
+namespace TheFramework\Jobs;
 
-use TheFramework\App\Job;
+use TheFramework\App\Queue\Job;
 
 class ExampleJob extends Job
 {

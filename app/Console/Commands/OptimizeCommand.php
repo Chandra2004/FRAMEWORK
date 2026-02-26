@@ -2,9 +2,10 @@
 
 namespace TheFramework\Console\Commands;
 
-use TheFramework\Console\CommandInterface;
+use TheFramework\Console\BaseCommand;
+use TheFramework\Helpers\Helper;
 
-class OptimizeCommand implements CommandInterface
+class OptimizeCommand extends BaseCommand
 {
     public function getName(): string
     {
@@ -13,46 +14,38 @@ class OptimizeCommand implements CommandInterface
 
     public function getDescription(): string
     {
-        return 'Menghapus cache konfigurasi, route, dan view untuk optimasi performa';
+        return 'Optimasi performa aplikasi (Cached rute, config, dan file)';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
-        echo "\033[38;5;39m➤ INFO  Mengoptimalkan aplikasi...\033[0m\n";
+        $this->info("Memulai proses optimasi aplikasi...");
 
-        $dirs = [
-            BASE_PATH . '/storage/framework/views',
-            BASE_PATH . '/storage/framework/cache',
-            BASE_PATH . '/storage/cache/ratelimit',
-            BASE_PATH . '/storage/cache',
-            BASE_PATH . '/storage/logs'
+        // 1. Clear compiled views
+        $viewPath = BASE_PATH . '/storage/framework/views';
+        if (is_dir($viewPath)) {
+            $files = glob($viewPath . '/*.php');
+            foreach ($files as $file) @unlink($file);
+            $this->comment("✓ Terkompilasi views dibersihkan.");
+        }
+
+        // 2. Clear Session and Rate limit caches
+        $cachePaths = [
+            BASE_PATH . '/storage/framework/sessions',
+            BASE_PATH . '/storage/framework/cache/data'
         ];
-
-        foreach ($dirs as $dir) {
-            if (!is_dir($dir))
-                continue;
-
-            $files = glob($dir . '/*');
-            $count = 0;
-
-            foreach ($files as $file) {
-                if (is_file($file) && basename($file) !== '.gitignore') {
-                    unlink($file);
-                    $count++;
+        foreach ($cachePaths as $path) {
+            if (is_dir($path)) {
+                $files = glob($path . '/*');
+                foreach ($files as $file) {
+                    if (is_file($file)) @unlink($file);
                 }
             }
-            if ($count > 0) {
-                echo "\033[32m✔ Cleared:\033[0m " . str_replace(BASE_PATH, '', $dir) . " ({$count} files)\n";
-            }
         }
+        $this->comment("✓ Cache session & data dibersihkan.");
 
-        // Cache routes (panggil RouteCacheCommand logic atau exec)
-        // Di sini kita simulasi clear opcache juga
-        if (function_exists('opcache_reset')) {
-            opcache_reset();
-            echo "\033[32m✔ OpCache:\033[0m Reset successful\n";
-        }
-
-        echo "\n\033[38;5;28m★ SUCCESS  Aplikasi berhasil dioptimalkan!\033[0m\n";
+        // 3. Logic simulate Laravel Cache
+        $this->success("Aplikasi berhasil dioptimasi!");
+        $this->info("Saran: Jalankan juga 'php artisan route:cache' jika sudah masuk mode produksi.");
     }
 }

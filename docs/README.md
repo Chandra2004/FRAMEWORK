@@ -1,12 +1,18 @@
-# 📚 The Framework Documentation
-
 <div align="center">
 
-**Complete Guide to The Framework v5.1.0**
+**Complete Guide to The Framework v5.0.2**
 
 [Home](../README.md) • Documentation • [Get Started](#getting-started)
 
 </div>
+
+---
+
+**✨ New in v5.0.2 (The Fluent DX Update):**
+
+- 🛠️ **Clean Architecture:** Framework internal controllers moved to `App\Internal`.
+- 🚀 **Fluent Helpers:** Modern `view()`, `redirect()`, `json()`, and `flash()` syntax.
+- 🎨 **Cleaner Controllers:** Expressive return types without redundant imports.
 
 ---
 
@@ -19,25 +25,27 @@
 3. [Installation](installation.md) - Setup your first project
 4. [Configuration](environment.md) - Environment variables
 5. [Structure](structure.md) - Project folder structure
-6. [Deployment](deployment.md) - Deploy to production
+6. [Providers](providers.md) - Service providers and container binding
+7. [Services](services.md) - Business logic encapsulation (Thin Controllers)
+8. [Routing](routing.md) - Defining routes and parameters
+9. [Deployment](deployment.md) - Deploy to production
 
 ### 💻 The Basics
 
-7. [Routing](routing.md) - URL routing system
-8. [Controllers](controllers.md) - Handle HTTP requests
-9. [Views & Blade](views.md) - Template engine
-10. [Security](security.md) - CSRF, XSS, WAF
-11. [Validation](validation.md) - Input validation
+10. [Views & Blade](views.md) - Template engine
+11. [Security](security.md) - CSRF, XSS, WAF
+12. [Validation](validation.md) - Input validation
 
 ### 🗄️ Database
 
 12. [Database](database.md) - Query Builder & connections
 13. [Migrations](migrations.md) - Database version control
-14. [ORM & Models](orm.md) - Eloquent-like ORM
-15. [Relationships](relationships.md) - Model relations
-16. [Query Builder](query-builder.md) - Advanced queries
+14. [Schema Builder](schema-builder.md) - Column types, indexes & introspection ⭐ NEW
+15. [ORM & Models](orm.md) - Eloquent-like ORM
+16. [Relationships](relationships.md) - Model relations
+17. [Query Builder](query-builder.md) - Advanced queries
 
-**✨ New in v5.1.0:**
+**✨ New in v5.0.1:**
 
 - 🔑 [Foreign Keys & JOINs Guide](foreign-keys-joins-guide.md) - Visual guide with examples
 - 📋 [Foreign Keys & JOINs Reference](foreign-keys-joins-reference.md) - Quick reference cheat sheet
@@ -47,24 +55,25 @@
 
 16. [Architecture](architecture.md) - MVC pattern
 17. [Middleware](middleware.md) - HTTP middleware
-18. [Helpers](helpers.md) - Global functions
-19. [Performance](performance.md) - Caching & optimization
-20. [Testing](testing-guide.md) - Unit & feature tests
-21. [Localization](localization.md) - Multi-language
-22. [Docker](docker.md) - Containerization
-23. [Error Handling](error-handling.md) - Standard Patterns
-24. [Rate Limiting](rate-limiting.md) - Brute-force protection
+18. [Cache](cache.md) - Caching system ⭐ NEW
+19. [Helpers](helpers.md) - Global functions
+20. [Performance](performance.md) - Caching & optimization
+21. [Testing](testing-guide.md) - Unit & feature tests
+22. [Localization](localization.md) - Multi-language
+23. [Docker](docker.md) - Containerization
+24. [Error Handling](error-handling.md) - Standard Patterns
+25. [Rate Limiting](rate-limiting.md) - Brute-force protection
 
 ### 🌐 Unique Features
 
 25. [Web Command Center](web-command-center.md) - Manage without SSH ⭐
 26. [Tinker (Interactive Shell)](tinker.md) - Debug code live (CLI & Web) 💻
-27. [Artisan CLI](artisan.md) - Command-line tools
+27. [Artisan CLI Engine](artisan.md) - Command-line tools v5 ⭐
 28. [Queue System](queue.md) - Background jobs
 29. [SEO & Sitemap](seo.md) - Search engine optimization
-30. [Email](email.md) - SMTP sending
-31. [Payments](payment.md) - Midtrans integration
-32. [File Uploads](file-uploads.md) - UploadHandler
+30. [Email Handler](email.md) - SMTP & Queue sending ⭐
+31. [Payment Handler](payment.md) - Midtrans integration ⭐
+32. [Upload Handler](file-uploads.md) - Smart Image Engine ⭐
 
 ### 📝 Tutorials
 
@@ -187,9 +196,9 @@ Visit `/hello/World` → See "Hello, World!"
 
 | Version   | Status           | PHP  | Release Date | End of Life |
 | --------- | ---------------- | ---- | ------------ | ----------- |
-| **5.1.0** | ✅ **Current**   | 8.3+ | Feb 2026     | Feb 2028    |
+| **5.0.2** | ✅ **Current**   | 8.3+ | Feb 2026     | Feb 2028    |
+| 5.0.1     | ✅ Supported     | 8.3+ | Feb 2026     | Feb 2028    |
 | 5.0.0     | ✅ Supported     | 8.3+ | Jan 2026     | Jan 2028    |
-| 4.0.0     | ⚠️ Security only | 8.3+ | Jan 2026     | Jul 2026    |
 | 3.x       | ❌ End of life   | 8.1+ | -            | -           |
 
 **Always use the latest version for security patches!**

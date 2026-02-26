@@ -1,0 +1,73 @@
+<?php
+
+namespace {{namespace}};
+
+use TheFramework\Http\Controllers\Controller;
+use TheFramework\App\Http\Request;
+use TheFramework\App\Http\View;
+use TheFramework\Helpers\Helper;
+use Exception;
+
+class {{class}} extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        return View::render('{{view_path}}.index');
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return View::render('{{view_path}}.create');
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        // $data = $request->validate([...]);
+        
+        Helper::flash('notification', ['type' => 'success', 'message' => 'Data berhasil disimpan']);
+        return redirect('/{{route_path}}');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
+    {
+        return View::render('{{view_path}}.show', ['id' => $id]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        return View::render('{{view_path}}.edit', ['id' => $id]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        Helper::flash('notification', ['type' => 'success', 'message' => 'Data berhasil diupdate']);
+        return redirect('/{{route_path}}');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        Helper::flash('notification', ['type' => 'success', 'message' => 'Data berhasil dihapus']);
+        return redirect('/{{route_path}}');
+    }
+}

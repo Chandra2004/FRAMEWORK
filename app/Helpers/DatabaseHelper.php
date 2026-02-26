@@ -2,18 +2,17 @@
 
 namespace TheFramework\Helpers;
 
-use TheFramework\App\Database;
+use TheFramework\App\Database\Database;
+use Throwable;
 
 /**
- * Helper untuk mengelola database connection
+ * Database Helper - Paten Utility
+ * Mempermudah pengecekan status dan debugging database.
  */
 class DatabaseHelper
 {
     /**
-     * Disable database connection
-     * Gunakan ini jika aplikasi tidak memerlukan database
-     * 
-     * @return void
+     * Matikan koneksi database secara global.
      */
     public static function disable(): void
     {
@@ -21,9 +20,7 @@ class DatabaseHelper
     }
 
     /**
-     * Enable database connection
-     * 
-     * @return void
+     * Aktifkan koneksi database secara global.
      */
     public static function enable(): void
     {
@@ -31,9 +28,7 @@ class DatabaseHelper
     }
 
     /**
-     * Check apakah database enabled
-     * 
-     * @return bool
+     * Cek apakah fitur database diaktifkan di framework.
      */
     public static function isEnabled(): bool
     {
@@ -41,32 +36,43 @@ class DatabaseHelper
     }
 
     /**
-     * Check apakah database terhubung (hanya mengecek status property)
-     * 
-     * @return bool
-     */
-    public static function isConnected(): bool
-    {
-        try {
-            $db = Database::getInstance();
-            return $db->isConnected();
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Mencoba melakukan koneksi ke database dan mengembalikan statusnya
-     * 
-     * @return bool
+     * Test koneksi database secara cepat.
      */
     public static function testConnection(): bool
     {
+        return Database::getInstance()->testConnection();
+    }
+
+    /**
+     * Test koneksi database dengan metrik waktu.
+     * Mengembalikan array informasi detail.
+     */
+    public static function auditConnection(): array
+    {
+        $start = microtime(true);
+        $status = false;
+        $error = null;
+        $version = null;
+
         try {
             $db = Database::getInstance();
-            return $db->testConnection();
-        } catch (\Exception $e) {
-            return false;
+            $status = $db->testConnection();
+            if ($status) {
+                $db->query("SELECT VERSION() as v");
+                $version = $db->single()['v'] ?? 'Unknown';
+            }
+        } catch (Throwable $e) {
+            $error = $e->getMessage();
         }
+
+        $duration = (microtime(true) - $start) * 1000;
+
+        return [
+            'connected' => $status,
+            'latency_ms' => round($duration, 2),
+            'version' => $version,
+            'error' => $error,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
     }
 }

@@ -1,14 +1,15 @@
 <?php
 
 use TheFramework\BladeInit;
-use TheFramework\App\Config;
-use TheFramework\App\Router;
-use TheFramework\App\SessionManager;
-use TheFramework\Http\Controllers\Services\FileController;
+use TheFramework\App\Core\Config;
+use TheFramework\App\Http\Router;
+use TheFramework\App\Http\SessionManager;
+use TheFramework\App\Internal\Controllers\FileController;
 use TheFramework\Middleware\CsrfMiddleware;
-use TheFramework\App\Container;
-use TheFramework\App\Database;
-use TheFramework\App\Request;
+use TheFramework\App\Core\Container;
+use TheFramework\App\Database\Database;
+use TheFramework\App\Http\Request;
+use TheFramework\App\Http\RateLimiter;
 use TheFramework\App\Exceptions\Handler;
 use TheFramework\Helpers\Helper;
 use TheFramework\Services\UserService;
@@ -53,7 +54,7 @@ error_reporting(E_ALL);
 // Hanya jalankan logic HTTP spesifik jika bukan CLI
 if (php_sapi_name() !== 'cli') {
     // ✅ SECURITY FIX: Enabled security headers (were commented out!)
-    header('X-Powered-By: TheFramework-v5');
+    header('X-Powered-By: TheFramework-v5.0.1');
     header('X-Frame-Options: DENY');
     header('X-Content-Type-Options: nosniff');
     header('X-XSS-Protection: 1; mode=block');
@@ -68,7 +69,7 @@ if (php_sapi_name() !== 'cli') {
     // Rate Limiting Global
     // Menggunakan Helper::get_client_ip() untuk akurasi lebih baik (Proxy support)
     $ip = class_exists(Helper::class) ? Helper::get_client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-    TheFramework\App\RateLimiter::check($ip, 100, 120);
+    RateLimiter::check($ip, 100, 120);
 
     CsrfMiddleware::generateToken();
 }
@@ -91,6 +92,11 @@ $container->singleton(Request::class, function () {
 $container->singleton(UserService::class, function () {
     return new UserService();
 });
+
+// --- 🛠️ SERVICE PROVIDERS 🛠️ ---
+$appProvider = new \TheFramework\Providers\AppServiceProvider();
+$appProvider->register();
+$appProvider->boot();
 
 // --- ROUTING SYSTEM ---
 // Route File Serving Route (Private Uploads)

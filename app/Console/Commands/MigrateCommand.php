@@ -2,10 +2,10 @@
 
 namespace TheFramework\Console\Commands;
 
-use TheFramework\Console\CommandInterface;
+use TheFramework\Console\BaseCommand;
 use Throwable;
 
-class MigrateCommand implements CommandInterface
+class MigrateCommand extends BaseCommand
 {
     public function getName(): string
     {
@@ -14,82 +14,76 @@ class MigrateCommand implements CommandInterface
 
     public function getDescription(): string
     {
-        return 'Menjalankan migrasi database';
+        return 'Jalankan database migration dengan status tracking';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
         $migrationDir = BASE_PATH . '/database/migrations/';
         $migrationFiles = glob($migrationDir . '*.php');
 
         if (empty($migrationFiles)) {
-            echo "\033[38;5;214m⚠ WARNING  Tidak ada file migrasi ditemukan di $migrationDir\033[0m\n";
+            $this->warn("Tidak ada file migrasi ditemukan.");
             return;
         }
 
-        // Init Migrator
-        $migrator = new \TheFramework\App\Migrator();
-        $migrator->ensureTableExists();
+        $migrator = new \TheFramework\App\Schema\Migrator();
+        try {
+            $migrator->ensureTableExists();
+        } catch (Throwable $e) {
+            $this->error("Koneksi Database Gagal: " . $e->getMessage());
+            return;
+        }
 
-        // Ambil migrasi yang sudah pernah dijalankan dari DB
         $ran = $migrator->getRan();
-
-        // Cari file yang belum dijalankan (Pending)
-        $pendingMigrations = [];
+        $pending = [];
         foreach ($migrationFiles as $file) {
-            $baseName = basename($file, '.php');
-            if (!in_array($baseName, $ran)) {
-                $pendingMigrations[] = $file;
+            $base = basename($file, '.php');
+            if (!in_array($base, $ran)) {
+                $pending[] = $file;
             }
         }
 
-        if (empty($pendingMigrations)) {
-            echo "\033[38;5;28m➤ INFO  Tidak ada migrasi baru (Database up to date).\033[0m\n";
+        if (empty($pending)) {
+            $this->success("Database sudah up to date.");
             return;
         }
 
-        echo "\033[38;5;39m➤ INFO  Menjalankan " . count($pendingMigrations) . " migrasi baru...";
-        echo "\033[0m\n";
+        $this->info("Ditemukan " . count($pending) . " migrasi baru.");
+        if (!$this->confirm("Jalankan migrasi sekarang?", true)) {
+            $this->comment("Migrasi dibatalkan.");
+            return;
+        }
 
-        // Tentukan Batch ID baru
         $batch = $migrator->getNextBatchNumber();
+        sort($pending);
 
-        // Urutkan berdasarkan nama file (timestamp yang ada di prefix nama file)
-        sort($pendingMigrations);
-
-        foreach ($pendingMigrations as $file) {
+        foreach ($pending as $file) {
             $baseName = basename($file, '.php');
             require_once $file;
-
-            // Nama class harus sesuai konvensi: 2024_01_01_users -> Database\Migrations\Migration_2024_01_01_users
-            // Tapi karena user mungkin pakai nama custom, kita coba guess nama class
-            // Asumsi: Class name = 'Migration_' . filename (seperti di command make:migration)
-            // Atau kita bisa parse file content untuk cari class name, tapi itu berat.
-            // Mari kita standarkan: Class name di file migrasi harus "Migration_{filename}" 
-            // ATAU kita bisa pakai return new class di file migrasi (anonymous class) ala Laravel 8+.
-            // Untuk sekarang kita pakai standar Framework ini:
+            
             $migrationClass = 'Database\\Migrations\\Migration_' . $baseName;
 
             if (class_exists($migrationClass)) {
                 try {
+                    $this->comment("Migrating: $baseName");
                     $migration = new $migrationClass();
-                    echo "\033[38;5;39m➤ INFO  Processing: $baseName\033[0m\n";
-
+                    
+                    $start = microtime(true);
                     $migration->up();
-
-                    // Catat ke DB bahwa ini sukses
                     $migrator->log($baseName, $batch);
+                    $duration = round((microtime(true) - $start) * 1000, 2);
 
-                    echo "\033[38;5;28m  ✓ Done\033[0m\n";
+                    echo self::COLOR_GREEN . "  DONE " . self::COLOR_RESET . "$baseName ($duration ms)" . PHP_EOL;
                 } catch (Throwable $e) {
-                    echo "\033[38;5;124m✖ ERROR  Gagal pada $baseName: " . $e->getMessage() . "\033[0m\n";
-                    return; // Stop jika ada satu yang gagal
+                    $this->error("Gagal pada $baseName: " . $e->getMessage());
+                    return;
                 }
             } else {
-                echo "\033[38;5;214m⚠ SKIPPED  Class '$migrationClass' tidak ditemukan di file.\033[0m\n";
+                $this->warn("Class '$migrationClass' tidak ditemukan di file.");
             }
         }
 
-        echo "\033[38;5;28m★ SUCCESS  Semua migrasi berhasil dijalankan.\033[0m\n";
+        $this->success("Semua migrasi berhasil dijalankan (Batch $batch).");
     }
 }

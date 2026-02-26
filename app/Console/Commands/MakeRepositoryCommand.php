@@ -49,7 +49,7 @@ class MakeRepositoryCommand implements CommandInterface
 
 namespace $namespace;
 
-use TheFramework\App\Database;
+use TheFramework\App\Database\Database;
 
 class $className
 {

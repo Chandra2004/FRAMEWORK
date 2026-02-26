@@ -39,7 +39,7 @@ Common questions and answers about The Framework.
 
 ### Q: Apakah production-ready?
 
-**A:** **YA** untuk aplikasi skala kecil-menengah. Version 5.0.0 memiliki security grade **A-** dan sudah melewati comprehensive security audit.
+**A:** **YA** untuk aplikasi skala kecil-menengah. Version 5.0.1 memiliki security grade **A-** dan sudah melewati comprehensive security audit.
 
 **Production-ready untuk:**
 
@@ -173,7 +173,7 @@ DB_TIMEZONE=+00:00
 
 **A:** **YA**, dengan catatan:
 
-**Built-in Security (v5.0.0):**
+**Built-in Security (v5.0.1):**
 
 - ✅ SQL Injection protection (Prepared Statements)
 - ✅ XSS protection (Auto-escaping)
@@ -194,7 +194,7 @@ DB_TIMEZONE=+00:00
 
 ### Q: Web Command Center aman?
 
-**A:** **YA**, jika dikonfigurasi benar (v5.0.0):
+**A:** **YA**, jika dikonfigurasi benar (v5.0.1):
 
 **3-Layer Security:**
 
@@ -304,7 +304,7 @@ php artisan make:command SendNewsletterCommand
 
 ### Q: Support real-time features (WebSocket)?
 
-**A:** **BELUM**. Version 5.0.0 tidak include WebSocket server.
+**A:** **BELUM**. Version 5.0.1 tidak include WebSocket server.
 
 **Alternative:**
 

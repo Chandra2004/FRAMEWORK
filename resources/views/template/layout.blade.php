@@ -138,7 +138,7 @@
                     <div class="relative group h-full flex items-center">
                         <button
                             class="flex items-center text-gray-400 hover:text-cyan-400 transition-all font-medium gap-1 py-4">
-                            <span class="uppercase">{{ \TheFramework\App\Lang::getLocale() }}</span>
+                            <span class="uppercase">{{ app_locale() }}</span>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 9l-7 7-7-7"></path>

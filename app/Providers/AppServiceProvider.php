@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Providers;
+namespace TheFramework\Providers;
 
-use TheFramework\App\Container;
+use TheFramework\App\Core\Container;
 
 class AppServiceProvider
 {
