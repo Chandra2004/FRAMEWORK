@@ -81,6 +81,9 @@
           cp .env.example .env
           php artisan setup
           composer install
+          
+          # Bersihkan file dokumentasi internal setelah instalasi berhasil
+          rm -rf SECURITY.md CONTRIBUTING.md CODE_OF_CONDUCT.md CHANGELOG.md docs/
         '';
         
         # Setup Database (Tunggu mysql ready lalu buat DB)
