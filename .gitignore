@@ -1,63 +1,73 @@
-# Environment Variables
+#-----------------------------------------------------------------------------
+# ENVIRONMENTS & SECRETS
+#-----------------------------------------------------------------------------
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
+*.key
+*.pem
 testing.txt
 
-# Dependencies
+#-----------------------------------------------------------------------------
+# DEPENDENCIES
+#-----------------------------------------------------------------------------
 /vendor/
+node_modules/
+npm-debug.log
+yarn-error.log
 composer.phar
 
-# Storage & Cache (Ignore contents, keep directory structure)
-/storage/session/*
-!/storage/session/.gitignore
-/storage/logs/*
-!/storage/logs/.gitignore
-/storage/framework/views/*
-!/storage/framework/views/.gitignore
-/storage/framework/cache/*
-!/storage/framework/cache/.gitignore
-/storage/cache/*
-!/storage/cache/.gitignore
+#-----------------------------------------------------------------------------
+# RUNTIME, CACHES, & LOGS (Preserve Directory Structures)
+#-----------------------------------------------------------------------------
 /storage/app/*
 !/storage/app/.gitignore
+/storage/cache/*
+!/storage/cache/.gitignore
+/storage/framework/cache/*
+!/storage/framework/cache/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/session/*
+!/storage/session/.gitignore
 
-/.PENILAIAN/*
-# User Uploads (Ignore file uploads)
+#-----------------------------------------------------------------------------
+# SYSTEM UPLOADS
+#-----------------------------------------------------------------------------
 /private-uploads/*
 !/private-uploads/.gitignore
 !/private-uploads/shared/
 /public/assets/uploads/*
 !/public/assets/uploads/.gitignore
 
-# System & IDE Files
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-.idx/
-*.swp
-*.swo
-
-# Temporary Files
+#-----------------------------------------------------------------------------
+# FRAMEWORK TESTING & DEBUGGING
+#-----------------------------------------------------------------------------
+.phpunit.cache
+.phpunit.result.cache
 *.log
 *.tmp
 *.bak
 
-# Node Modules (Jika nanti pakai frontend build tools)
-node_modules/
-npm-debug.log
+#-----------------------------------------------------------------------------
+# OS & IDE
+#-----------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# Test Cache
-.phpunit.cache
-.phpunit.result.cache
-
-# INTERNAL AUDIT DOCS (DO NOT COMMIT)
+#-----------------------------------------------------------------------------
+# PROJECT SPECIFIC (Audit & Verification)
+#-----------------------------------------------------------------------------
+/.PENILAIAN/
+.AUDIT/
+.BACKUP/
 QA_AUDIT.md
 QA_CATEGORIZED_ISSUES.md
 SECURITY_AUDIT_REPORT.md
-.AUDIT/
-.BACKUP/
-
-# Google Verification
 google*.html
