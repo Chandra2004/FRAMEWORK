@@ -81,12 +81,15 @@ Our documentation is comprehensive, well-organized, and beginner-friendly:
 - [🛣️ Routing](docs/routing.md) - URL routing and parameters
 - [🌍 HTTP Module (New!)](docs/http.md) - Request, Router, Session & Validator
 - [🎨 Views & Blade](docs/views.md) - Templating engine
+- [🎨 Blade Engine](docs/blade.md) - Custom directives & initialization ⭐ NEW
+- [🔒 Session Manager](docs/session.md) - Secure session & flash data ⭐ NEW
 - [🔐 Security](docs/security.md) - CSRF, XSS, WAF protection
 - [✅ Validation](docs/validation.md) - Input validation rules
 
 ### **Database**
 
 - [🗄️ Database](docs/database.md) - Query Builder & connections
+- [🗄️ Database Engine](docs/database-engine.md) - PDO wrapper, transactions & savepoints ⭐ NEW
 - [📊 Migrations](docs/migrations.md) - Database version control
 - [🏗️ Schema Builder](docs/schema-builder.md) - Column types, indexes & introspection ⭐ NEW
 - [🔗 ORM &amp; Relations](docs/orm.md) - Eloquent-like ORM
@@ -94,8 +97,12 @@ Our documentation is comprehensive, well-organized, and beginner-friendly:
 ### **Advanced Topics**
 
 - [🏗️ Architecture](docs/architecture.md) - MVC pattern explained
+- [📦 DI Container](docs/container.md) - Dependency Injection & auto-wiring ⭐ NEW
+- [📝 Logging](docs/logging.md) - Multi-channel logging system ⭐ NEW
 - [⚡ Cache](docs/cache.md) - Caching system (File, Array, Database) ⭐ NEW
 - [🔧 Core](docs/core.md) - Config, Container, Lang, Logging ⭐ NEW
+- [🛠️ Utility Classes](docs/utilities.md) - Arr, Str, Collection, DatabaseHelper ⭐ NEW
+- [🔄 CRUD Trait](docs/crud-trait.md) - Auto CRUD via Trait ⭐ NEW
 - [🚀 Performance](docs/performance.md) - Caching & optimization
 - [🧪 Testing](docs/testing-guide.md) - Unit & feature testing
 - [🚢 Deployment](docs/deployment.md) - Deploy to production
@@ -105,8 +112,9 @@ Our documentation is comprehensive, well-organized, and beginner-friendly:
 ### **Special Features**
 
 - [🌐 Web Command Center](docs/web-command-center.md) - Manage without SSH
-- [💻 Tinker (Interactive Shell)](docs/tinker.md) - Debug code live (CLI & Web) ⭐
+- [💛 Tinker (Interactive Shell)](docs/tinker.md) - Debug code live (CLI & Web) ⭐
 - [🛠️ Artisan CLI](docs/artisan.md) - Command-line tools
+- [🖥️ Console Engine](docs/console.md) - BaseCommand, 41 commands & stubs ⭐ NEW
 - [🌍 Localization](docs/localization.md) - Multi-language support
 - [🗺️ SEO & Sitemap](docs/seo.md) - SEO best practices
 - [📧 Email Handler](docs/email.md) - SMTP & Queue Support ⭐
