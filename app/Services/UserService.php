@@ -52,6 +52,9 @@ class UserService
         }
 
         $data = $request->validated();
+        if (array_key_exists('delete_profile_picture', $data)) {
+            unset($data['delete_profile_picture']);
+        }
         $data['profile_picture'] = $photoName;
         $data['uid'] = Helper::uuid();
 
@@ -80,7 +83,7 @@ class UserService
             throw new Exception('Email is taken');
         }
 
-        $data = $request->updateValidated();
+        $data = $request->validated();
 
         $oldPhoto = $existingUser['profile_picture'] ?? null;
         if (!empty($data['delete_profile_picture']) && $oldPhoto) {

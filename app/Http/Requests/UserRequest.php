@@ -2,41 +2,30 @@
 
 namespace TheFramework\Http\Requests;
 
-use TheFramework\App\Http\Request;
+use TheFramework\App\Http\FormRequest;
 
-class UserRequest extends Request
+class UserRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [
             'name' => 'required|min:3|max:100',
             'email' => 'required|email',
             'profile_picture' => 'nullable|file|images|max:2048',
+            'delete_profile_picture' => 'nullable'
         ];
     }
 
-    public function updateRule(): array
-    {
-        return array_merge($this->rules(), [
-            'delete_profile_picture' => 'nullable'
-        ]);
-    }
-
-    public function messages(): array
+    public function labels(): array
     {
         return [
-            'name' => 'Name is required',
-            'email' => 'Email is required'
+            'name' => 'Name',
+            'email' => 'Email Address'
         ];
-    }
-
-    public function validated(): array
-    {
-        return $this->validate($this->rules(), $this->messages());
-    }
-
-    public function updateValidated(): array
-    {
-        return $this->validate($this->updateRule(), $this->messages());
     }
 }
