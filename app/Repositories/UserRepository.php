@@ -2,118 +2,89 @@
 
 namespace TheFramework\Repositories;
 
+use Exception;
+use TheFramework\App\Database\Database;
 use TheFramework\Models\User;
 
-/**
- * UserRepository — Data Access Layer
- *
- * Abstraksi query untuk model User.
- * Controller TIDAK boleh akses database langsung.
- * Alurnya: Controller → Service → Repository → Model.
- *
- * @package TheFramework\Repositories
- * @version 5.0.3
- */
 class UserRepository
 {
     protected User $model;
+    protected Database $db;
+
 
     public function __construct()
     {
         $this->model = new User();
+        $this->db = Database::getInstance();
     }
 
-    /**
-     * Ambil semua user (diurutkan terbaru).
-     */
-    public function getAll(): array
+    public function getAll()
     {
-        return $this->model->query()
+        return $this->model
+            ->query()
             ->orderBy('updated_at', 'DESC')
             ->get();
     }
 
-    /**
-     * Cari user berdasarkan UID.
-     */
-    public function findByUid(string $uid): ?array
+    public function getInformation(string $uid)
     {
-        $result = $this->model->find($uid);
-        return $result ?: null;
+        return $this->model->where('uid', '=', $uid)->first();
     }
 
-    /**
-     * Cari user berdasarkan email.
-     */
-    public function findByEmail(string $email): ?array
-    {
-        $result = $this->model->query()->where('email', '=', $email)->first();
-        return $result ?: null;
-    }
-
-    /**
-     * Cari user berdasarkan nama.
-     */
-    public function findByName(string $name): ?array
-    {
-        $result = $this->model->query()->where('name', '=', $name)->first();
-        return $result ?: null;
-    }
-
-    /**
-     * Cek apakah nama sudah dipakai (exclude UID tertentu).
-     */
-    public function isNameTaken(string $name, ?string $excludeUid = null): bool
-    {
-        $query = $this->model->query()->where('name', '=', $name);
-        if ($excludeUid) {
-            $query->where('uid', '!=', $excludeUid);
-        }
-        return (bool) $query->first();
-    }
-
-    /**
-     * Cek apakah email sudah dipakai (exclude UID tertentu).
-     */
-    public function isEmailTaken(string $email, ?string $excludeUid = null): bool
+    public function findByEmail(string $email, ?string $uid = null)
     {
         $query = $this->model->query()->where('email', '=', $email);
-        if ($excludeUid) {
-            $query->where('uid', '!=', $excludeUid);
+        if ($uid) {
+            $query->where('uid', '!=', $uid);
         }
-        return (bool) $query->first();
+        return $query->first();
     }
 
-    /**
-     * Buat user baru.
-     */
-    public function create(array $data): bool
+    public function findByName(string $name, ?string $uid = null)
     {
-        return $this->model->create($data);
+        $query = $this->model->query()->where('name', '=', $name);
+        if ($uid) {
+            $query->where('uid', '!=', $uid);
+        }
+        return $query->first();
     }
 
-    /**
-     * Update user berdasarkan UID.
-     */
-    public function update(array $data, string $uid): bool
+    public function createRepo(array $data)
     {
-        return $this->model->update($data, $uid);
+        try {
+            $this->db->beginTransaction();
+            $createUser = $this->model->create($data);
+            $this->db->commit();
+            return $createUser;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            throw $e;
+        }
+    }
+    
+    public function updateRepo(array $data, string $uid)
+    {
+        try {
+            $this->db->beginTransaction();
+            $updateUser = $this->model->where('uid', '=', $uid)->update($data);
+            $this->db->commit();
+            return $updateUser;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            throw $e;
+        }
     }
 
-    /**
-     * Hapus user berdasarkan UID.
-     */
-    public function delete(string $uid): bool
+    public function deleteRepo(string $uid)
     {
-        return $this->model->delete($uid);
-    }
-
-    /**
-     * Hitung total user.
-     */
-    public function count(): int
-    {
-        $result = $this->model->query()->select('COUNT(*) as total')->first();
-        return (int) ($result['total'] ?? 0);
+        try {
+            $this->db->beginTransaction();
+            $deleteUser = $this->model->where('uid', '=', $uid)->delete();
+            $this->db->commit();
+            return $deleteUser;
+        } catch (Exception $e) {
+            $this->db->rollback();
+            throw $e;
+        }
     }
 }

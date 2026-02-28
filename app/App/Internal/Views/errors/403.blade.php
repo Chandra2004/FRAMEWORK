@@ -1,76 +1,166 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ url('/assets/ico/favicon-debug.ico') }}">
-    <title>403 - Akses Dilarang | The Framework</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>403 — Forbidden</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        .glow-security {
-            text-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0a0a0c;
+            color: #f4f4f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            max-width: 500px;
+            padding: 40px;
+        }
+
+        .error-code {
+            font-size: 140px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -8px;
+        }
+
+        .error-code span {
+            background: linear-gradient(135deg, #F59E0B, #FBBF24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 16px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f4f4f5;
+            margin: 16px 0 8px;
+        }
+
+        .desc {
+            color: #71717a;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+            color: #18181b;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #a1a1aa;
+        }
+
+        .btn-secondary:hover {
+            background: #27272a;
+            color: #f4f4f5;
         }
     </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-6">
-    <div class="max-w-xl w-full text-center space-y-8">
-        <div class="relative inline-block">
-            <div class="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full"></div>
-            <i data-lucide="shield-off" class="w-32 h-32 text-blue-500 relative mx-auto animate-pulse"></i>
+<body>
+    <div class="container">
+        <div class="icon">
+            <svg width="28" height="28" fill="none" stroke="#F59E0B" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 15v.01M12 9v2m-7 4h14l-7-12-7 12z"></path>
+            </svg>
         </div>
-
-        <div class="space-y-4">
-            <h1 class="text-8xl font-black text-white glow-security tracking-tighter">403</h1>
-            <h2 class="text-2xl font-bold text-slate-200">Akses Dilarang (Forbidden)</h2>
-            <p class="text-slate-400 leading-relaxed">
-                Maaf, Anda tidak memiliki izin untuk mengakses halaman atau sumber daya ini. Ini mungkin karena sesi
-                Anda berakhir atau level akun Anda tidak mencukupi.
-            </p>
-        </div>
-
-        <div class="grid grid-cols-1 gap-4 text-left">
-            <div class="bg-slate-900/50 border border-white/5 rounded-xl p-4 flex items-center gap-4">
-                <div class="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                    <i data-lucide="lock" class="w-5 h-5 text-blue-400"></i>
-                </div>
-                <div>
-                    <div class="text-[10px] font-black text-slate-500 uppercase">Reason Code</div>
-                    <div class="text-sm font-mono text-slate-300">AUTH_PERMISSION_DENIED</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-center gap-4 pt-4">
-            <a href="{{ url('/') }}"
-                class="px-8 py-3 bg-white text-black font-black rounded-full hover:bg-slate-200 transition-all flex items-center gap-2">
-                <i data-lucide="home" class="w-4 h-4"></i>
-                Kembali ke Beranda
+        <div class="error-code"><span>403</span></div>
+        <h1 class="title">Access Denied</h1>
+        <p class="desc">Anda tidak memiliki izin untuk mengakses halaman ini. Jika Anda yakin ini adalah kesalahan,
+            hubungi administrator.</p>
+        <div class="actions">
+            <a href="{{ url('/') }}" class="btn btn-primary">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Kembali ke Home
             </a>
-            <button onclick="history.back()"
-                class="px-8 py-3 bg-slate-900 border border-slate-700 text-white font-black rounded-full hover:bg-slate-800 transition-all">
-                Kembali
-            </button>
-        </div>
-
-        <div class="text-xs text-slate-600 pt-8 font-mono">
-            IP: {{ $_SERVER['REMOTE_ADDR'] }} | {{ date('Y-m-d H:i:s') }}
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Go Back
+            </a>
         </div>
     </div>
-
-    <script>
-        lucide.createIcons();
-    </script>
 </body>
 
 </html>

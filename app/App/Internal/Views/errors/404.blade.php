@@ -1,79 +1,169 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ url('/assets/ico/favicon-debug.ico') }}">
-    <title>404 - Halaman Tidak Ditemukan | The Framework</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>404 — Page Not Found</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        .glow-404 {
-            text-shadow: 0 0 30px rgba(148, 163, 184, 0.3);
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0a0a0c;
+            color: #f4f4f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            max-width: 500px;
+            padding: 40px;
+        }
+
+        .error-code {
+            font-size: 140px;
+            font-weight: 900;
+            line-height: 1;
+            color: #18181b;
+            letter-spacing: -8px;
+            position: relative;
+        }
+
+        .error-code span {
+            background: linear-gradient(135deg, #3B82F6, #60A5FA);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f4f4f5;
+            margin: 16px 0 8px;
+        }
+
+        .desc {
+            color: #71717a;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #a1a1aa;
+        }
+
+        .btn-secondary:hover {
+            background: #27272a;
+            color: #f4f4f5;
+        }
+
+        .suggestion {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #1e1e22;
+            color: #52525b;
+            font-size: 12px;
+        }
+
+        .suggestion code {
+            background: #18181b;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #71717a;
+            font-size: 12px;
         }
     </style>
 </head>
 
-<body
-    class="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_50%_50%,_#161b22_0%,_#0d1117_100%)]">
-    <div class="max-w-2xl w-full text-center space-y-8">
-        <div class="space-y-4">
-            <h1
-                class="text-[12rem] font-black text-white glow-404 leading-none tracking-tighter opacity-10 select-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                404</h1>
-
-            <div class="relative">
-                <i data-lucide="map" class="w-24 h-24 text-slate-500 mx-auto mb-6"></i>
-                <h2 class="text-4xl font-bold text-white tracking-tight">Halaman Hilang?</h2>
-                <p class="text-slate-400 text-lg mt-4 max-w-md mx-auto">
-                    Kami mencari di mana-mana, tapi sepertinya halaman yang Anda cari telah dipindahkan atau tidak
-                    pernah ada.
-                </p>
-            </div>
+<body>
+    <div class="container">
+        <div class="error-code"><span>404</span></div>
+        <h1 class="title">Page Not Found</h1>
+        <p class="desc">Halaman yang Anda cari tidak ditemukan. Mungkin sudah dihapus, dipindahkan, atau URL yang
+            dimasukkan salah.</p>
+        <div class="actions">
+            <a href="{{ url('/') }}" class="btn btn-primary">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Kembali ke Home
+            </a>
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Go Back
+            </a>
         </div>
-
-        <div class="bg-slate-900/40 border border-white/5 rounded-2xl p-6 backdrop-blur-sm max-w-sm mx-auto">
-            <div class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 leading-none">Mungkin yang Anda
-                cari:</div>
-            <div class="space-y-2">
-                <a href="{{ url('/') }}"
-                    class="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all group">
-                    <i data-lucide="home" class="w-4 h-4 text-blue-400"></i>
-                    <span class="text-sm font-medium">Beranda Utama</span>
-                    <i data-lucide="chevron-right"
-                        class="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all"></i>
-                </a>
-                <a href="https://github.com/Chandra2004/FRAMEWORK" target="_blank"
-                    class="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all group">
-                    <i data-lucide="github" class="w-4 h-4 text-slate-400"></i>
-                    <span class="text-sm font-medium">Repositori Github</span>
-                    <i data-lucide="chevron-right"
-                        class="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all"></i>
-                </a>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-center gap-4 pt-4">
-            <button onclick="history.back()"
-                class="px-8 py-3 bg-slate-100 text-black font-black rounded-full hover:bg-white transition-all flex items-center gap-2">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                Kembali
-            </button>
+        <div class="suggestion">
+            <code>{{ $_SERVER['REQUEST_METHOD'] ?? 'GET' }} {{ $_SERVER['REQUEST_URI'] ?? '/' }}</code>
         </div>
     </div>
-
-    <script>
-        lucide.createIcons();
-    </script>
 </body>
 
 </html>

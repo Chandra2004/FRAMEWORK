@@ -27,7 +27,7 @@ class MakeCrudCommand implements CommandInterface
     {
         $name = $args[0] ?? null;
         if (!$name) {
-            echo "\033[38;5;124m✖ ERROR  Harap masukkan nama resource (mis. User)\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Harap masukkan nama resource (mis. User)\n";
             exit(1);
         }
 
@@ -39,23 +39,55 @@ class MakeCrudCommand implements CommandInterface
         $routePath = '/' . $slug;
         $viewDir = $this->basePath . '/resources/Views/' . $slug;
 
+        $repositoryClass = $base . 'Repository';
+
         $this->makeController($controllerClass, $modelClass, $requestClass, $slug, $routePath);
         $this->makeModel($modelClass, $slug);
-        $this->makeService($base, $modelClass);
+        $this->makeRepository($base, $modelClass);
+        $this->makeService($base, $repositoryClass);
         $this->makeRequest($requestClass);
         $this->makeViews($viewDir, $slug, $base);
         $this->appendRoute($controllerClass, $routePath);
 
-        echo "\033[38;5;28m★ SUCCESS  CRUD scaffolded untuk {$base}\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m CRUD scaffolded untuk {$base}\n";
         echo "  Controller : app/Http/Controllers/{$controllerClass}.php\n";
-        echo "  Model      : app/Models/{$modelClass}.php\n";
         echo "  Request    : app/Http/Requests/{$requestClass}.php\n";
+        echo "  Service    : app/Services/{$base}Service.php\n";
+        echo "  Repository : app/Repositories/{$repositoryClass}.php\n";
+        echo "  Model      : app/Models/{$modelClass}.php\n";
         echo "  Views      : resources/Views/{$slug}/\n";
         echo "  Route      : routes/web.php (Router::resource '{$routePath}')\n";
-        echo "  Service    : app/Services/{$base}Service.php\n";
     }
 
-    private function makeService(string $base, string $model): void
+    private function makeRepository(string $base, string $model): void
+    {
+        $repositoryClass = $base . 'Repository';
+        $path = $this->basePath . "/app/Repositories/{$repositoryClass}.php";
+        if (file_exists($path)) {
+            echo "\033[38;5;214mℹ SKIP   Repository sudah ada: {$repositoryClass}\033[0m\n";
+            return;
+        }
+
+        $stubPath = $this->basePath . '/app/Console/Stubs/repository.crud.stub';
+        if (!file_exists($stubPath)) {
+            echo "\n  \033[1;41;97m ERROR \033[0m Stub tidak ditemukan di app/Console/Stubs/repository.crud.stub\n";
+            return;
+        }
+
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{model}}', '{{class}}'],
+            [$model, $repositoryClass],
+            $content
+        );
+
+        if (!is_dir(dirname($path)))
+            mkdir(dirname($path), 0755, true);
+        file_put_contents($path, $content);
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Repository dibuat: {$repositoryClass}\n";
+    }
+
+    private function makeService(string $base, string $repository): void
     {
         $serviceClass = $base . 'Service';
         $path = $this->basePath . "/app/Services/{$serviceClass}.php";
@@ -64,47 +96,23 @@ class MakeCrudCommand implements CommandInterface
             return;
         }
 
-        $modelVar = lcfirst($model);
-        $varName = '$' . $modelVar;
+        $stubPath = $this->basePath . '/app/Console/Stubs/service.stub';
+        if (!file_exists($stubPath)) {
+            echo "\n  \033[1;41;97m ERROR \033[0m Stub tidak ditemukan di app/Console/Stubs/service.stub\n";
+            return;
+        }
 
-        $content = "<?php\n\n";
-        $content .= "namespace TheFramework\\Services;\n\n";
-        $content .= "use TheFramework\\Models\\{$model};\n\n";
-        $content .= "class {$serviceClass}\n";
-        $content .= "{\n";
-        $content .= "    protected {$varName};\n\n";
-        $content .= "    public function __construct()\n";
-        $content .= "    {\n";
-        $content .= "        {$varName} = null;\n";
-        $content .= "        \$this->{$modelVar} = new {$model}();\n";
-        $content .= "    }\n\n";
-        $content .= "    // Example methods - implement business logic here\n";
-        $content .= "    public function getAll()\n";
-        $content .= "    {\n";
-        $content .= "        return \$this->{$modelVar}->GetAllUsers();\n";
-        $content .= "    }\n\n";
-        $content .= "    public function find(string \$id)\n";
-        $content .= "    {\n";
-        $content .= "        return \$this->{$modelVar}->InformationUser(\$id);\n";
-        $content .= "    }\n\n";
-        $content .= "    public function create(array \$data)\n";
-        $content .= "    {\n";
-        $content .= "        return \$this->{$modelVar}->CreateUser(\$data);\n";
-        $content .= "    }\n\n";
-        $content .= "    public function update(string \$id, array \$data)\n";
-        $content .= "    {\n";
-        $content .= "        return \$this->{$modelVar}->UpdateUser(\$data, \$id);\n";
-        $content .= "    }\n\n";
-        $content .= "    public function delete(string \$id)\n";
-        $content .= "    {\n";
-        $content .= "        return \$this->{$modelVar}->DeleteUser(\$id);\n";
-        $content .= "    }\n";
-        $content .= "}\n";
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{repository}}', '{{class}}', '{{lc_repository}}'],
+            [$repository, $serviceClass, $this->lc($repository)],
+            $content
+        );
 
         if (!is_dir(dirname($path)))
             mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Service dibuat: {$serviceClass}\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Service dibuat: {$serviceClass}\n";
     }
 
     private function studly(string $value): string
@@ -128,59 +136,52 @@ class MakeCrudCommand implements CommandInterface
             return;
         }
 
-        $content = <<<PHP
-<?php
+        $stubPath = $this->basePath . '/app/Console/Stubs/controller.crud.stub';
+        if (!file_exists($stubPath)) {
+            echo "\n  \033[1;41;97m ERROR \033[0m Stub tidak ditemukan di app/Console/Stubs/controller.crud.stub\n";
+            return;
+        }
 
-namespace TheFramework\\Http\\Controllers;
-
-use TheFramework\\App\\Traits\\BaseCrudTrait;
-use TheFramework\\Models\\{$model};
-use TheFramework\\Http\\Requests\\{$request};
-
-class {$controller} extends Controller
-{
-    use BaseCrudTrait;
-
-    private \${$this->lc($request)};
-    private \${$this->lc($model)};
-
-    public function __construct()
-    {
-        \$this->{$this->lc($request)} = new {$request}();
-        \$this->{$this->lc($model)} = new {$model}();
-    }
-
-    protected function getModel()
-    {
-        return \$this->{$this->lc($model)};
-    }
-
-    protected function getRequest()
-    {
-        return \$this->{$this->lc($request)};
-    }
-
-    protected function getRoutePath(): string
-    {
-        return '{$routePath}';
-    }
-
-    protected function getViewPath(): string
-    {
-        return '{$slug}';
-    }
-
-    protected function getPrimaryKey(): string
-    {
-        return 'id'; // Ubah ke 'uid' jika menggunakan UUID
-    }
-}
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            [
+                '{{model}}',
+                '{{request}}',
+                '{{class}}',
+                '{{lc_request}}',
+                '{{lc_model}}',
+                '{{route_path}}',
+                '{{slug}}',
+                '{{primary_key}}'
+            ],
+            [
+                $model,
+                $request,
+                $controller,
+                $this->lc($request),
+                $this->lc($model),
+                $routePath,
+                $slug,
+                'id'
+            ],
+            $content
+        );
 
         if (!is_dir(dirname($path)))
             mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Controller dibuat: {$controller}\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Controller dibuat: {$controller}\n";
+    }
+
+    private function pluralize(string $value): string
+    {
+        $lastChar = strtolower(substr($value, -1));
+        if ($lastChar === 'y') {
+            return substr($value, 0, -1) . 'ies';
+        } elseif (in_array(substr(strtolower($value), -2), ['sh', 'ch']) || in_array($lastChar, ['s', 'x', 'z'])) {
+            return $value . 'es';
+        }
+        return $value . 's';
     }
 
     private function makeModel(string $model, string $slug): void
@@ -191,24 +192,25 @@ PHP;
             return;
         }
 
-        $content = <<<PHP
-<?php
+        $stubPath = $this->basePath . '/app/Console/Stubs/model.stub';
+        if (!file_exists($stubPath)) {
+            echo "\n  \033[1;41;97m ERROR \033[0m Stub tidak ditemukan di app/Console/Stubs/model.stub\n";
+            return;
+        }
 
-namespace TheFramework\\Models;
+        $tableName = $this->pluralize($slug);
 
-use TheFramework\\App\\Model;
-
-class {$model} extends Model
-{
-    protected \$table = '{$slug}s';
-    protected \$primaryKey = 'id';
-}
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{namespace}}', '{{class}}', '{{table}}'],
+            ['TheFramework\\Models', $model, $tableName],
+            $content
+        );
 
         if (!is_dir(dirname($path)))
             mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Model dibuat: {$model}\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Model dibuat: {$model}\n";
     }
 
     private function makeRequest(string $request): void
@@ -219,40 +221,23 @@ PHP;
             return;
         }
 
-        $content = <<<PHP
-<?php
+        $stubPath = $this->basePath . '/app/Console/Stubs/request.form.stub';
+        if (!file_exists($stubPath)) {
+            echo "\n  \033[1;41;97m ERROR \033[0m Stub tidak ditemukan di app/Console/Stubs/request.form.stub\n";
+            return;
+        }
 
-namespace TheFramework\\Http\\Requests;
-
-use TheFramework\\App\\Request;
-
-class {$request} extends Request
-{
-    public function rules(): array
-    {
-        return [
-            // 'name' => 'required',
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            // 'name.required' => 'Nama wajib diisi',
-        ];
-    }
-
-    public function validated(): array
-    {
-        return \$this->validate(\$this->rules(), \$this->messages());
-    }
-}
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{namespace}}', '{{class}}'],
+            ['TheFramework\\Http\\Requests', $request],
+            $content
+        );
 
         if (!is_dir(dirname($path)))
             mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Request dibuat: {$request}\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Request dibuat: {$request}\n";
     }
 
     private function makeViews(string $dir, string $slug, string $base): void
@@ -260,102 +245,29 @@ PHP;
         if (!is_dir($dir))
             mkdir($dir, 0755, true);
 
-        $index = <<<BLADE
-@extends('template.layout')
-@section('main-content')
-<h1 class="text-2xl font-semibold mb-4">{{ \$title ?? 'List' }}</h1>
-<a class="text-blue-500 underline" href="/{$slug}/create">Tambah {$base}</a>
+        $stubsPath = $this->basePath . '/app/Console/Stubs/';
 
-@if(!empty(\${$this->lc($slug)}s))
-    <table class="mt-4 border w-full text-left">
-        <thead>
-            <tr><th class="p-2">ID</th><th class="p-2">Data</th><th class="p-2">Aksi</th></tr>
-        </thead>
-        <tbody>
-        @foreach(\${$this->lc($slug)}s as \$item)
-            <tr class="border-t">
-                <td class="p-2">{{ \$item['id'] ?? '-' }}</td>
-                <td class="p-2"><code>{{ json_encode(\$item) }}</code></td>
-                <td class="p-2 space-x-2">
-                    <a class="text-blue-500" href="/{$slug}/{{ \$item['id'] ?? '' }}">Detail</a>
-                    <a class="text-amber-500" href="/{$slug}/{{ \$item['id'] ?? '' }}/edit">Edit</a>
-                    <form class="inline" action="/{$slug}/{{ \$item['id'] ?? '' }}/delete" method="POST" onsubmit="return confirm('Hapus data?')">
-                        @csrf
-                        <button type="submit" class="text-red-500">Hapus</button>
-                    </form>
-                </td>
-            </tr>
-        @endforeach
-        </tbody>
-    </table>
-@else
-    <p class="mt-4 text-gray-500">Belum ada data.</p>
-@endif
-@endsection
-BLADE;
+        $index = file_exists($stubsPath . 'view.index.stub') ? file_get_contents($stubsPath . 'view.index.stub') : '';
+        $create = file_exists($stubsPath . 'view.create.stub') ? file_get_contents($stubsPath . 'view.create.stub') : '';
+        $edit = file_exists($stubsPath . 'view.edit.stub') ? file_get_contents($stubsPath . 'view.edit.stub') : '';
+        $show = file_exists($stubsPath . 'view.show.stub') ? file_get_contents($stubsPath . 'view.show.stub') : '';
 
-        $create = <<<BLADE
-@extends('template.layout')
-@section('main-content')
-<h1 class="text-2xl font-semibold mb-4">{{ \$title ?? 'Create' }}</h1>
+        $replacements = [
+            '{{slug}}' => $slug,
+            '{{base}}' => $base,
+            '{{lc_slug}}' => $this->lc($slug)
+        ];
 
-@if(\$errors)
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        <ul class="list-disc list-inside">
-            @foreach(\$errors as \$error)
-                <li>{{ \$error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-<form action="/{$slug}" method="POST" class="space-y-3">
-    @csrf
-    <!-- TODO: Tambah field sesuai kebutuhan -->
-    <!-- Contoh: <input type="text" name="name" value="{{ old('name') }}" class="border rounded px-3 py-2"> -->
-    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Simpan</button>
-</form>
-@endsection
-BLADE;
-
-        $edit = <<<BLADE
-@extends('template.layout')
-@section('main-content')
-<h1 class="text-2xl font-semibold mb-4">{{ \$title ?? 'Edit' }}</h1>
-
-@if(\$errors)
-    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        <ul class="list-disc list-inside">
-            @foreach(\$errors as \$error)
-                <li>{{ \$error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-<form action="/{$slug}/{{ \$item['id'] ?? '' }}" method="POST" class="space-y-3">
-    @csrf
-    <!-- TODO: Prefill field dari \$item -->
-    <!-- Contoh: <input type="text" name="name" value="{{ \$item['name'] ?? old('name') }}" class="border rounded px-3 py-2"> -->
-    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Update</button>
-</form>
-@endsection
-BLADE;
-
-        $show = <<<BLADE
-@extends('template.layout')
-@section('main-content')
-<h1 class="text-2xl font-semibold mb-4">{{ \$title ?? 'Detail' }}</h1>
-<pre class="bg-gray-100 p-3 rounded">{{ print_r(\$item, true) }}</pre>
-<a class="text-blue-500 underline" href="/{$slug}">Kembali</a>
-@endsection
-BLADE;
+        $index = str_replace(array_keys($replacements), array_values($replacements), $index);
+        $create = str_replace(array_keys($replacements), array_values($replacements), $create);
+        $edit = str_replace(array_keys($replacements), array_values($replacements), $edit);
+        $show = str_replace(array_keys($replacements), array_values($replacements), $show);
 
         file_put_contents($dir . '/index.blade.php', $index);
         file_put_contents($dir . '/create.blade.php', $create);
         file_put_contents($dir . '/edit.blade.php', $edit);
         file_put_contents($dir . '/show.blade.php', $show);
-        echo "\033[38;5;28m★ SUCCESS  Views dibuat di resources/Views/{$slug}\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Views dibuat di resources/Views/{$slug}\n";
     }
 
     private function appendRoute(string $controller, string $routePath): void
@@ -372,13 +284,13 @@ BLADE;
             $content = preg_replace('/(<\?php\s*\n)/', "$0$useLine\n", $content, 1);
         }
 
-        $resourceLine = "Router::resource('{$routePath}', {$controller}::class, ['middleware' => [\\TheFramework\\Middleware\\CsrfMiddleware::class]]);";
+        $resourceLine = "Router::resource('{$routePath}', {$controller}::class, ['middleware' => [\\TheFramework\\Middleware\\CsrfMiddleware::class, \\TheFramework\\Middleware\\WAFMiddleware::class]]);";
         if (strpos($content, $resourceLine) === false) {
             $content = rtrim($content) . "\n\n{$resourceLine}\n";
         }
 
         file_put_contents($routeFile, $content);
-        echo "\033[38;5;28m★ SUCCESS  Route resource ditambahkan di routes/web.php\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Route resource ditambahkan di routes/web.php\n";
     }
 
     private function lc(string $value): string

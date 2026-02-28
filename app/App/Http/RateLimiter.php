@@ -7,9 +7,21 @@ use TheFramework\App\Core\Config;
 
 class RateLimiter
 {
-    private static $fallbackDir = __DIR__ . '/../../storage/cache/ratelimit/';
+    private static ?string $fallbackDir = null;
     private static $fallbackLimit = 50; // Limit fallback lebih ketat
     private static $window = 60; // Waktu window dalam detik
+
+    /**
+     * Get rate limit cache directory (consistent with CacheManager path resolution)
+     */
+    private static function getFallbackDir(): string
+    {
+        if (self::$fallbackDir === null) {
+            $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+            self::$fallbackDir = $root . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'ratelimit' . DIRECTORY_SEPARATOR;
+        }
+        return self::$fallbackDir;
+    }
 
     /**
      * Mengecek apakah permintaan bisa diproses berdasarkan rate limiting.
@@ -44,11 +56,12 @@ class RateLimiter
      */
     private static function fallbackCheck($key, $limit, $window)
     {
-        if (!is_dir(self::$fallbackDir)) {
-            mkdir(self::$fallbackDir, 0755, true);
+        $dir = self::getFallbackDir();
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
         }
 
-        $file = self::$fallbackDir . md5($key) . '.json';
+        $file = $dir . md5($key) . '.json';
         $data = file_exists($file) ? json_decode(file_get_contents($file), true) : [
             'count' => 0,
             'timestamp' => time()

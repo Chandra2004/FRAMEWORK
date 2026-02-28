@@ -48,10 +48,21 @@ class RollbackCommand extends BaseCommand
         try {
             $count = $migrator->rollback($steps);
 
+            echo PHP_EOL;
             foreach ($migrator->getOutput() as $line) {
-                $this->line("  " . $line);
+                // Determine color based on content
+                $color = self::COLOR_GRAY;
+                if (str_contains($line, '✅'))
+                    $color = self::COLOR_GREEN;
+                elseif (str_contains($line, '❌'))
+                    $color = self::COLOR_RED;
+                elseif (str_contains($line, '⚠️'))
+                    $color = self::COLOR_YELLOW;
+
+                $this->line("  " . $line, $color);
             }
 
+            echo PHP_EOL;
             $this->success("Rollback selesai. $count migrasi berhasil di-rollback.");
         } catch (Throwable $e) {
             $this->error("Gagal rollback: " . $e->getMessage());

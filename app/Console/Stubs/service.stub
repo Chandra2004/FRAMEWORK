@@ -1,0 +1,43 @@
+<?php
+
+namespace TheFramework\Services;
+
+use TheFramework\Repositories\{{repository}};
+
+class {{class}}
+{
+    /**
+     * @var {{repository}}
+     */
+    protected ${{lc_repository}};
+
+    public function __construct()
+    {
+        $this->{{lc_repository}} = new {{repository}}();
+    }
+
+    public function getAll()
+    {
+        return $this->{{lc_repository}}->getAll();
+    }
+
+    public function find(string $id)
+    {
+        return $this->{{lc_repository}}->find($id);
+    }
+
+    public function create(array $data)
+    {
+        return $this->{{lc_repository}}->create($data);
+    }
+
+    public function update(string $id, array $data)
+    {
+        return $this->{{lc_repository}}->update($id, $data);
+    }
+
+    public function delete(string $id)
+    {
+        return $this->{{lc_repository}}->delete($id);
+    }
+}

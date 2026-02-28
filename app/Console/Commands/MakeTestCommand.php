@@ -52,33 +52,18 @@ class MakeTestCommand extends BaseCommand
         }
 
         $namespace = "Tests\\{$subDir}";
-        $content = <<<PHP
-<?php
+        $stubPath = BASE_PATH . '/app/Console/Stubs/test.stub';
+        if (!file_exists($stubPath)) {
+            $this->error("Stub tidak ditemukan di app/Console/Stubs/test.stub");
+            return;
+        }
 
-namespace {$namespace};
-
-use PHPUnit\Framework\TestCase;
-
-class {$name} extends TestCase
-{
-    /**
-     * Setup sebelum setiap test dijalankan.
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-    }
-
-    /**
-     * Contoh test method.
-     */
-    public function test_example(): void
-    {
-        \$this->assertTrue(true);
-    }
-}
-
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{namespace}}', '{{class}}'],
+            [$namespace, $name],
+            $content
+        );
 
         file_put_contents($filePath, $content);
 

@@ -59,14 +59,14 @@ class Router
 
     public static function view(string $path, string $view, array $data = []): Route
     {
-        return self::get($path, function() use ($view, $data) {
+        return self::get($path, function () use ($view, $data) {
             return \TheFramework\App\Http\View::render($view, $data);
         });
     }
 
     public static function redirect(string $uri, string $destination, int $status = 302): Route
     {
-        return self::any($uri, function() use ($destination, $status) {
+        return self::any($uri, function () use ($destination, $status) {
             \TheFramework\Helpers\Helper::redirect($destination, null, null, 0);
             exit;
         });
@@ -203,7 +203,8 @@ class Router
             // PHP hanya melayani jika file fisik di public tidak ditemukan atau APP_ENV=local
 
             // Cek file di public/assets dulu
-            $publicFile = dirname(__DIR__, 2) . "/public/assets/" . $matches[1];
+            $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+            $publicFile = $root . "/public/assets/" . $matches[1];
             if (file_exists($publicFile)) {
                 // Biarkan webserver/browser mengakses langsung, tapi karena request sudah masuk ke PHP (artinya rewrite rule jalan),
                 // kita bisa serve dari sini SEBAGAI FALLBACK jika webserver salah config.
@@ -222,7 +223,8 @@ class Router
         self::checkAppMode();
 
         // 🚀 PERFORMANCE MOD: Route Caching Check
-        $cacheFile = dirname(__DIR__, 2) . '/storage/cache/routes.php';
+        $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+        $cacheFile = $root . '/storage/cache/routes.php';
         if (file_exists($cacheFile) && Config::get('APP_ENV') !== 'local') {
             // Production mode + file cache ada -> Load Instant
             $cachedRoutes = require $cacheFile;
@@ -315,12 +317,12 @@ class Router
                 if (self::$fallbackRoute) {
                     $handler = self::$fallbackRoute['handler'];
                     if ($handler instanceof \Closure) {
-                         call_user_func($handler);
+                        call_user_func($handler);
                     } else {
-                         $container = Container::getInstance();
-                         $controller = $container->make($handler);
-                         $function = self::$fallbackRoute['function'] ?? '__invoke';
-                         call_user_func([$controller, $function]);
+                        $container = Container::getInstance();
+                        $controller = $container->make($handler);
+                        $function = self::$fallbackRoute['function'] ?? '__invoke';
+                        call_user_func([$controller, $function]);
                     }
                 } else {
                     self::handle404();
@@ -392,7 +394,8 @@ class Router
     private static function servePublicAsset(string $fullPath)
     {
         // Security Check: Pastikan file ada di folder public/assets
-        $publicDir = dirname(__DIR__, 2) . "/public/assets";
+        $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+        $publicDir = $root . "/public/assets";
         if (!self::isPathSecure($fullPath, $publicDir)) {
             http_response_code(403);
             die("Access Denied: Invalid asset path");
@@ -410,7 +413,8 @@ class Router
 
     private static function serveAsset(string $filePath)
     {
-        $resourcesDir = dirname(__DIR__, 2) . "/resources";
+        $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+        $resourcesDir = $root . "/resources";
         $fullPath = $resourcesDir . "/$filePath";
 
         // Security Check: Pastikan file ada di folder resources

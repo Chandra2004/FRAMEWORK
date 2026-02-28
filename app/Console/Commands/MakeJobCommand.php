@@ -40,28 +40,14 @@ class MakeJobCommand implements CommandInterface
             return;
         }
 
-        $template = <<<PHP
-<?php
+        $stubPath = BASE_PATH . '/app/Console/Stubs/job.stub';
+        if (!file_exists($stubPath)) {
+            echo "\033[31mError: Stub tidak ditemukan di app/Console/Stubs/job.stub\033[0m\n";
+            return;
+        }
 
-namespace TheFramework\Jobs;
-
-use TheFramework\App\Queue\Job;
-
-class $className extends Job
-{
-    /**
-     * Jalankan pekerjaan.
-     */
-    public function handle()
-    {
-        // Ambil data yang dikirim saat dispatch
-        // \$userId = \$this->getData('user_id');
-        
-        // Lakukan proses berat di sini...
-        // misal: Kirim Email, Resize Gambar, dll.
-    }
-}
-PHP;
+        $template = file_get_contents($stubPath);
+        $template = str_replace('{{class}}', $className, $template);
 
         file_put_contents($filePath, $template);
 

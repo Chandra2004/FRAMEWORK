@@ -57,8 +57,8 @@ class DownCommand extends BaseCommand
 
         echo PHP_EOL;
         $this->line("  ╔══════════════════════════════════════════╗", self::COLOR_YELLOW);
-        $this->line("  ║       APPLICATION IS NOW IN               ║", self::COLOR_YELLOW);
-        $this->line("  ║       🚧 MAINTENANCE MODE 🚧              ║", self::COLOR_YELLOW);
+        $this->line("  ║          APPLICATION IS NOW IN           ║", self::COLOR_YELLOW);
+        $this->line("  ║         🚧 MAINTENANCE MODE 🚧          ║", self::COLOR_YELLOW);
         $this->line("  ╚══════════════════════════════════════════╝", self::COLOR_YELLOW);
         echo PHP_EOL;
 

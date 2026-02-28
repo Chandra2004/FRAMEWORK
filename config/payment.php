@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Payment Gateway Configuration — The Framework v5.0.3
+ * Payment Gateway Configuration — The Framework v5.0.1
  * All values driven by .env
  */
 

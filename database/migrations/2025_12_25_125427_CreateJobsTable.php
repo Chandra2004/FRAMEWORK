@@ -2,7 +2,7 @@
 
 namespace Database\Migrations;
 
-use TheFramework\App\Schema;
+use TheFramework\App\Schema\Schema;
 
 class Migration_2025_12_25_125427_CreateJobsTable
 {

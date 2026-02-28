@@ -1,0 +1,57 @@
+<?php
+
+namespace TheFramework\Mail;
+
+class {{class}}
+{
+    protected string $subject = '';
+    protected string $view = 'emails.{{viewName}}';
+    protected array $data = [];
+
+    public function __construct(array $data = [])
+    {
+        $this->data = $data;
+        $this->subject = '{{class}}';
+    }
+
+    /**
+     * Build the message.
+     */
+    public function build(): self
+    {
+        return $this;
+    }
+
+    /**
+     * Get email subject.
+     */
+    public function getSubject(): string
+    {
+        return $this->subject;
+    }
+
+    /**
+     * Set email subject.
+     */
+    public function subject(string $subject): self
+    {
+        $this->subject = $subject;
+        return $this;
+    }
+
+    /**
+     * Get the view name.
+     */
+    public function getView(): string
+    {
+        return $this->view;
+    }
+
+    /**
+     * Get the data for the view.
+     */
+    public function getData(): array
+    {
+        return $this->data;
+    }
+}

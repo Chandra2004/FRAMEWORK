@@ -1,4 +1,4 @@
-# 📤 File Upload & Private Storage (v5.0.3)
+# 📤 File Upload & Private Storage (v5.0.1)
 
 Panduan lengkap sistem upload file di The Framework.  
 File disimpan di folder **`private-uploads/`** yang berada **di luar public root** — tidak bisa diakses langsung via URL, sehingga **aman dari direct download**.
@@ -360,7 +360,7 @@ flowchart TD
 
 <div align="center">
 
-**Upload Engine v5.0.3 — Secure by Default** 🔒
+**Upload Engine v5.0.1 — Secure by Default** 🔒
 
 [Back to Documentation](README.md) • [Main README](../README.md)
 

@@ -138,7 +138,9 @@ class Migrator
                 continue;
             if (pathinfo($item, PATHINFO_EXTENSION) !== 'php')
                 continue;
-            $files[$item] = $path . DIRECTORY_SEPARATOR . $item;
+
+            $name = basename($item, '.php');
+            $files[$name] = $path . DIRECTORY_SEPARATOR . $item;
         }
 
         // Urutkan berdasarkan nama (timestamp)
@@ -164,17 +166,17 @@ class Migrator
     }
 
     /**
-     * Convert nama file migrasi ke nama class
+     * Convert nama file migrasi ke fully-qualified class name
      * 
-     * Contoh: "2026_02_24_000001_create_users_table" → "CreateUsersTable"
+     * Convention: "2025_08_14_045829_CreateUsersTable" 
+     *           → "Database\Migrations\Migration_2025_08_14_045829_CreateUsersTable"
      */
     protected function resolveClassName(string $filename): string
     {
-        // Hapus timestamp prefix (YYYY_MM_DD_NNNNNN_)
-        $name = preg_replace('/^\d{4}_\d{2}_\d{2}_\d{6}_/', '', $filename);
+        // Hapus ekstensi .php jika ada
+        $filename = str_replace('.php', '', $filename);
 
-        // Convert snake_case ke PascalCase
-        return str_replace(' ', '', ucwords(str_replace('_', ' ', $name)));
+        return 'Database\\Migrations\\Migration_' . $filename;
     }
 
     // ========================================================

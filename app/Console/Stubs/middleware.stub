@@ -1,0 +1,24 @@
+<?php
+
+namespace {{namespace}};
+
+use TheFramework\Helpers\Helper;
+
+class {{class}} implements Middleware
+{
+    public function before()
+    {
+        // Logika middleware dieksekusi SEBELUM Controller
+        
+        // Contoh: Cek Session
+        // $user = Helper::session_get('user_id');
+        // if (!$user) {
+        //      Helper::redirect('/login', 'error', 'Silakan login terlebih dahulu.');
+        // }
+    }
+
+    public function after()
+    {
+        // Logika middleware dieksekusi SETELAH Controller (Optional)
+    }
+}

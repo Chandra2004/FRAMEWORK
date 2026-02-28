@@ -1,0 +1,46 @@
+<?php
+
+namespace TheFramework\Http\Controllers;
+
+use TheFramework\App\Traits\BaseCrudTrait;
+use TheFramework\Models\{{model}};
+use TheFramework\Http\Requests\{{request}};
+
+class {{class}} extends Controller
+{
+    use BaseCrudTrait;
+
+    private ${{lc_request}};
+    private ${{lc_model}};
+
+    public function __construct()
+    {
+        $this->{{lc_request}} = new {{request}}();
+        $this->{{lc_model}} = new {{model}}();
+    }
+
+    protected function getModel()
+    {
+        return $this->{{lc_model}};
+    }
+
+    protected function getRequest()
+    {
+        return $this->{{lc_request}};
+    }
+
+    protected function getRoutePath(): string
+    {
+        return '{{route_path}}';
+    }
+
+    protected function getViewPath(): string
+    {
+        return '{{slug}}';
+    }
+
+    protected function getPrimaryKey(): string
+    {
+        return '{{primary_key}}'; // Ubah ke 'uid' jika menggunakan UUID
+    }
+}

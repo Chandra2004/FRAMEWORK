@@ -6,7 +6,7 @@ use Exception;
 use TheFramework\App\Core\Config;
 
 /**
- * 📤 UploadHandler — Advanced File Upload Engine v5.0.3
+ * 📤 UploadHandler — Advanced File Upload Engine v5.0.1
  *
  * Mendukung:
  * - Upload files ke private-uploads/ (di luar public root = aman)
@@ -16,7 +16,7 @@ use TheFramework\App\Core\Config;
  * - Static + Instance API
  *
  * @package TheFramework\Handlers
- * @version 5.0.3
+ * @version 5.0.1
  */
 class UploadHandler
 {
@@ -46,9 +46,9 @@ class UploadHandler
         try {
             $handler = new static();
             $result = $handler->save($file, $subDir, [
-                'prefix'     => $prefix,
+                'prefix' => $prefix,
                 'convert_to' => 'webp',
-                'quality'    => $quality ?: ($handler->config['webp_quality'] ?? 80),
+                'quality' => $quality ?: ($handler->config['webp_quality'] ?? 80),
             ]);
 
             return $result['name'];
@@ -181,12 +181,12 @@ class UploadHandler
         // 7. Upload biasa
         if (move_uploaded_file($file['tmp_name'], $fullPath)) {
             return [
-                'name'      => $filename,
-                'path'      => $subDir . '/' . $filename,
+                'name' => $filename,
+                'path' => $subDir . '/' . $filename,
                 'full_path' => $fullPath,
-                'size'      => $file['size'],
+                'size' => $file['size'],
                 'extension' => $ext,
-                'success'   => true,
+                'success' => true,
             ];
         }
 
@@ -211,10 +211,10 @@ class UploadHandler
 
         $img = match ($mime) {
             'image/jpeg' => imagecreatefromjpeg($tmpFile),
-            'image/png'  => imagecreatefrompng($tmpFile),
+            'image/png' => imagecreatefrompng($tmpFile),
             'image/webp' => imagecreatefromwebp($tmpFile),
-            'image/gif'  => imagecreatefromgif($tmpFile),
-            default      => throw new Exception("Format gambar tidak didukung: {$mime}"),
+            'image/gif' => imagecreatefromgif($tmpFile),
+            default => throw new Exception("Format gambar tidak didukung: {$mime}"),
         };
 
         // Resize jika diminta
@@ -225,14 +225,13 @@ class UploadHandler
         // Simpan sebagai WebP
         $quality = $options['quality'] ?? ($this->config['webp_quality'] ?? 80);
         imagewebp($img, $targetPath, $quality);
-        imagedestroy($img);
 
         return [
-            'name'      => basename($targetPath),
-            'path'      => str_replace(static::getUploadBaseDir(), '', $targetPath),
+            'name' => basename($targetPath),
+            'path' => str_replace(static::getUploadBaseDir(), '', $targetPath),
             'full_path' => $targetPath,
-            'type'      => 'image/webp',
-            'success'   => true,
+            'type' => 'image/webp',
+            'success' => true,
         ];
     }
 
@@ -243,8 +242,10 @@ class UploadHandler
     {
         $oldW = imagesx($img);
         $oldH = imagesy($img);
-        if (!$h) $h = (int) (($oldH / $oldW) * $w);
-        if (!$w) $w = (int) (($oldW / $oldH) * $h);
+        if (!$h)
+            $h = (int) (($oldH / $oldW) * $w);
+        if (!$w)
+            $w = (int) (($oldW / $oldH) * $h);
         $new = imagecreatetruecolor($w, $h);
         imagealphablending($new, false);
         imagesavealpha($new, true);
@@ -258,14 +259,14 @@ class UploadHandler
     protected function getUploadError(int $code): string
     {
         return match ($code) {
-            UPLOAD_ERR_INI_SIZE   => 'Ukuran file melebihi batas upload_max_filesize di php.ini.',
-            UPLOAD_ERR_FORM_SIZE  => 'Ukuran file melebihi batas MAX_FILE_SIZE di form.',
-            UPLOAD_ERR_PARTIAL    => 'File hanya ter-upload sebagian.',
-            UPLOAD_ERR_NO_FILE    => 'Tidak ada file yang di-upload.',
+            UPLOAD_ERR_INI_SIZE => 'Ukuran file melebihi batas upload_max_filesize di php.ini.',
+            UPLOAD_ERR_FORM_SIZE => 'Ukuran file melebihi batas MAX_FILE_SIZE di form.',
+            UPLOAD_ERR_PARTIAL => 'File hanya ter-upload sebagian.',
+            UPLOAD_ERR_NO_FILE => 'Tidak ada file yang di-upload.',
             UPLOAD_ERR_NO_TMP_DIR => 'Folder temporary tidak ditemukan.',
             UPLOAD_ERR_CANT_WRITE => 'Gagal menulis file ke disk.',
-            UPLOAD_ERR_EXTENSION  => 'Upload dihentikan oleh ekstensi PHP.',
-            default               => "Unknown upload error (code: {$code}).",
+            UPLOAD_ERR_EXTENSION => 'Upload dihentikan oleh ekstensi PHP.',
+            default => "Unknown upload error (code: {$code}).",
         };
     }
 
@@ -281,7 +282,7 @@ class UploadHandler
     {
         $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__, 2);
         $dir = Config::get('UPLOAD_DIR', '/private-uploads');
-        
+
         // Jika dimulai dengan '/' berarti relatif dari ROOT_DIR
         if (str_starts_with($dir, '/')) {
             return $root . $dir;

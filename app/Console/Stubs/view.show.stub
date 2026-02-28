@@ -1,0 +1,6 @@
+@extends('template.layout')
+@section('main-content')
+<h1 class="text-2xl font-semibold mb-4">{{ $title ?? 'Detail' }}</h1>
+<pre class="bg-gray-100 p-3 rounded">{{ print_r($item, true) }}</pre>
+<a class="text-blue-500 underline" href="/{{slug}}">Kembali</a>
+@endsection

@@ -46,40 +46,14 @@ class MakeProviderCommand extends BaseCommand
             return;
         }
 
-        $content = <<<PHP
-<?php
+        $stubPath = BASE_PATH . '/app/Console/Stubs/provider.stub';
+        if (!file_exists($stubPath)) {
+            $this->error("Stub tidak ditemukan di app/Console/Stubs/provider.stub");
+            return;
+        }
 
-namespace TheFramework\Providers;
-
-use TheFramework\App\Core\Container;
-
-class {$name}
-{
-    /**
-     * Register services ke container.
-     * Dipanggil saat bootstrap aplikasi.
-     */
-    public function register(): void
-    {
-        \$container = Container::getInstance();
-
-        // Contoh: Bind service ke container
-        // \$container->singleton(MyService::class, function () {
-        //     return new MyService();
-        // });
-    }
-
-    /**
-     * Bootstrap services.
-     * Dipanggil setelah semua provider ter-register.
-     */
-    public function boot(): void
-    {
-        //
-    }
-}
-
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace('{{class}}', $name, $content);
 
         file_put_contents($filePath, $content);
 

@@ -349,7 +349,7 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         return $this->loadAggregates($models, $relations, 'count', '*');
     }
 
-    public function loadAggregates(array $models, array $relationData, string $defaultFunction = null, string $defaultColumn = null)
+    public function loadAggregates(array $models, array $relationData, ?string $defaultFunction = null, ?string $defaultColumn = null)
     {
         if (empty($models)) {
             return $models;
@@ -585,7 +585,7 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         return $this->softDeletes && !is_null($this->getAttribute(static::DELETED_AT));
     }
 
-    public function replicate(array $except = null)
+    public function replicate(?array $except = null)
     {
         $attributes = $this->attributes;
         unset($attributes[$this->getKeyName()]);

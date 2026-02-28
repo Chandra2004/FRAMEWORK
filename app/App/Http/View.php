@@ -34,7 +34,7 @@ class View
 
         // Fallback for native PHP views (ONLY if it's a plain .php file, NOT .blade.php)
         $viewPath = str_replace('.', '/', $view);
-        $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__, 2);
+        $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
 
         $fallbackPath = $root . '/resources/views/' . $viewPath . '.php';
 

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Mail Configuration — The Framework v5.0.3
+ * Mail Configuration — The Framework v5.0.1
  * All values driven by .env
  */
 

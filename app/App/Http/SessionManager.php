@@ -18,7 +18,9 @@ class SessionManager
             ini_set('session.use_strict_mode', 1);
             ini_set('session.cookie_samesite', 'Lax');
 
-            $sessionPath = defined('ROOT_DIR') ? ROOT_DIR . '/storage/session' : dirname(__DIR__, 2) . '/storage/session';
+            $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+            $sessionPath = $root . '/storage/session';
+
             if (!is_dir($sessionPath)) {
                 @mkdir($sessionPath, 0777, true);
             }
@@ -133,21 +135,21 @@ class SessionManager
         self::ensureSession();
         $keys = is_array($keys) ? $keys : func_get_args();
         $old = $_SESSION['flash']['old'] ?? [];
-        
+
         foreach ($keys as $key) {
             if (in_array($key, $old)) {
                 $_SESSION['flash']['new'][] = $key;
                 $old = array_diff($old, [$key]);
             }
         }
-        
+
         $_SESSION['flash']['old'] = $old;
     }
 
     private static function ageFlashData(): void
     {
         self::ensureSession();
-        
+
         $old = $_SESSION['flash']['old'] ?? [];
         foreach ($old as $key) {
             self::forget($key);

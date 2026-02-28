@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Application Configuration — The Framework v5.0.3
+ * Application Configuration — The Framework v5.0.1
  * 
  * Semua konfigurasi utama aplikasi dikontrol dari sini,
  * yang nilainya diambil dari file .env.

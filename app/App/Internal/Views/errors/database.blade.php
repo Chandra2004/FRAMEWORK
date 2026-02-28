@@ -1,206 +1,499 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Error - The Framework</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: {
-                            100: '#2A2A2A',
-                            200: '#242424',
-                            300: '#1e1e1e', 
-                            400: '#18181b', 
-                            500: '#121212', 
-                            600: '#09090b', 
-                        },
-                        brand: {
-                            red: '#F43F5E',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <title>Database Error — The Framework</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
     <style>
-        body { background-color: #18181b; color: #f4f4f5; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; overflow: hidden; margin: 0; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        
-        .code-container { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.9rem; line-height: 1.6; }
-        
-        .tab-btn { padding: 0.875rem 1.5rem; color: #a1a1aa; font-size: 0.875rem; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; background: transparent; }
-        .tab-btn:hover { color: #f4f4f5; }
-        .tab-btn.active { color: #F43F5E; border-bottom-color: #F43F5E; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-        .key-val { display: flex; border-bottom: 1px solid #2a2a2a; padding: 0.875rem 0; }
-        .key-val:last-child { border-bottom: none; }
-        .key-col { width: 30%; color: #a1a1aa; font-size: 0.875rem; font-weight: 500; }
-        .val-col { width: 70%; font-family: monospace; color: #d4d4d8; word-break: break-all; font-size: 0.85rem; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #131316;
+            color: #f4f4f5;
+            min-height: 100vh;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 3px;
+        }
+
+        .header {
+            background: linear-gradient(180deg, #130e0a, #131316);
+            border-bottom: 1px solid #27272a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #F97316, #FB923C, #F97316);
+        }
+
+        .header .glow {
+            position: absolute;
+            top: -120px;
+            left: -60px;
+            width: 500px;
+            height: 500px;
+            background: rgba(249, 115, 22, 0.06);
+            filter: blur(150px);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            padding: 28px 32px;
+        }
+
+        .db-icon {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .db-icon .icon-box {
+            width: 28px;
+            height: 28px;
+            background: rgba(249, 115, 22, 0.15);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .db-icon span {
+            color: #FB923C;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #f4f4f5;
+            line-height: 1.3;
+            margin-bottom: 12px;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .db-badge {
+            background: rgba(249, 115, 22, 0.15);
+            color: #FB923C;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .meta-text {
+            color: #52525b;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .main-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: #18181c;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 12px 20px;
+            background: #1e1e22;
+            border-bottom: 1px solid #27272a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header h3 {
+            font-size: 11px;
+            font-weight: 700;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .sql-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            background: #1a1a1e;
+            padding: 20px;
+            color: #d4d4d8;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .sql-box .keyword {
+            color: #60A5FA;
+            font-weight: 700;
+        }
+
+        .env-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .env-table th {
+            text-align: left;
+            padding: 8px 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #52525b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: #1a1a1e;
+            border-bottom: 1px solid #27272a;
+        }
+
+        .env-table td {
+            padding: 8px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            border-bottom: 1px solid #1e1e22;
+        }
+
+        .env-table td:first-child {
+            color: #FB923C;
+            font-weight: 500;
+            width: 180px;
+        }
+
+        .env-table td:last-child {
+            color: #d4d4d8;
+        }
+
+        .env-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .env-hidden {
+            color: #3f3f46;
+            font-style: italic;
+        }
+
+        .hint-box {
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.06), rgba(249, 115, 22, 0.02));
+            border: 1px solid rgba(249, 115, 22, 0.15);
+            border-radius: 12px;
+            padding: 20px 24px;
+        }
+
+        .hint-box h3 {
+            color: #FB923C;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hint-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .hint-box li {
+            color: #a1a1aa;
+            font-size: 13px;
+            padding: 5px 0 5px 20px;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .hint-box li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #FB923C;
+        }
+
+        .hint-box code {
+            color: #FB923C;
+            background: #1e1e22;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .kv-section {
+            padding: 16px 20px;
+        }
+
+        .kv-row {
+            display: flex;
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #1e1e22;
+        }
+
+        .kv-row:last-child {
+            border-bottom: none;
+        }
+
+        .kv-key {
+            width: 140px;
+            flex-shrink: 0;
+            color: #71717a;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+
+        .kv-val {
+            flex: 1;
+            color: #d4d4d8;
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #a1a1aa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            background: #3f3f46;
+            color: #f4f4f5;
+        }
     </style>
 </head>
-<body class="flex flex-col h-screen antialiased">
 
-    <!-- Header -->
-    <header class="bg-dark-600 border-b border-dark-100 flex-shrink-0 flex items-center justify-between px-10 py-8 relative overflow-hidden shadow-md">
-        <!-- Glow effect -->
-        <div class="absolute top-0 left-0 w-full h-1 bg-brand-red"></div>
-        <div class="absolute top-[-100px] left-[-50px] w-[400px] h-[400px] bg-brand-red/10 blur-[120px] rounded-full pointer-events-none"></div>
-
-        <div class="flex-1 min-w-0 z-10">
-            <h2 class="text-zinc-400 text-sm font-mono tracking-wider truncate mb-2 flex items-center gap-2">
-                <svg class="w-4 h-4 text-brand-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
-                DATABASE EXCEPTION
-            </h2>
-            <h1 class="text-3xl font-black text-zinc-100 leading-tight tracking-tight">
-                {{ $message ?? 'Database connection or validation failure.' }}
-            </h1>
-        </div>
-        
-        <div class="text-right ml-10 shrink-0 z-10 flex flex-col items-end gap-3">
-            <button onclick="location.reload()" class="inline-flex items-center justify-center px-4 py-2 bg-dark-400 hover:bg-dark-200 border border-dark-100 text-zinc-300 text-sm font-bold rounded-lg transition-colors shadow-sm">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                Retry Request
-            </button>
-            <div class="flex flex-col items-end gap-1">
-                <span class="text-brand-red text-xs font-black uppercase tracking-widest">{{ $error_type ?? 'Query Error' }}</span>
-                <span class="text-zinc-500 font-mono text-xs">{{ $request_info['method'] ?? 'GET' }} {{ $request_info['uri'] ?? '/' }}</span>
+<body>
+    <div class="header">
+        <div class="glow"></div>
+        <div class="header-content">
+            <div class="db-icon">
+                <div class="icon-box">🗄️</div>
+                <span>{{ $error_type ?? 'Database Error' }}</span>
+            </div>
+            <h1>{{ $message }}</h1>
+            <div class="header-meta">
+                <span class="db-badge">{{ $error_type ?? 'DB ERROR' }}</span>
+                <span class="meta-text">{{ $request_info['uri'] ?? '/' }}</span>
+                <span style="color:#3f3f46">•</span>
+                <span class="meta-text">PHP {{ $environment['php_version'] ?? PHP_VERSION }}</span>
             </div>
         </div>
-    </header>
-
-    <!-- Main Layout -->
-    <div class="flex flex-1 overflow-hidden">
-        
-        <!-- Sidebar Diagnosis -->
-        <aside class="w-[450px] bg-dark-400 border-r border-dark-100 flex flex-col shrink-0 z-20 shadow-xl overflow-y-auto scrollbar-hide p-6">
-            <h3 class="text-xs font-black text-zinc-400 uppercase tracking-widest mb-6 border-b border-dark-100 pb-2">Environment Configuration</h3>
-            
-            <div class="space-y-4">
-                @php
-                    $envVars = [
-                        'DB_DRIVER' => $env_values['DB_DRIVER'] ?? 'mysql',
-                        'DB_HOST' => $env_values['DB_HOST'] ?? 'not set',
-                        'DB_PORT' => $env_values['DB_PORT'] ?? 'not set',
-                        'DB_NAME' => $env_values['DB_NAME'] ?? 'not set',
-                        'DB_USER' => $env_values['DB_USER'] ?? 'not set',
-                    ];
-                @endphp
-                
-                @foreach($envVars as $key => $val)
-                <div class="p-3 bg-dark-500 rounded border border-dark-100 flex items-center justify-between shadow-inner">
-                    <span class="text-zinc-400 font-mono text-xs font-bold">{{ $key }}</span>
-                    @if($val === 'not set')
-                        <span class="text-brand-red font-mono text-xs italic">{{ $val }}</span>
-                    @else
-                        <span class="text-blue-400 font-mono text-xs font-bold">{{ $val }}</span>
-                    @endif
-                </div>
-                @endforeach
-            </div>
-
-            <h3 class="text-xs font-black text-zinc-400 uppercase tracking-widest mt-8 mb-4 border-b border-dark-100 pb-2">Troubleshooting</h3>
-            
-            <div class="space-y-3">
-                <div class="flex items-start gap-3 p-4 bg-dark-500 rounded border border-dark-100">
-                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <p class="text-xs text-zinc-400 font-medium">Verify your <span class="text-zinc-200 font-mono">.env</span> file matches the requirements above.</p>
-                </div>
-                <div class="flex items-start gap-3 p-4 bg-dark-500 rounded border border-dark-100">
-                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <p class="text-xs text-zinc-400 font-medium">Ensure your Database service (MySQL/PostgreSQL) is running.</p>
-                </div>
-                <div class="flex items-start gap-3 p-4 bg-dark-500 rounded border border-dark-100">
-                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <p class="text-xs text-zinc-400 font-medium">Clear system cache by deleting <span class="text-zinc-200 font-mono">storage/cache</span> mapping.</p>
-                </div>
-            </div>
-
-        </aside>
-
-        <!-- Main Content Pane -->
-        <main class="flex-1 bg-dark-300 flex flex-col overflow-hidden relative">
-            
-            <!-- Context Headers -->
-            <div class="flex px-2 bg-dark-500 border-b border-dark-100 shrink-0 shadow-sm">
-                <button class="tab-btn active uppercase tracking-wider text-xs" onclick="switchTab('query')">SQL Details</button>
-                <button class="tab-btn uppercase tracking-wider text-xs" onclick="switchTab('request')">Request Status</button>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto p-8 scrollbar-hide text-base">
-                
-                <!-- Query Tab -->
-                <div id="tab-query" class="tab-content block">
-                    <div class="mb-4 text-xs font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                        <svg class="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                        Raw Query Execution
-                    </div>
-                    
-                    @if(!empty($sql))
-                    <div class="bg-dark-600 border border-dark-100 rounded-lg p-6 overflow-x-auto shadow-inner mb-8">
-                        <pre class="code-container text-blue-300">{{ $sql }}</pre>
-                    </div>
-                    @else
-                    <div class="bg-dark-500 border border-dark-100 rounded-lg p-6 mb-8 flex items-center justify-center">
-                        <span class="text-zinc-500 text-sm italic">Failed before SQL was generated.</span>
-                    </div>
-                    @endif
-
-                    <div class="mb-4 text-xs font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                        <svg class="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                        Bindings
-                    </div>
-                    
-                    @if(!empty($bindings))
-                    <div class="bg-dark-600 border border-dark-100 rounded-lg p-6 overflow-x-auto shadow-inner">
-                        <pre class="code-container text-amber-300">{{ json_encode($bindings, JSON_PRETTY_PRINT) }}</pre>
-                    </div>
-                    @else
-                    <div class="bg-dark-500 border border-dark-100 rounded-lg p-6 flex items-center justify-center">
-                        <span class="text-zinc-500 text-sm italic">No bindings attached.</span>
-                    </div>
-                    @endif
-                </div>
-
-                <!-- Request Tab -->
-                <div id="tab-request" class="tab-content hidden">
-                    <div class="key-val">
-                        <div class="key-col">URL</div>
-                        <div class="val-col"><span class="bg-dark-100 px-1 py-0.5 rounded mr-2 text-zinc-500">{{ $request_info['method'] ?? 'GET' }}</span> <a href="{{ $request_info['uri'] ?? '/' }}" target="_blank" class="text-blue-400 hover:underline">{{ $request_info['uri'] ?? '/' }}</a></div>
-                    </div>
-                    <div class="key-val">
-                        <div class="key-col">Client IP</div>
-                        <div class="val-col">{{ $request_info['ip'] ?? 'Unknown' }}</div>
-                    </div>
-                    @if(!empty($request_info['query']))
-                    <div class="key-val">
-                        <div class="key-col">Query String</div>
-                        <div class="val-col">
-                            <pre class="bg-dark-100 p-3 rounded font-mono text-xs border border-dark-100">{{ json_encode($request_info['query'], JSON_PRETTY_PRINT) }}</pre>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-
-            </div>
-
-        </main>
     </div>
 
-    <script>
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('block'));
-            
-            event.target.classList.add('active');
-            document.getElementById('tab-' + tabId).classList.remove('hidden');
-            document.getElementById('tab-' + tabId).classList.add('block');
-        }
-    </script>
+    <div class="main-grid">
+        <!-- SQL Query (if available) -->
+        @if (!empty($sql))
+            <div class="card">
+                <div class="card-header">
+                    <svg width="14" height="14" fill="none" stroke="#FB923C" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4">
+                        </path>
+                    </svg>
+                    <h3>SQL Query</h3>
+                </div>
+                <div class="sql-box"><?php
+                $sqlDisplay = $sql ?? '';
+                $keywords = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'INTO', 'UPDATE', 'DELETE', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'ON', 'SET', 'VALUES', 'ORDER BY', 'GROUP BY', 'LIMIT', 'AND', 'OR', 'NOT', 'NULL', 'IS', 'IN', 'LIKE', 'CREATE', 'TABLE', 'ALTER', 'DROP', 'IF', 'EXISTS', 'PRIMARY', 'KEY', 'INDEX', 'UNIQUE', 'FOREIGN', 'REFERENCES', 'CASCADE', 'HAVING', 'AS', 'DISTINCT', 'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'BETWEEN'];
+                $escaped = htmlspecialchars($sqlDisplay);
+                foreach ($keywords as $kw) {
+                    $escaped = preg_replace('/\b(' . $kw . ')\b/i', '<span class="keyword">$1</span>', $escaped);
+                }
+                echo $escaped;
+                ?></div>
+
+                @if (!empty($bindings))
+                    <div style="padding:12px 20px;font-size:12px;border-top:1px solid #27272a;background:#1a1a1e;">
+                        <span style="color:#52525b;font-weight:600;">Bindings:</span>
+                        <span
+                            style="color:#d4d4d8;font-family:'JetBrains Mono',monospace;">{{ json_encode($bindings) }}</span>
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        <!-- Connection Config -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Database Configuration</h3>
+            </div>
+            <table class="env-table">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php
+                        $envVals = $env_values ?? [];
+                        $dbVars = [
+                            'DB_CONNECTION' => $envVals['DB_CONNECTION'] ?? ($_ENV['DB_CONNECTION'] ?? 'mysql'),
+                            'DB_HOST' => $envVals['DB_HOST'] ?? ($_ENV['DB_HOST'] ?? 'not set'),
+                            'DB_PORT' => $envVals['DB_PORT'] ?? ($_ENV['DB_PORT'] ?? 'not set'),
+                            'DB_NAME' => $envVals['DB_NAME'] ?? ($_ENV['DB_NAME'] ?? 'not set'),
+                            'DB_USER' => $envVals['DB_USER'] ?? ($_ENV['DB_USER'] ?? 'not set'),
+                            'DB_PASS' => !empty($envVals['DB_PASS'] ?? ($_ENV['DB_PASS'] ?? ''))
+                                ? '••••••••'
+                                : 'not set',
+                            'DB_TIMEZONE' => $envVals['DB_TIMEZONE'] ?? ($_ENV['DB_TIMEZONE'] ?? 'not set'),
+                        ];
+                    @endphp
+                    @foreach ($dbVars as $key => $val)
+                        <tr>
+                            <td>{{ $key }}</td>
+                            <td>
+                                @if ($val === 'not set' || $val === '••••••••')
+                                    <span
+                                        class="{{ $val === 'not set' ? 'env-hidden' : '' }}">{{ $val }}</span>
+                                @else
+                                    {{ $val }}
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Troubleshooting -->
+        <div class="hint-box">
+            <h3>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                    </path>
+                </svg>
+                Solutions
+            </h3>
+            <ul>
+                @if (isset($error_type) && $error_type === 'Connection Error')
+                    <li>Pastikan MySQL/MariaDB server sedang <strong>berjalan</strong></li>
+                    <li>Cek <code>DB_HOST</code> dan <code>DB_PORT</code> di file <code>.env</code></li>
+                    <li>Pastikan user <code>DB_USER</code> memiliki akses ke database <code>DB_NAME</code></li>
+                @elseif(isset($error_type) && $error_type === 'Duplicate Entry')
+                    <li>Data yang Anda masukkan sudah ada di database (unique constraint violation)</li>
+                    <li>Cek kolom <strong>UNIQUE</strong> di tabel terkait</li>
+                @elseif(isset($error_type) && $error_type === 'SQL Syntax Error')
+                    <li>Periksa query SQL di atas — kemungkinan ada <strong>typo</strong> atau <strong>missing
+                            column</strong></li>
+                    <li>Pastikan nama tabel dan kolom benar</li>
+                    <li>Jalankan <code>php artisan migrate:status</code> untuk cek status migrasi</li>
+                @else
+                    <li>Pastikan database server berjalan: <code>mysql -u root -p</code></li>
+                    <li>Buat database jika belum: <code>CREATE DATABASE db_name;</code></li>
+                    <li>Pastikan <code>.env</code> sudah benar, lalu jalankan <code>php artisan migrate</code></li>
+                    <li>Cek log: <code>storage/logs/framework-{{ date('Y-m-d') }}.log</code></li>
+                @endif
+            </ul>
+        </div>
+
+        <!-- Request Info -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Request Info</h3>
+            </div>
+            <div class="kv-section">
+                <div class="kv-row">
+                    <div class="kv-key">Method</div>
+                    <div class="kv-val">{{ $request_info['method'] ?? 'GET' }}</div>
+                </div>
+                <div class="kv-row">
+                    <div class="kv-key">URL</div>
+                    <div class="kv-val">{{ $request_info['uri'] ?? '/' }}</div>
+                </div>
+                <div class="kv-row">
+                    <div class="kv-key">Client IP</div>
+                    <div class="kv-val">{{ $request_info['ip'] ?? '127.0.0.1' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <a href="{{ url('/') }}" class="btn">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Go Home
+            </a>
+            <a href="javascript:location.reload()" class="btn">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
+                Retry
+            </a>
+        </div>
+    </div>
 </body>
+
 </html>

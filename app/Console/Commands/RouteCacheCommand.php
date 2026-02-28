@@ -19,7 +19,7 @@ class RouteCacheCommand implements CommandInterface
 
     public function run(array $args): void
     {
-        echo "\033[38;5;39m➤ INFO  Sedang memproses route caching...\033[0m\n";
+        echo "\n  \033[1;44;97m INFO \033[0m Sedang memproses route caching...\n";
 
         if (!defined('ROOT_DIR')) {
             define('ROOT_DIR', dirname(__DIR__, 3));
@@ -38,7 +38,7 @@ class RouteCacheCommand implements CommandInterface
         $routes = Router::getRouteDefinitions();
 
         if (empty($routes)) {
-            echo "\033[38;5;124m✖ ERROR  Tidak ada route yang ditemukan untuk di-cache.\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Tidak ada route yang ditemukan untuk di-cache.\n";
             return;
         }
 
@@ -60,10 +60,10 @@ class RouteCacheCommand implements CommandInterface
         }
 
         if (file_put_contents($cacheFile, $cacheContent)) {
-            echo "\033[38;5;28m★ SUCCESS  Route berhasil di-cache! (" . count($routes) . " routes)\033[0m\n";
+            echo "\n  \033[1;42;30m SUCCESS \033[0m Route berhasil di-cache! (" . count($routes) . " routes)\n";
             echo "\033[38;5;240m  Lokasi: " . $cacheFile . "\033[0m\n";
         } else {
-            echo "\033[38;5;124m✖ ERROR  Gagal menulis file cache.\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Gagal menulis file cache.\n";
         }
     }
 }

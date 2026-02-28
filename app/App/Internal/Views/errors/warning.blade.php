@@ -1,235 +1,456 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ url('/assets/ico/favicon-debug.ico') }}">
-    <title>{{ $severity_name ?? 'Warning' }} | The Framework</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>{{ $class ?? 'Warning' }} — The Framework</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-        :root {
-            --bg-main: #0d1117;
-            --bg-card: #161b22;
-            --border: rgba(210, 153, 34, 0.2);
-            --warning: #d29922;
-            --text-main: #c9d1d9;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            margin: 0;
-            line-height: 1.5;
-            background-image: linear-gradient(180deg, rgba(210, 153, 34, 0.05) 0%, rgba(13, 17, 23, 0) 500px);
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #131316;
+            color: #f4f4f5;
+            min-height: 100vh;
         }
 
-        .premium-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 3px;
+        }
+
+        .header {
+            background: linear-gradient(180deg, #18181c, #131316);
+            border-bottom: 1px solid #27272a;
+            position: relative;
             overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
-        .editor-container {
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #F59E0B, #FBBF24, #F59E0B);
+        }
+
+        .header .glow {
+            position: absolute;
+            top: -120px;
+            left: -60px;
+            width: 500px;
+            height: 500px;
+            background: rgba(245, 158, 11, 0.06);
+            filter: blur(150px);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            padding: 24px 32px;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .header-badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #F59E0B;
+            animation: pulse 2s infinite;
+        }
+
+        .header-badge span {
+            color: #71717a;
+            font-size: 12px;
             font-family: 'JetBrains Mono', monospace;
-            background-color: #0d1117;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border);
+            letter-spacing: 0.05em;
         }
 
-        .editor-header {
-            background-color: #161b22;
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border);
+        .header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #f4f4f5;
+            line-height: 1.3;
+            margin-bottom: 12px;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .method-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: #FBBF24;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .meta-text {
+            color: #52525b;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .meta-dot {
+            color: #3f3f46;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 32px;
+            gap: 24px;
+        }
+
+        .card {
+            background: #18181c;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 12px 20px;
+            background: #1e1e22;
+            border-bottom: 1px solid #27272a;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: between;
         }
 
-        .window-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
+        .card-header h3 {
+            font-size: 11px;
+            font-weight: 700;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
 
-        .editor-content {
-            padding: 16px 0;
+        .card-body {
+            padding: 0;
+        }
+
+        .code-container {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.7;
             overflow-x: auto;
-            max-height: 400px;
         }
 
         .code-line {
             display: flex;
-            width: 100%;
-            height: 24px;
-            align-items: center;
+            padding: 0 16px;
+            border-left: 3px solid transparent;
         }
 
-        .ln-col {
-            width: 55px;
+        .code-line:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .code-line.active {
+            background: rgba(245, 158, 11, 0.08);
+            border-left-color: #F59E0B;
+        }
+
+        .code-line.active .line-num {
+            color: #F59E0B;
+            font-weight: 700;
+        }
+
+        .line-num {
+            width: 3.5rem;
             text-align: right;
-            padding-right: 20px;
-            color: #484f58;
+            padding-right: 1.25rem;
+            color: #3f3f46;
             user-select: none;
+            border-right: 1px solid #27272a;
+            margin-right: 1.25rem;
             flex-shrink: 0;
-            font-size: 12px;
-            border-right: 1px solid var(--border);
         }
 
-        .code-col {
-            padding-left: 20px;
+        .line-code {
             white-space: pre;
-            color: #c9d1d9;
-            font-size: 14px;
+            color: #d4d4d8;
         }
 
-        .highlight-line {
-            background: rgba(210, 153, 34, 0.1);
-            position: relative;
+        .file-path {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #71717a;
+            border-bottom: 1px solid #27272a;
+            background: #1a1a1e;
         }
 
-        .highlight-line::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: var(--warning);
+        .file-path .line-highlight {
+            color: #F59E0B;
+            font-weight: 700;
         }
 
-        .highlight-line .ln-col {
-            color: var(--warning);
-            font-weight: bold;
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
         }
 
-        .glow-warning {
-            text-shadow: 0 0 20px rgba(210, 153, 34, 0.2);
+        .kv-section {
+            padding: 16px 20px;
+        }
+
+        .kv-section h4 {
+            font-size: 11px;
+            font-weight: 700;
+            color: #52525b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #27272a;
+        }
+
+        .kv-row {
+            display: flex;
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #1e1e22;
+        }
+
+        .kv-row:last-child {
+            border-bottom: none;
+        }
+
+        .kv-key {
+            width: 140px;
+            flex-shrink: 0;
+            color: #71717a;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+
+        .kv-val {
+            flex: 1;
+            color: #d4d4d8;
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #a1a1aa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            background: #3f3f46;
+            color: #f4f4f5;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-grid {
+                padding: 16px;
+            }
+
+            .header-content {
+                padding: 16px;
+            }
         }
     </style>
 </head>
 
-<body class="p-6 md:p-12">
-    <div class="max-w-5xl mx-auto space-y-8">
-        <!-- Header Section -->
-        <div class="space-y-4">
-            <div
-                class="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-black rounded-md uppercase tracking-widest">
-                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
-                Runtime Warning
+<body>
+    <div class="header">
+        <div class="glow"></div>
+        <div class="header-content">
+            <div class="header-badge">
+                <div class="dot"></div>
+                <span>{{ $class ?? 'PHP Warning' }}</span>
             </div>
-
-            <h1 class="text-3xl md:text-5xl font-bold glow-warning">
-                {{ $severity_name ?? 'E_WARNING' }}
-            </h1>
-
-            <p class="text-lg text-slate-400 max-w-3xl leading-relaxed">
-                {{ $message }}
-            </p>
-        </div>
-
-        <!-- Meta Info -->
-        <div class="grid md:grid-cols-2 gap-4">
-            <div class="premium-card p-5 space-y-2">
-                <div class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Source Context</div>
-                <div class="text-sm font-mono text-slate-300 truncate" title="{{ $file }}">
-                    {{ $file }}
-                </div>
-                <div class="text-xs text-amber-500 font-bold">Line: {{ $line }}</div>
+            <h1>{{ $message }}</h1>
+            <div class="header-meta">
+                <span class="method-badge">{{ $error_code_text ?? 'WARNING' }}</span>
+                <span class="meta-text">{{ $request_info['uri'] ?? '/' }}</span>
+                <span class="meta-dot">•</span>
+                <span class="meta-text">PHP {{ $environment['php_version'] ?? PHP_VERSION }}</span>
             </div>
-
-            <div class="premium-card p-5 space-y-2 bg-gradient-to-r from-[#161b22] to-[#1c2128]">
-                <div class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Framework State</div>
-                <div class="flex items-center gap-4">
-                    <div class="text-sm font-bold text-slate-300">Severity: {{ $severity ?? 0 }}</div>
-                    <div class="w-px h-4 bg-slate-700"></div>
-                    <div class="text-sm font-bold text-slate-300">PHP {{ PHP_VERSION }}</div>
-                </div>
-                <div class="text-xs text-slate-500 italic">Execution will continue after this warning.</div>
-            </div>
-        </div>
-
-        <!-- Code Preview -->
-        <div class="editor-container">
-            <div class="editor-header">
-                <div class="flex items-center gap-4">
-                    <div class="flex gap-1.5">
-                        <div class="window-dot bg-[#ff5f56]"></div>
-                        <div class="window-dot bg-[#ffbd2e]"></div>
-                        <div class="window-dot bg-[#27c93f]"></div>
-                    </div>
-                    <div class="text-xs font-medium text-slate-500 font-mono">{{ basename($file) }}</div>
-                </div>
-                <div class="text-[10px] font-black text-slate-700 uppercase">Warning Snapshot</div>
-            </div>
-            <div class="editor-content">
-                @php
-                    if (empty($code_snippet)) {
-                        $lines = @file($file);
-                        $start = max(0, $line - 5);
-                        $end = min(count($lines), $line + 4);
-                        $code_snippet = [];
-                        for ($i = $start; $i < $end; $i++) {
-                            $code_snippet[$i + 1] = $lines[$i];
-                        }
-                    }
-                @endphp
-                @foreach ($code_snippet as $lineNum => $codeLine)
-                    <div class="code-line {{ $lineNum == $line ? 'highlight-line' : '' }}">
-                        <div class="ln-col">{{ $lineNum }}</div>
-                        <div class="code-col">{!! htmlspecialchars(rtrim($codeLine)) !!}</div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-
-        <!-- Info Request -->
-        @if (!empty($request_info))
-            <div class="premium-card overflow-hidden">
-                <div class="px-5 py-3 border-b border-white/5 bg-black/20 text-xs font-black uppercase text-slate-500">
-                    Request Trace</div>
-                <div class="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
-                    <div>
-                        <span class="block text-slate-600 mb-1">Method</span>
-                        <span class="text-blue-400">{{ $request_info['method'] }}</span>
-                    </div>
-                    <div class="col-span-1 md:col-span-2">
-                        <span class="block text-slate-600 mb-1">Path</span>
-                        <span class="text-slate-300 truncate block">{{ $request_info['uri'] }}</span>
-                    </div>
-                    <div>
-                        <span class="block text-slate-600 mb-1">Remote IP</span>
-                        <span class="text-slate-300">{{ $request_info['ip'] }}</span>
-                    </div>
-                </div>
-            </div>
-        @endif
-
-        <!-- Actions -->
-        <div class="flex items-center justify-center gap-4 pt-4">
-            <button onclick="history.back()"
-                class="px-6 py-2 bg-slate-800 text-slate-300 font-bold rounded hover:bg-slate-700 transition flex items-center gap-2">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                Go Back
-            </button>
-            <a href="{{ url('/') }}"
-                class="px-6 py-2 bg-amber-500 text-black font-bold rounded hover:bg-amber-400 transition flex items-center gap-2">
-                <i data-lucide="home" class="w-4 h-4"></i>
-                Home
-            </a>
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-    </script>
+    <div class="main-grid">
+        <!-- Source Code -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Source Code</h3>
+            </div>
+            <div class="file-path">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    style="flex-shrink:0">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                </svg>
+                <span>{{ $file }}</span>
+                <span class="meta-dot">:</span>
+                <span class="line-highlight">{{ $line }}</span>
+            </div>
+            <div class="card-body">
+                <div class="code-container" style="padding: 12px 0;">
+                    @if (!empty($code_snippet))
+                        @foreach ($code_snippet as $num => $code)
+                            <div class="code-line {{ $num == $line ? 'active' : '' }}">
+                                <div class="line-num">{{ $num }}</div>
+                                <div class="line-code">{{ $code }}</div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div style="padding: 24px; text-align: center; color: #52525b; font-size: 13px;">No source code
+                            available</div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="info-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Request Info</h3>
+                </div>
+                <div class="kv-section">
+                    <div class="kv-row">
+                        <div class="kv-key">Method</div>
+                        <div class="kv-val">{{ $request_info['method'] ?? 'GET' }}</div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">URL</div>
+                        <div class="kv-val">{{ $request_info['uri'] ?? '/' }}</div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">Client IP</div>
+                        <div class="kv-val">{{ $request_info['ip'] ?? '127.0.0.1' }}</div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">User Agent</div>
+                        <div class="kv-val">{{ $request_info['user_agent'] ?? 'Unknown' }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Environment</h3>
+                </div>
+                <div class="kv-section">
+                    <div class="kv-row">
+                        <div class="kv-key">PHP</div>
+                        <div class="kv-val" style="color:#3B82F6;font-weight:700">
+                            {{ $environment['php_version'] ?? PHP_VERSION }}</div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">App Env</div>
+                        <div class="kv-val"><span
+                                class="method-badge">{{ strtoupper($environment['app_env'] ?? 'local') }}</span></div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">Memory</div>
+                        <div class="kv-val">{{ $environment['memory_usage'] ?? 'N/A' }}</div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">Framework</div>
+                        <div class="kv-val" style="color:#F59E0B;font-weight:600">v5.0.1</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <a href="{{ url('/') }}" class="btn">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Go Home
+            </a>
+            <a href="javascript:location.reload()" class="btn">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
+                Retry
+            </a>
+        </div>
+    </div>
 </body>
 
 </html>

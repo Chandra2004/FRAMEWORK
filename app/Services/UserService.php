@@ -2,22 +2,13 @@
 
 namespace TheFramework\Services;
 
+use Exception;
 use TheFramework\Repositories\UserRepository;
 use TheFramework\Handlers\UploadHandler;
 use TheFramework\Helpers\DatabaseHelper;
 use TheFramework\Helpers\Helper;
 use TheFramework\Http\Requests\UserRequest;
 
-/**
- * UserService — Business Logic Layer
- *
- * Alur: Controller → Service → Repository → Model
- * Service menangani business logic + upload.
- * Repository menangani query database.
- *
- * @package TheFramework\Services
- * @version 5.0.3
- */
 class UserService
 {
     protected UserRepository $repo;
@@ -27,168 +18,125 @@ class UserService
         $this->repo = new UserRepository();
     }
 
-    /**
-     * Cek status koneksi database.
-     */
     public function status(): string
     {
         return DatabaseHelper::testConnection() ? 'success' : 'failed';
     }
 
-    /**
-     * Ambil semua user.
-     */
-    public function getAllUsers(): array
+    public function getAll()
     {
         return $this->repo->getAll();
     }
 
-    /**
-     * Ambil user berdasarkan UID.
-     */
-    public function getUser(string $uid): ?array
+    public function getInformation(string $uid)
     {
-        return $this->repo->findByUid($uid);
+        return $this->repo->getInformation($uid);
     }
 
-    /**
-     * Ambil user berdasarkan email.
-     */
-    public function getUserByEmail(string $email): ?array
+    public function createUserService(UserRequest $request)
     {
-        return $this->repo->findByEmail($email);
-    }
-
-    /**
-     * Buat user baru dari request.
-     *
-     * @return bool|string|array true=sukses, string=error_key, array=upload_error
-     */
-    public function createFromRequest(UserRequest $request): bool|string|array
-    {
-        $validated = $request->validated();
-
-        // 1. Business Logic: Check Uniqueness
-        if ($this->repo->isNameTaken($validated['name'])) {
-            return 'name_exist';
-        }
-        if ($this->repo->isEmailTaken($validated['email'])) {
-            return 'email_exist';
+        if ($this->repo->findByName($request->input('name')) != null) {
+            throw new Exception('Name is taken');
         }
 
-        // 2. Handle Upload (ke private-uploads/user-pictures)
-        $uploadedFileName = null;
+        if ($this->repo->findByEmail($request->input('email')) != null) {
+            throw new Exception('Email is taken');
+        }
 
+        $photoName = null;
         if ($request->hasFile('profile_picture')) {
-            $uploadResult = UploadHandler::handleUploadToWebP(
-                $request->file('profile_picture'),
-                '/user-pictures',
-                'foto_'
-            );
-
-            if (UploadHandler::isError($uploadResult)) {
-                return $uploadResult;
+            $photoName = UploadHandler::handleUploadToWebP($request->file('profile_picture'), '/user-pictures', 'foto_');
+            if (UploadHandler::isError($photoName)) {
+                throw new Exception(UploadHandler::getErrorMessage($photoName));
             }
-
-            $validated['profile_picture'] = $uploadResult;
-            $uploadedFileName = $uploadResult;
-        } else {
-            $validated['profile_picture'] = null;
         }
 
-        // 3. Generate UID
-        $validated['uid'] = Helper::uuid();
+        $data = $request->validated();
+        $data['profile_picture'] = $photoName;
+        $data['uid'] = Helper::uuid();
 
-        // 4. Insert to DB via Repository
-        $result = $this->repo->create($validated);
-
-        if (!$result && $uploadedFileName) {
-            // Cleanup upload on failure
-            UploadHandler::delete($uploadedFileName, '/user-pictures');
+        try {
+            return $this->repo->createRepo($data);
+        } catch (Exception $e) {
+            if ($photoName) {
+                UploadHandler::delete($photoName, '/user-pictures');
+            }
+            throw new Exception('Failed to save data:' . $e->getMessage());
         }
-
-        return $result;
     }
 
-    /**
-     * Update user dari request.
-     *
-     * @return bool|string|array true=sukses, string=error_key, array=upload_error
-     */
-    public function updateFromRequest(string $uid, UserRequest $request): bool|string|array
+    public function updateUserService(string $uid, UserRequest $request)
     {
-        $user = $this->repo->findByUid($uid);
-        if (!$user) {
-            return 'not_found';
+        $existingUser = $this->repo->getInformation($uid);
+        if (!$existingUser) {
+            throw new Exception('User is not found');
         }
 
-        $validated = $request->validated();
-
-        // 1. Business Logic: Check Uniqueness (Exclude Self)
-        if ($this->repo->isNameTaken($validated['name'], $uid)) {
-            return 'name_exist';
-        }
-        if ($this->repo->isEmailTaken($validated['email'], $uid)) {
-            return 'email_exist';
+        if ($this->repo->findByName($request->input('name'), $uid) != null) {
+            throw new Exception('Name is taken');
         }
 
-        // 2. Handle Upload
-        $oldProfilePicture = $user['profile_picture'] ?? null;
-        $uploadedFileName = null;
-        $deletePicture = !empty($validated['delete_profile_picture']);
-        $profilePicture = $oldProfilePicture;
+        if ($this->repo->findByEmail($request->input('email'), $uid) != null) {
+            throw new Exception('Email is taken');
+        }
 
+        $data = $request->updateValidated();
+
+        $oldPhoto = $existingUser['profile_picture'] ?? null;
+        if (!empty($data['delete_profile_picture']) && $oldPhoto) {
+            UploadHandler::delete($oldPhoto, '/user-pictures');
+            $oldPhoto = null;
+        }
+
+        $newPhoto = null;
         if ($request->hasFile('profile_picture')) {
-            $uploadResult = UploadHandler::handleUploadToWebP(
-                $request->file('profile_picture'),
-                '/user-pictures',
-                'foto_'
-            );
-
-            if (UploadHandler::isError($uploadResult)) {
-                return $uploadResult;
+            if ($oldPhoto) {
+                UploadHandler::delete($oldPhoto, '/user-pictures');
             }
 
-            $uploadedFileName = $uploadResult;
-            $profilePicture = $deletePicture ? null : $uploadedFileName;
-        } else {
-            $profilePicture = $deletePicture ? null : $oldProfilePicture;
-        }
-
-        // 3. Prepare Data
-        unset($validated['delete_profile_picture']);
-        $validated['profile_picture'] = $profilePicture;
-
-        // 4. Update via Repository
-        $result = $this->repo->update($validated, $uid);
-
-        if ($result) {
-            // Cleanup old file if replaced or deleted
-            if (($deletePicture && $oldProfilePicture) || ($uploadedFileName && $oldProfilePicture)) {
-                UploadHandler::delete($oldProfilePicture, '/user-pictures');
-            }
-        } else {
-            // Cleanup new file if update failed
-            if ($uploadedFileName) {
-                UploadHandler::delete($uploadedFileName, '/user-pictures');
+            $newPhoto = UploadHandler::handleUploadToWebP($request->file('profile_picture'), '/user-pictures', 'foto_');
+            if (UploadHandler::isError($newPhoto)) {
+                throw new Exception(UploadHandler::getErrorMessage($newPhoto));
             }
         }
 
-        return $result;
+        if ($newPhoto) {
+            $data['profile_picture'] = $newPhoto;
+        } elseif (!empty($data['delete_profile_picture'])) {
+            $data['profile_picture'] = null;
+        } else {
+            unset($data['profile_picture']);
+        }
+        unset($data['delete_profile_picture']);
+
+        try {
+            return $this->repo->updateRepo($data, $uid);
+        } catch (Exception $e) {
+            if ($newPhoto) {
+                UploadHandler::delete($newPhoto, '/user-pictures');
+            }
+            throw new Exception('Failed to update data:' . $e->getMessage());
+        }
     }
 
-    /**
-     * Hapus user + cleanup file profile.
-     */
-    public function deleteUser(string $uid): bool
+    public function deleteUserService(string $uid)
     {
-        $user = $this->repo->findByUid($uid);
-
-        // Hapus file profile picture jika ada
-        if ($user && !empty($user['profile_picture'])) {
-            UploadHandler::delete($user['profile_picture'], '/user-pictures');
+        $existingUser = $this->repo->getInformation($uid);
+        if (!$existingUser) {
+            throw new Exception('User is not found');
         }
 
-        return $this->repo->delete($uid);
+        try {
+            $result = $this->repo->deleteRepo($uid);
+
+            $photo = $existingUser['profile_picture'] ?? null;
+            if ($photo) {
+                UploadHandler::delete($photo, '/user-pictures');
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            throw new Exception('Failed to delete data: ' . $e->getMessage());
+        }
     }
 }

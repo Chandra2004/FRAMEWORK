@@ -1,0 +1,23 @@
+<?php
+
+namespace Database\Seeders;
+
+use Faker\Factory;
+use TheFramework\Database\Seeder;
+use TheFramework\Helpers\Helper;
+
+class {{class}} extends Seeder {
+
+    public function run(): void {
+        $faker = Factory::create();
+        $table = $this->table('{{table}}');
+
+        $table->insert([
+            [
+                // Contoh data:
+                // 'uid' => Helper::uuid(),
+                // 'name' => $faker->name,
+            ]
+        ]);
+    }
+}

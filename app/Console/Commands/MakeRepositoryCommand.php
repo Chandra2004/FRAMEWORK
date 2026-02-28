@@ -21,7 +21,7 @@ class MakeRepositoryCommand implements CommandInterface
         $name = $args[0] ?? null;
 
         if (!$name) {
-            echo "\033[38;5;124m✖ ERROR  Harap masukkan nama repository (contoh: ProductRepository)\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Harap masukkan nama repository (contoh: ProductRepository)\n";
             exit(1);
         }
 
@@ -38,54 +38,30 @@ class MakeRepositoryCommand implements CommandInterface
         $path = BASE_PATH . "/app/Repositories/" . ($folderPath ? $folderPath . '/' : '') . "$className.php";
 
         if (file_exists($path)) {
-            echo "\033[38;5;124m✖ ERROR  Repository sudah ada: $className\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Repository sudah ada: $className\n";
             exit(1);
         }
 
         $namespace = "TheFramework\\Repositories" . ($subNamespace ? "\\$subNamespace" : '');
 
-        $content = <<<PHP
-<?php
+        $stubPath = BASE_PATH . '/app/Console/Stubs/repository.stub';
+        if (!file_exists($stubPath)) {
+            echo "\n  \033[1;41;97m ERROR \033[0m Stub tidak ditemukan di app/Console/Stubs/repository.stub\n";
+            exit(1);
+        }
 
-namespace $namespace;
-
-use TheFramework\App\Database\Database;
-
-class $className
-{
-    protected \$db;
-
-    public function __construct()
-    {
-        \$this->db = Database::getInstance();
-    }
-
-    /**
-     * Contoh method untuk mengambil semua data
-     */
-    public function all()
-    {
-        \$this->db->query("SELECT * FROM table_name");
-        return \$this->db->resultSet();
-    }
-
-    /**
-     * Contoh method untuk mengambil data berdasarkan ID
-     */
-    public function find(\$id)
-    {
-        \$this->db->query("SELECT * FROM table_name WHERE id = ?");
-        \$this->db->bind(1, \$id);
-        return \$this->db->single();
-    }
-}
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{namespace}}', '{{class}}'],
+            [$namespace, $className],
+            $content
+        );
 
         if (!is_dir(dirname($path))) {
             mkdir(dirname($path), 0755, true);
         }
 
         file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Repository dibuat: $className (app/Repositories/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Repository dibuat: $className (app/Repositories/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\n";
     }
 }

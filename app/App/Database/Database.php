@@ -179,7 +179,8 @@ class Database
         }
 
         // Only check for typos if .env file exists (don't error if it's missing in production)
-        $envFile = __DIR__ . '/../../.env';
+        $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+        $envFile = $root . '/.env';
         if (file_exists($envFile)) {
             $envContent = file_get_contents($envFile);
             $expectedVars = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASS', 'DB_PORT'];

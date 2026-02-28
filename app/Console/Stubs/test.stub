@@ -1,0 +1,24 @@
+<?php
+
+namespace {{namespace}};
+
+use PHPUnit\Framework\TestCase;
+
+class {{class}} extends TestCase
+{
+    /**
+     * Setup sebelum setiap test dijalankan.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+    }
+
+    /**
+     * Contoh test method.
+     */
+    public function test_example(): void
+    {
+        $this->assertTrue(true);
+    }
+}

@@ -10,15 +10,15 @@ abstract class BaseCommand implements CommandInterface
 {
     // ANSI Colors & Styles
     protected const COLOR_RESET = "\033[0m";
-    protected const STYLE_BOLD  = "\033[1m";
-    
-    protected const COLOR_BLUE    = "\033[38;5;39m";
-    protected const COLOR_GREEN   = "\033[38;5;28m";
-    protected const COLOR_YELLOW  = "\033[38;5;214m";
-    protected const COLOR_RED     = "\033[31m";
+    protected const STYLE_BOLD = "\033[1m";
+
+    protected const COLOR_BLUE = "\033[38;5;39m";
+    protected const COLOR_GREEN = "\033[38;5;28m";
+    protected const COLOR_YELLOW = "\033[38;5;214m";
+    protected const COLOR_RED = "\033[31m";
     protected const COLOR_MAGENTA = "\033[38;5;201m";
-    protected const COLOR_CYAN    = "\033[38;5;51m";
-    protected const COLOR_GRAY    = "\033[38;5;244m";
+    protected const COLOR_CYAN = "\033[38;5;51m";
+    protected const COLOR_GRAY = "\033[38;5;244m";
 
     abstract public function getName(): string;
     abstract public function getDescription(): string;
@@ -36,22 +36,22 @@ abstract class BaseCommand implements CommandInterface
 
     protected function info(string $message): void
     {
-        echo self::COLOR_BLUE . "➤ INFO  " . self::COLOR_RESET . $message . PHP_EOL;
+        echo PHP_EOL . "  \033[1;44;97m INFO \033[0m " . $message . PHP_EOL;
     }
 
     protected function success(string $message): void
     {
-        echo self::COLOR_GREEN . "★ SUCCESS  " . self::COLOR_RESET . $message . PHP_EOL;
+        echo PHP_EOL . "  \033[1;42;30m SUCCESS \033[0m " . $message . PHP_EOL;
     }
 
     protected function warn(string $message): void
     {
-        echo self::COLOR_YELLOW . "⚠ WARNING  " . self::COLOR_RESET . $message . PHP_EOL;
+        echo PHP_EOL . "  \033[1;43;30m WARN \033[0m " . $message . PHP_EOL;
     }
 
     protected function error(string $message): void
     {
-        echo self::COLOR_RED . "✖ ERROR  " . self::COLOR_RESET . $message . PHP_EOL;
+        echo PHP_EOL . "  \033[1;41;97m ERROR \033[0m " . $message . PHP_EOL;
     }
 
     protected function line(string $message, string $color = self::COLOR_GRAY): void
@@ -71,12 +71,16 @@ abstract class BaseCommand implements CommandInterface
     {
         $widths = [];
         foreach ($headers as $i => $header) {
-            $widths[$i] = mb_strlen($header);
+            $cleanHeader = preg_replace("/\033\[[0-9;]*m/", '', $header);
+            $widths[$i] = mb_strlen($cleanHeader, 'UTF-8');
         }
 
         foreach ($rows as $row) {
-            foreach ($row as $i => $cell) {
-                $widths[$i] = max($widths[$i], mb_strlen((string)$cell));
+            $i = 0;
+            foreach ($row as $cell) {
+                $cleanCell = preg_replace("/\033\[[0-9;]*m/", '', (string) $cell);
+                $widths[$i] = max($widths[$i] ?? 0, mb_strlen($cleanCell, 'UTF-8'));
+                $i++;
             }
         }
 
@@ -86,7 +90,9 @@ abstract class BaseCommand implements CommandInterface
         // Headers
         echo "│";
         foreach ($headers as $i => $header) {
-            echo " " . self::STYLE_BOLD . str_pad($header, $widths[$i]) . self::COLOR_RESET . " │";
+            $cleanHeader = preg_replace("/\033\[[0-9;]*m/", '', $header);
+            $padAmount = max(0, $widths[$i] - mb_strlen($cleanHeader, 'UTF-8'));
+            echo " " . self::STYLE_BOLD . $header . self::COLOR_RESET . str_repeat(" ", $padAmount) . " │";
         }
         echo PHP_EOL;
 
@@ -96,8 +102,12 @@ abstract class BaseCommand implements CommandInterface
         // Data Rows
         foreach ($rows as $row) {
             echo "│";
-            foreach ($row as $i => $cell) {
-                echo " " . str_pad((string)$cell, $widths[$i]) . " │";
+            $i = 0;
+            foreach ($row as $cell) {
+                $cleanCell = preg_replace("/\033\[[0-9;]*m/", '', (string) $cell);
+                $padAmount = max(0, $widths[$i] - mb_strlen($cleanCell, 'UTF-8'));
+                echo " " . ((string) $cell) . str_repeat(" ", $padAmount) . " │";
+                $i++;
             }
             echo PHP_EOL;
         }
@@ -109,7 +119,7 @@ abstract class BaseCommand implements CommandInterface
     /**
      * Ask user for input
      */
-    protected function ask(string $question, string $default = null): string
+    protected function ask(string $question, ?string $default = null): string
     {
         echo self::COLOR_CYAN . "? " . self::COLOR_RESET . $question . ($default ? " [$default]" : "") . ": ";
         $handle = fopen("php://stdin", "r");
@@ -117,7 +127,7 @@ abstract class BaseCommand implements CommandInterface
         fclose($handle);
         $input = trim($line);
 
-        return $input === '' ? (string)$default : $input;
+        return $input === '' ? (string) $default : $input;
     }
 
     /**
@@ -127,13 +137,14 @@ abstract class BaseCommand implements CommandInterface
     {
         $displayDefault = $default ? "[Y/n]" : "[y/N]";
         echo self::COLOR_CYAN . "? " . self::COLOR_RESET . $question . " $displayDefault: ";
-        
+
         $handle = fopen("php://stdin", "r");
         $line = fgets($handle);
         fclose($handle);
         $input = strtolower(trim($line));
 
-        if ($input === '') return $default;
+        if ($input === '')
+            return $default;
         return in_array($input, ['y', 'yes']);
     }
 

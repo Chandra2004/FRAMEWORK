@@ -3,9 +3,7 @@ ob_start();
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/app/Helpers/helpers.php';
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// Error reporting defaults to system PHP settings until bootstrap/app.php loads environment
 
 define('ROOT_DIR', __DIR__);
 
@@ -25,10 +23,12 @@ if ($isDown || file_exists($maintenanceFile)) {
     if (!in_array($clientIp, $allowedIps)) {
         header('HTTP/1.1 503 Service Unavailable');
         header('Retry-After: 3600');
-        if (file_exists(__DIR__ . '/resources/views/errors/503.blade.php')) {
-             echo \TheFramework\App\Http\View::render('errors.503');
+        if (file_exists(__DIR__ . '/app/App/Internal/Views/errors/maintenance.blade.php')) {
+            echo \TheFramework\App\Http\View::render('Internal::errors.maintenance');
+        } elseif (file_exists(__DIR__ . '/resources/views/errors/503.blade.php')) {
+            echo \TheFramework\App\Http\View::render('errors.503');
         } else {
-             die("🚧 Under Maintenance. Please check back later.");
+            die("🚧 Under Maintenance. Please check back later.");
         }
         exit;
     }

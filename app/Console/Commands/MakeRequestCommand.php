@@ -20,7 +20,7 @@ class MakeRequestCommand implements CommandInterface
     {
         $name = $args[0] ?? null;
         if (!$name) {
-            echo "\033[38;5;124m✖ ERROR  Harap masukkan nama request\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Harap masukkan nama request\n";
             exit(1);
         }
 
@@ -31,96 +31,28 @@ class MakeRequestCommand implements CommandInterface
 
         $path = BASE_PATH . "/app/Http/Requests/" . ($folderPath ? $folderPath . '/' : '') . "$className.php";
         if (file_exists($path)) {
-            echo "\033[38;5;124m✖ ERROR  Request sudah ada: $className\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Request sudah ada: $className\n";
             exit(1);
         }
 
         $namespace = "TheFramework\\Http\\Requests" . ($subNamespace ? "\\$subNamespace" : '');
 
-        $content = <<<PHP
-<?php
+        $stubPath = BASE_PATH . '/app/Console/Stubs/request.form.stub';
+        if (!file_exists($stubPath)) {
+            echo "\n  \033[1;41;97m ERROR \033[0m Stub tidak ditemukan di app/Console/Stubs/request.form.stub\n";
+            exit(1);
+        }
 
-namespace $namespace;
-
-use TheFramework\\App\\FormRequest;
-
-/**
- * Request validation untuk $className
- * 
- * Auto-validates when used in controller!
- * No need to call validate() manually.
- * 
- * Usage:
- * public function store($className \$request) {
- *     // Validation already done automatically
- *     // If we reach here, validation passed
- *     Model::create(\$request->validated());
- * }
- */
-class $className extends FormRequest
-{
-    /**
-     * Determine if the user is authorized to make this request.
-     * Return false to deny access (403 Forbidden).
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Get the validation rules that apply to the request.
-     * 
-     * Available rules: required, email, min, max, unique, exists,
-     * alpha, numeric, confirmed, in, between, mimes, image, etc.
-     * 
-     * @return array
-     */
-    public function rules(): array
-    {
-        return [
-            // Example: 'email' => 'required|email|unique:users,email',
-            // Example: 'password' => 'required|min:8|confirmed',
-            // Example: 'age' => 'nullable|numeric|between:13,120',
-        ];
-    }
-
-    /**
-     * Get custom labels for validation error messages.
-     * Makes error messages more user-friendly in your language.
-     * 
-     * @return array
-     */
-    public function labels(): array
-    {
-        return [
-            // Example: 'email' => 'Alamat Email',
-            // Example: 'password' => 'Kata Sandi',
-        ];
-    }
-
-    /**
-     * (OPTIONAL) Override this method to force JSON response on validation errors.
-     * Uncomment the code below to always return JSON (useful for API endpoints).
-     * 
-     * @param array \$errors
-     * @return void
-     */
-    // protected function failedValidation(array \$errors): void
-    // {
-    //     \\TheFramework\\Helpers\\Helper::json([
-    //         'status' => 'error',
-    //         'errors' => \$errors,
-    //         'input' => \$this->all()
-    //     ], 422);
-    //     exit;
-    // }
-}
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{namespace}}', '{{class}}'],
+            [$namespace, $className],
+            $content
+        );
 
         if (!is_dir(dirname($path)))
             mkdir(dirname($path), 0755, true);
         file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Request dibuat: $className (app/Http/Requests/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Request dibuat: $className (app/Http/Requests/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\n";
     }
 }

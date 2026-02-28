@@ -1,4 +1,4 @@
-# 🌐 Konfigurasi Environment (v5.0.3 — All-In)
+# 🌐 Konfigurasi Environment (v5.0.1 — All-In)
 
 File `.env` adalah **jantung konfigurasi** The Framework. Seluruh perilaku aplikasi — dari mode debug, koneksi database, hingga rate limiter — semuanya dikontrol dari satu file ini.
 

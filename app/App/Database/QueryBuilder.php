@@ -85,7 +85,7 @@ class QueryBuilder
         return $this;
     }
 
-    public function from(string $table, string $alias = null)
+    public function from(string $table, ?string $alias = null)
     {
         $this->table = $table . ($alias ? " AS $alias" : '');
         return $this;
@@ -437,22 +437,22 @@ class QueryBuilder
         return $this;
     }
 
-    public function whereHas(string $relationName, Closure $callback = null, $boolean = 'AND')
+    public function whereHas(string $relationName, ?Closure $callback = null, $boolean = 'AND')
     {
         return $this->addSubqueryWhere('exists', $relationName, $boolean, $callback);
     }
 
-    public function orWhereHas(string $relationName, Closure $callback = null)
+    public function orWhereHas(string $relationName, ?Closure $callback = null)
     {
         return $this->whereHas($relationName, $callback, 'OR');
     }
 
-    public function doesntHave(string $relation, $boolean = 'AND', Closure $callback = null)
+    public function doesntHave(string $relation, $boolean = 'AND', ?Closure $callback = null)
     {
         return $this->addSubqueryWhere('not_exists', $relation, $boolean, $callback);
     }
 
-    public function orDoesntHave(string $relation, Closure $callback = null)
+    public function orDoesntHave(string $relation, ?Closure $callback = null)
     {
         return $this->doesntHave($relation, 'OR', $callback);
     }
@@ -509,7 +509,7 @@ class QueryBuilder
         });
     }
 
-    protected function addSubqueryWhere($type, $relationName, $boolean, Closure $callback = null)
+    protected function addSubqueryWhere($type, $relationName, $boolean, ?Closure $callback = null)
     {
         $relation = $this->model->$relationName();
         $subQuery = $relation->getRelated()->newQueryWithoutScopes();
@@ -636,7 +636,7 @@ class QueryBuilder
         return $this;
     }
 
-    public function when($value, callable $callback, callable $default = null)
+    public function when($value, callable $callback, ?callable $default = null)
     {
         if ($value)
             return $callback($this, $value) ?? $this;
@@ -861,7 +861,7 @@ class QueryBuilder
         return $this->get();
     }
 
-    public function pluck(string $column, string $key = null): array
+    public function pluck(string $column, ?string $key = null): array
     {
         $originalColumns = $this->columns;
         $this->columns = $key ? "{$this->wrapColumn($column)}, {$this->wrapColumn($key)}" : $this->wrapColumn($column);
@@ -963,7 +963,7 @@ class QueryBuilder
         return $results[0] ?? null;
     }
 
-    public function firstOr($columns = ['*'], Closure $callback = null)
+    public function firstOr($columns = ['*'], ?Closure $callback = null)
     {
         if ($columns instanceof Closure) {
             $callback = $columns;
@@ -1004,7 +1004,7 @@ class QueryBuilder
         return $this->where($primaryKey, '=', $id)->first();
     }
 
-    public function findOr($id, $columns = ['*'], Closure $callback = null)
+    public function findOr($id, $columns = ['*'], ?Closure $callback = null)
     {
         if ($columns instanceof Closure) {
             $callback = $columns;
@@ -1336,7 +1336,7 @@ class QueryBuilder
         ];
     }
 
-    public function cursorPaginate(int $perPage = 15, string $cursor = null, string $column = null)
+    public function cursorPaginate(int $perPage = 15, ?string $cursor = null, ?string $column = null)
     {
         $column = $column ?? ($this->model ? $this->model->getKeyName() : 'id');
         if ($cursor) {
@@ -1357,13 +1357,13 @@ class QueryBuilder
         return $this->limit($perPage)->offset(($page - 1) * $perPage);
     }
 
-    public function forPageBeforeId(int $perPage, $id, string $column = null)
+    public function forPageBeforeId(int $perPage, $id, ?string $column = null)
     {
         $column = $column ?? ($this->model ? $this->model->getKeyName() : 'id');
         return $this->where($column, '<', $id)->orderBy($column, 'DESC')->limit($perPage);
     }
 
-    public function forPageAfterId(int $perPage, $id, string $column = null)
+    public function forPageAfterId(int $perPage, $id, ?string $column = null)
     {
         $column = $column ?? ($this->model ? $this->model->getKeyName() : 'id');
         return $this->where($column, '>', $id)->orderBy($column, 'ASC')->limit($perPage);
@@ -1827,7 +1827,7 @@ class QueryBuilder
     //  UTILITY METHODS
     // ========================================================
 
-    public function unless($value, callable $callback, callable $default = null): static
+    public function unless($value, callable $callback, ?callable $default = null): static
     {
         if (!$value) {
             $callback($this, $value);

@@ -1,0 +1,31 @@
+<?php
+
+namespace TheFramework\Providers;
+
+use TheFramework\App\Core\Container;
+
+class {{class}}
+{
+    /**
+     * Register services ke container.
+     * Dipanggil saat bootstrap aplikasi.
+     */
+    public function register(): void
+    {
+        $container = Container::getInstance();
+
+        // Contoh: Bind service ke container
+        // $container->singleton(MyService::class, function () {
+        //     return new MyService();
+        // });
+    }
+
+    /**
+     * Bootstrap services.
+     * Dipanggil setelah semua provider ter-register.
+     */
+    public function boot(): void
+    {
+        //
+    }
+}

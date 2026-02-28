@@ -21,9 +21,9 @@ class RouteListCommand extends BaseCommand
     {
         // Load routes from web.php
         require_once BASE_PATH . '/routes/web.php';
-        
+
         $routes = Router::getRoutes();
-        
+
         if (empty($routes)) {
             $this->warn("Tidak ada rute yang terdaftar.");
             return;
@@ -34,7 +34,7 @@ class RouteListCommand extends BaseCommand
 
         foreach ($routes as $route) {
             $method = $route['method'];
-            $color = match($method) {
+            $color = match ($method) {
                 'GET' => self::COLOR_GREEN,
                 'POST' => self::COLOR_CYAN,
                 'PUT', 'PATCH' => self::COLOR_YELLOW,
@@ -43,21 +43,32 @@ class RouteListCommand extends BaseCommand
             };
 
             // Format Action
-            $action = $route['action'];
-            if (is_array($action)) {
-                $actionStr = basename($action[0]) . '@' . $action[1];
-            } elseif (is_object($action)) {
+            $handler = $route['handler'];
+            if (is_string($handler)) {
+                $function = $route['function'] ?? '__invoke';
+                $actionStr = basename(str_replace('\\', '/', $handler)) . '@' . $function;
+            } elseif ($handler instanceof \Closure) {
                 $actionStr = 'Closure';
+            } elseif (is_array($handler)) {
+                $actionStr = basename(str_replace('\\', '/', $handler[0])) . '@' . $handler[1];
             } else {
-                $actionStr = (string)$action;
+                $actionStr = 'Unknown';
+            }
+
+            // Shorten middlewares
+            $middlewares = [];
+            if (!empty($route['middleware'])) {
+                foreach ((array) $route['middleware'] as $m) {
+                    $middlewares[] = is_string($m) ? basename(str_replace('\\', '/', $m)) : 'Closure';
+                }
             }
 
             $rows[] = [
                 $color . $method . self::COLOR_RESET,
-                $route['uri'],
+                $route['path'],
                 $route['name'] ?? '-',
                 $actionStr,
-                !empty($route['middleware']) ? implode(', ', (array)$route['middleware']) : '-'
+                !empty($middlewares) ? implode(', ', $middlewares) : '-'
             ];
         }
 

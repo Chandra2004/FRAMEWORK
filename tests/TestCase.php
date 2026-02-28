@@ -3,8 +3,8 @@
 namespace Tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
-use TheFramework\App\Container;
-use TheFramework\App\Router;
+use TheFramework\App\Core\Container;
+use TheFramework\App\Http\Router;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -50,6 +50,17 @@ abstract class TestCase extends BaseTestCase
 
         // Load Bootstrap
         $this->app = require BASE_PATH . '/bootstrap/app.php';
+
+        // Load Routes only once
+        if (file_exists(BASE_PATH . '/routes/web.php')) {
+            require_once BASE_PATH . '/routes/web.php';
+        }
+        if (file_exists(BASE_PATH . '/routes/api.php')) {
+            require_once BASE_PATH . '/routes/api.php';
+        }
+        if (file_exists(BASE_PATH . '/app/App/Internal/Controllers/_system/routes.php')) {
+            require_once BASE_PATH . '/app/App/Internal/Controllers/_system/routes.php';
+        }
     }
 
     /**

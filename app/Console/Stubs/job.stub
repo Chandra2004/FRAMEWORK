@@ -1,0 +1,20 @@
+<?php
+
+namespace TheFramework\Jobs;
+
+use TheFramework\App\Queue\Job;
+
+class {{class}} extends Job
+{
+    /**
+     * Jalankan pekerjaan.
+     */
+    public function handle()
+    {
+        // Ambil data yang dikirim saat dispatch
+        // $userId = $this->getData('user_id');
+        
+        // Lakukan proses berat di sini...
+        // misal: Kirim Email, Resize Gambar, dll.
+    }
+}

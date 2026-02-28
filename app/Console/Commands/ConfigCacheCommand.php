@@ -19,7 +19,7 @@ class ConfigCacheCommand implements CommandInterface
 
     public function run(array $args): void
     {
-        echo "\033[38;5;39m➤ INFO  Memproses config caching...\033[0m\n";
+        echo "\n  \033[1;44;97m INFO \033[0m Memproses config caching...\n";
 
         if (!defined('ROOT_DIR')) {
             define('ROOT_DIR', dirname(__DIR__, 3));
@@ -33,7 +33,7 @@ class ConfigCacheCommand implements CommandInterface
             $envVars = $dotenv->load();
 
             if (empty($envVars)) {
-                echo "\033[38;5;214m⚠ WARNING  File .env kosong atau tidak ditemukan.\033[0m\n";
+                echo "\n  \033[1;43;30m WARN \033[0m File .env kosong atau tidak ditemukan.\n";
             }
 
             $cacheContent = "<?php\n\nreturn " . var_export($envVars, true) . ";\n";
@@ -44,14 +44,14 @@ class ConfigCacheCommand implements CommandInterface
             }
 
             if (file_put_contents($cacheFile, $cacheContent)) {
-                echo "\033[38;5;28m★ SUCCESS  Konfigurasi berhasil di-cache!\033[0m\n";
+                echo "\n  \033[1;42;30m SUCCESS \033[0m Konfigurasi berhasil di-cache!\n";
                 echo "\033[38;5;240m  Lokasi: " . $cacheFile . "\033[0m\n";
             } else {
-                echo "\033[38;5;124m✖ ERROR  Gagal menulis file cache config.\033[0m\n";
+                echo "\n  \033[1;41;97m ERROR \033[0m Gagal menulis file cache config.\n";
             }
 
         } catch (\Exception $e) {
-            echo "\033[38;5;124m✖ ERROR  " . $e->getMessage() . "\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m " . $e->getMessage() . "\n";
         }
     }
 }

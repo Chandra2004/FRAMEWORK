@@ -26,12 +26,12 @@ class RouteClearCommand implements CommandInterface
 
         if (file_exists($cacheFile)) {
             if (unlink($cacheFile)) {
-                echo "\033[38;5;28m★ SUCCESS  Route cache berhasil dihapus.\033[0m\n";
+                echo "\n  \033[1;42;30m SUCCESS \033[0m Route cache berhasil dihapus.\n";
             } else {
-                echo "\033[38;5;124m✖ ERROR  Gagal menghapus file cache.\033[0m\n";
+                echo "\n  \033[1;41;97m ERROR \033[0m Gagal menghapus file cache.\n";
             }
         } else {
-            echo "\033[38;5;214m➤ INFO  Tidak ada file cache route yang ditemukan.\033[0m\n";
+            echo "\n  \033[1;44;97m INFO \033[0m Tidak ada file cache route yang ditemukan.\n";
         }
     }
 }

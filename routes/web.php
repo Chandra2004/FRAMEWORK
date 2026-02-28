@@ -1,4 +1,7 @@
 <?php
+use TheFramework\Http\Controllers\CategoryController;
+use TheFramework\Http\Controllers\GalleryController;
+use TheFramework\Http\Controllers\ProductController;
 // ROUTER
 use TheFramework\App\Http\Router;
 
@@ -10,11 +13,10 @@ use TheFramework\Middleware\LanguageMiddleware;
 
 // CONTROLLER
 use TheFramework\Http\Controllers\HomeController;
-use TheFramework\Http\Controllers\ApiHomeController;
-// UTILITIES
 
-Router::add('GET', '/', HomeController::class, 'Welcome', [WAFMiddleware::class, LanguageMiddleware::class]);
-Router::add('GET', '/users', HomeController::class, 'Users', [WAFMiddleware::class, LanguageMiddleware::class]);
+// UTILITIES
+Router::get('/', HomeController::class, 'welcome')->middleware([WAFMiddleware::class, LanguageMiddleware::class]);
+Router::get('/users', HomeController::class, 'users')->middleware([WAFMiddleware::class, LanguageMiddleware::class]);
 
 Router::group(
     [
@@ -26,26 +28,9 @@ Router::group(
         ]
     ],
     function () {
-        Router::add('POST', '/create', HomeController::class, 'CreateUser');
-        Router::add('POST', '/update/{uid}', HomeController::class, 'UpdateUser');
-        Router::add('POST', '/delete/{uid}', HomeController::class, 'DeleteUser');
-        Router::add('GET', '/information/{uid}', HomeController::class, 'InformationUser');
-    }
-);
-
-Router::group(
-    [
-        'prefix' => '/api',
-        'middleware' => [
-            ApiAuthMiddleware::class,
-            LanguageMiddleware::class
-        ]
-    ],
-    function () {
-        Router::add('GET', '/users', ApiHomeController::class, 'Users');
-        Router::add('GET', '/users/{uid}', ApiHomeController::class, 'InformationUser');
-        Router::add('POST', '/users/create', ApiHomeController::class, 'CreateUser');
-        Router::add('POST', '/users/update/{uid}', ApiHomeController::class, 'UpdateUser');
-        Router::add('POST', '/users/delete/{uid}', ApiHomeController::class, 'DeleteUser');
+        Router::post('/create', HomeController::class, 'createUser');
+        Router::post('/update/{uid}', HomeController::class, 'updateUser');
+        Router::post('/delete/{uid}', HomeController::class, 'deleteUser');
+        Router::get('/information/{uid}', HomeController::class, 'informationUser');
     }
 );

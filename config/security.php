@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Security & System Configuration — The Framework v5.0.3
+ * Security & System Configuration — The Framework v5.0.1
  * Configuration for Web Command Center, WAF, and CORS.
  */
 

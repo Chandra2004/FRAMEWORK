@@ -22,7 +22,7 @@ class AssetPublishCommand implements CommandInterface
             define('ROOT_DIR', dirname(__DIR__, 3));
         }
 
-        echo "\033[38;5;39m➤ INFO  Publishing assets...\033[0m\n";
+        echo "\n  \033[1;44;97m INFO \033[0m Publishing assets...\n";
 
         $source = ROOT_DIR . '/resources';
         $dest = ROOT_DIR . '/public/assets';
@@ -40,7 +40,7 @@ class AssetPublishCommand implements CommandInterface
             }
         }
 
-        echo "\033[38;5;28m★ SUCCESS  Assets published to public/assets/\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Assets published to public/assets/\n";
     }
 
     private function copyDirectory($source, $dest)

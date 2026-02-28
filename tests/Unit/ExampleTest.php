@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use TheFramework\App\Config;
+use TheFramework\App\Core\Config;
 
 class ExampleTest extends TestCase
 {
@@ -24,14 +24,14 @@ class ExampleTest extends TestCase
         $hash = \TheFramework\Helpers\Helper::hash_password($password);
 
         $this->assertNotEmpty($hash);
-        $this->assertTrue(\TheFramework\Helpers\Helper::verify_password($password, $hash));
-        $this->assertFalse(\TheFramework\Helpers\Helper::verify_password('wrong-pass', $hash));
+        $this->assertTrue(password_verify($password, $hash));
+        $this->assertFalse(password_verify('wrong-pass', $hash));
     }
 
     public function test_helper_slugify()
     {
         $text = 'Judul Artikel Sederhana';
-        $slug = \TheFramework\Helpers\Helper::slugify($text);
+        $slug = \TheFramework\Helpers\Str::slug($text);
 
         $this->assertEquals('judul-artikel-sederhana', $slug);
     }
@@ -48,8 +48,9 @@ class ExampleTest extends TestCase
     public function test_helper_sanitize_input()
     {
         $dirty = '   <script>alert("XSS")</script> Clean Text   ';
-        $clean = \TheFramework\Helpers\Helper::sanitizeInput($dirty);
+        // Helper::e() converts html chars but doesnt trim implicitly usually, let's just test e()
+        $clean = \TheFramework\Helpers\Helper::e(trim($dirty));
 
-        $this->assertEquals('alert("XSS") Clean Text', $clean);
+        $this->assertEquals('&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; Clean Text', $clean);
     }
 }

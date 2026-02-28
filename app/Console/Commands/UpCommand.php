@@ -49,8 +49,8 @@ class UpCommand extends BaseCommand
 
         echo PHP_EOL;
         $this->line("  ╔══════════════════════════════════════════╗", self::COLOR_GREEN);
-        $this->line("  ║       APPLICATION IS NOW                  ║", self::COLOR_GREEN);
-        $this->line("  ║       ✅ LIVE & ONLINE ✅                 ║", self::COLOR_GREEN);
+        $this->line("  ║            APPLICATION IS NOW            ║", self::COLOR_GREEN);
+        $this->line("  ║           ✅ LIVE & ONLINE ✅            ║", self::COLOR_GREEN);
         $this->line("  ╚══════════════════════════════════════════╝", self::COLOR_GREEN);
         echo PHP_EOL;
 

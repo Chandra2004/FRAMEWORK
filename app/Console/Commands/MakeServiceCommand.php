@@ -21,7 +21,7 @@ class MakeServiceCommand implements CommandInterface
         $name = $args[0] ?? null;
 
         if (!$name) {
-            echo "\033[38;5;124m✖ ERROR  Harap masukkan nama service (contoh: ProductService)\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Harap masukkan nama service (contoh: ProductService)\n";
             exit(1);
         }
 
@@ -38,44 +38,30 @@ class MakeServiceCommand implements CommandInterface
         $path = BASE_PATH . "/app/Services/" . ($folderPath ? $folderPath . '/' : '') . "$className.php";
 
         if (file_exists($path)) {
-            echo "\033[38;5;124m✖ ERROR  Service sudah ada: $className\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Service sudah ada: $className\n";
             exit(1);
         }
 
         $namespace = "TheFramework\\Services" . ($subNamespace ? "\\$subNamespace" : '');
 
-        $content = <<<PHP
-<?php
+        $stubPath = BASE_PATH . '/app/Console/Stubs/service.make.stub';
+        if (!file_exists($stubPath)) {
+            echo "\n  \033[1;41;97m ERROR \033[0m Stub tidak ditemukan di app/Console/Stubs/service.make.stub\n";
+            exit(1);
+        }
 
-namespace $namespace;
-
-class $className
-{
-    /**
-     * Constructor untuk Dependency Injection
-     * Contoh: public function __construct(protected ProductRepository \$repository) {}
-     */
-    public function __construct()
-    {
-        // 
-    }
-
-    /**
-     * Contoh method logika bisnis
-     */
-    public function execute()
-    {
-        // Masukkan logika bisnis Anda di sini
-        return true;
-    }
-}
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{namespace}}', '{{class}}'],
+            [$namespace, $className],
+            $content
+        );
 
         if (!is_dir(dirname($path))) {
             mkdir(dirname($path), 0755, true);
         }
 
         file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  Service dibuat: $className (app/Services/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Service dibuat: $className (app/Services/" . ($folderPath ? $folderPath . '/' : '') . "$className.php)\n";
     }
 }

@@ -47,66 +47,18 @@ class MakeMailCommand extends BaseCommand
 
         $viewName = strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', str_replace('Mail', '', $name)));
 
-        $content = <<<PHP
-<?php
+        $stubPath = BASE_PATH . '/app/Console/Stubs/mail.stub';
+        if (!file_exists($stubPath)) {
+            $this->error("Stub tidak ditemukan di app/Console/Stubs/mail.stub");
+            return;
+        }
 
-namespace TheFramework\Mail;
-
-class {$name}
-{
-    protected string \$subject = '';
-    protected string \$view = 'emails.{$viewName}';
-    protected array \$data = [];
-
-    public function __construct(array \$data = [])
-    {
-        \$this->data = \$data;
-        \$this->subject = '{$name}';
-    }
-
-    /**
-     * Build the message.
-     */
-    public function build(): self
-    {
-        return \$this;
-    }
-
-    /**
-     * Get email subject.
-     */
-    public function getSubject(): string
-    {
-        return \$this->subject;
-    }
-
-    /**
-     * Set email subject.
-     */
-    public function subject(string \$subject): self
-    {
-        \$this->subject = \$subject;
-        return \$this;
-    }
-
-    /**
-     * Get the view name.
-     */
-    public function getView(): string
-    {
-        return \$this->view;
-    }
-
-    /**
-     * Get the data for the view.
-     */
-    public function getData(): array
-    {
-        return \$this->data;
-    }
-}
-
-PHP;
+        $content = file_get_contents($stubPath);
+        $content = str_replace(
+            ['{{class}}', '{{viewName}}'],
+            [$name, $viewName],
+            $content
+        );
 
         file_put_contents($filePath, $content);
 

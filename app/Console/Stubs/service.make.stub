@@ -1,0 +1,24 @@
+<?php
+
+namespace {{namespace}};
+
+class {{class}}
+{
+    /**
+     * Constructor untuk Dependency Injection
+     * Contoh: public function __construct(protected ProductRepository $repository) {}
+     */
+    public function __construct()
+    {
+        // 
+    }
+
+    /**
+     * Contoh method logika bisnis
+     */
+    public function execute()
+    {
+        // Masukkan logika bisnis Anda di sini
+        return true;
+    }
+}

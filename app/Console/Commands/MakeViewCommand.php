@@ -61,6 +61,6 @@ class {$className} {
 PHP;
 
         file_put_contents($path, $content);
-        echo "\033[38;5;28m★ SUCCESS  View Migration dibuat: $filename (database/migrations/$filename)\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m View Migration dibuat: $filename (database/migrations/$filename)\n";
     }
 }

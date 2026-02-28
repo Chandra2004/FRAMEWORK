@@ -1,280 +1,514 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $class ?? 'View Error' }} - The Framework</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        dark: {
-                            100: '#2A2A2A',
-                            200: '#242424',
-                            300: '#1e1e1e', 
-                            400: '#18181b', 
-                            500: '#121212', 
-                            600: '#09090b',
-                        },
-                        brand: {
-                            amber: '#F59E0B',
-                            amber_glow: 'rgba(245, 158, 11, 0.15)'
-                        }
-                    }
-                }
+    <title>View Error — The Framework</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #131316;
+            color: #f4f4f5;
+            min-height: 100vh;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 3px;
+        }
+
+        .header {
+            background: linear-gradient(180deg, #0f1520, #131316);
+            border-bottom: 1px solid #27272a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #8B5CF6, #A78BFA, #8B5CF6);
+        }
+
+        .header .glow {
+            position: absolute;
+            top: -100px;
+            left: -80px;
+            width: 500px;
+            height: 400px;
+            background: rgba(139, 92, 246, 0.06);
+            filter: blur(120px);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+            padding: 28px 32px;
+        }
+
+        .view-icon {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .view-icon .icon-box {
+            width: 28px;
+            height: 28px;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .view-icon span {
+            color: #A78BFA;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: #f4f4f5;
+            line-height: 1.3;
+            margin-bottom: 12px;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .view-badge {
+            background: rgba(139, 92, 246, 0.15);
+            color: #A78BFA;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .meta-text {
+            color: #52525b;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .main-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: #18181c;
+            border: 1px solid #27272a;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 12px 20px;
+            background: #1e1e22;
+            border-bottom: 1px solid #27272a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header h3 {
+            font-size: 11px;
+            font-weight: 700;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .card-header .icon {
+            color: #A78BFA;
+        }
+
+        .code-container {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            overflow-x: auto;
+            padding: 12px 0;
+        }
+
+        .code-line {
+            display: flex;
+            padding: 0 16px;
+            border-left: 3px solid transparent;
+        }
+
+        .code-line:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .code-line.active {
+            background: rgba(139, 92, 246, 0.08);
+            border-left-color: #8B5CF6;
+        }
+
+        .code-line.active .line-num {
+            color: #A78BFA;
+            font-weight: 700;
+        }
+
+        .line-num {
+            width: 3.5rem;
+            text-align: right;
+            padding-right: 1.25rem;
+            color: #3f3f46;
+            user-select: none;
+            border-right: 1px solid #27272a;
+            margin-right: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .line-code {
+            white-space: pre;
+            color: #d4d4d8;
+        }
+
+        .file-path {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #71717a;
+            border-bottom: 1px solid #27272a;
+            background: #1a1a1e;
+        }
+
+        .file-path .hl {
+            color: #A78BFA;
+            font-weight: 700;
+        }
+
+        .blade-tip {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.06), rgba(139, 92, 246, 0.02));
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 12px;
+            padding: 20px 24px;
+        }
+
+        .blade-tip h3 {
+            color: #A78BFA;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .blade-tip ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .blade-tip li {
+            color: #a1a1aa;
+            font-size: 13px;
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .blade-tip li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #A78BFA;
+        }
+
+        .blade-tip code {
+            color: #A78BFA;
+            background: #1e1e22;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .kv-section {
+            padding: 16px 20px;
+        }
+
+        .kv-row {
+            display: flex;
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #1e1e22;
+        }
+
+        .kv-row:last-child {
+            border-bottom: none;
+        }
+
+        .kv-key {
+            width: 140px;
+            flex-shrink: 0;
+            color: #71717a;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+        }
+
+        .kv-val {
+            flex: 1;
+            color: #d4d4d8;
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #a1a1aa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            background: #3f3f46;
+            color: #f4f4f5;
+        }
+
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
             }
         }
-    </script>
-    <style>
-        body { background-color: #18181b; color: #f4f4f5; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; overflow: hidden; margin: 0; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        
-        .code-container { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85rem; line-height: 1.6; }
-        .code-line { display: flex; padding: 0 1rem; cursor: text; transition: background 0.1s; border-left: 2px solid transparent;}
-        .code-line:hover { background-color: rgba(255, 255, 255, 0.03); }
-        .code-line.active { background-color: var(--tw-color-brand-amber_glow, rgba(245, 158, 11, 0.15)); border-left-color: #F59E0B; }
-        .code-line.active .line-num { color: #F59E0B; font-weight: bold; }
-        .line-num { width: 3.5rem; text-align: right; padding-right: 1.5rem; color: #52525b; user-select: none; border-right: 1px solid #3f3f46; margin-right: 1.5rem; }
-        .line-code { white-space: pre; color: #e4e4e7; }
-
-        .frame-item { padding: 1rem 1.5rem; cursor: pointer; border-bottom: 1px solid #2a2a2a; border-right: 2px solid transparent; transition: background 0.15s; }
-        .frame-item:hover { background-color: #242424; }
-        .frame-item.active { background-color: #242424; border-right-color: #F59E0B; }
-        
-        .tab-btn { padding: 0.875rem 1.5rem; color: #a1a1aa; font-size: 0.875rem; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; background: transparent; }
-        .tab-btn:hover { color: #f4f4f5; }
-        .tab-btn.active { color: #F59E0B; border-bottom-color: #F59E0B; }
-
-        .key-val { display: flex; border-bottom: 1px solid #2a2a2a; padding: 0.875rem 0; }
-        .key-val:last-child { border-bottom: none; }
-        .key-col { width: 25%; color: #a1a1aa; font-size: 0.875rem; font-weight: 500; }
-        .val-col { width: 75%; font-family: monospace; color: #d4d4d8; word-break: break-all; font-size: 0.85rem; }
     </style>
 </head>
-<body class="flex flex-col h-screen antialiased">
 
-    <!-- Header -->
-    <header class="bg-dark-600 border-b border-dark-100 flex-shrink-0 flex items-center justify-between px-10 py-8 relative overflow-hidden shadow-md">
-        <!-- Glow effect -->
-        <div class="absolute top-0 left-0 w-full h-1 bg-brand-amber"></div>
-        <div class="absolute top-[-100px] left-[-50px] w-[400px] h-[400px] bg-brand-amber/10 blur-[120px] rounded-full pointer-events-none"></div>
-
-        <div class="flex-1 min-w-0 z-10">
-            <h2 class="text-zinc-400 text-sm font-mono tracking-wider truncate mb-2 flex items-center gap-2 uppercase font-black">
-                <svg class="w-4 h-4 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                VIEW RENDERING WARNING
-            </h2>
-            <h1 class="text-3xl font-black text-zinc-100 leading-tight tracking-tight">
-                {{ $message }}
-            </h1>
-        </div>
-        
-        <div class="text-right ml-10 shrink-0 z-10 flex flex-col items-end gap-3">
-            <button onclick="history.back()" class="inline-flex items-center justify-center px-4 py-2 bg-dark-400 hover:bg-dark-200 border border-dark-100 text-zinc-300 text-sm font-bold rounded-lg transition-colors shadow-sm">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Go Back
-            </button>
-            <div class="flex items-center gap-2 text-zinc-400 font-mono text-xs mt-1">
-                <span class="bg-brand-amber/10 border border-brand-amber/20 text-brand-amber px-2.5 py-1 rounded shadow-inner uppercase font-bold">{{ $class ?? 'E_WARNING' }}</span>
-                <span>Blade Compiler Engine</span>
+<body>
+    <div class="header">
+        <div class="glow"></div>
+        <div class="header-content">
+            <div class="view-icon">
+                <div class="icon-box">⚡</div>
+                <span>Blade Compilation Error</span>
+            </div>
+            <h1>{{ $message }}</h1>
+            <div class="header-meta">
+                <span class="view-badge">VIEW ERROR</span>
+                <span class="meta-text">{{ basename($file ?? 'unknown.blade.php') }}</span>
+                <span style="color:#3f3f46">•</span>
+                <span class="meta-text">{{ $request_info['uri'] ?? '/' }}</span>
             </div>
         </div>
-    </header>
-
-    <!-- Main Layout -->
-    <div class="flex flex-1 overflow-hidden">
-        
-        <!-- Sidebar Stack Trace -->
-        <aside class="w-[450px] bg-dark-400 border-r border-dark-100 flex flex-col shrink-0 z-20 shadow-xl">
-            <div class="px-6 py-4 bg-dark-500 border-b border-dark-100 flex items-center justify-between shrink-0">
-                <h3 class="text-xs font-black text-zinc-400 uppercase tracking-widest">Compiler Stack Trace</h3>
-                <span class="text-[10px] bg-dark-100 text-zinc-400 px-2 py-1 rounded-full font-bold">{{ count($trace_parsed ?? []) + 1 }} FRAMES</span>
-            </div>
-            
-            <div class="overflow-y-auto flex-1 scrollbar-hide pb-10" id="frames-list">
-                
-                <!-- PRIMARY VIEW ERROR FRAME -->
-                <div class="frame-item active" onclick="selectFrame(0, this)">
-                    <div class="flex justify-between items-start mb-1.5">
-                        <div class="font-mono text-[13px] text-zinc-200 truncate pr-2 font-semibold">
-                            Blade::render()
-                        </div>
-                        <span class="shrink-0 text-[9px] px-1.5 py-0.5 bg-brand-amber/20 text-brand-amber rounded font-black uppercase tracking-wider border border-brand-amber/20">Template</span>
-                    </div>
-                    <div class="text-xs text-zinc-500 font-mono truncate flex items-center gap-1.5">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        {{ basename($file) }}:{{ $line }}
-                    </div>
-                </div>
-
-                @if(!empty($trace_parsed))
-                @foreach($trace_parsed as $index => $frame)
-                <div class="frame-item" onclick="selectFrame({{ $index + 1 }}, this)">
-                    <div class="flex justify-between items-start mb-1.5">
-                        <div class="font-mono text-[13px] text-zinc-200 truncate pr-2 font-semibold">
-                            @if($frame['class'])
-                                <span class="text-zinc-500 font-normal">{{ $frame['class'] }}{{ $frame['type'] }}</span>{{ $frame['function'] }}
-                            @else
-                                {{ $frame['function'] }}
-                            @endif
-                        </div>
-                        @if($frame['is_app'])
-                            <span class="shrink-0 text-[9px] px-1.5 py-0.5 bg-dark-100 text-zinc-300 rounded font-black uppercase tracking-wider border border-dark-100">App</span>
-                        @else
-                            <span class="shrink-0 text-[9px] px-1.5 py-0.5 bg-dark-100 text-zinc-500 rounded font-black uppercase tracking-wider border border-dark-100">Vendor</span>
-                        @endif
-                    </div>
-                    <div class="text-xs text-zinc-500 font-mono truncate flex items-center gap-1.5">
-                        <svg class="w-3 h-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        {{ basename($frame['file']) }}:{{ $frame['line'] ?? '?' }}
-                    </div>
-                </div>
-                @endforeach
-                @endif
-            </div>
-        </aside>
-
-        <!-- Main Content Pane -->
-        <main class="flex-1 bg-dark-300 flex flex-col overflow-hidden relative">
-            
-            <!-- Code Snippet Viewer -->
-            <div class="h-[60%] flex flex-col bg-[#1e1e1e] border-b border-dark-100">
-                <div class="px-6 py-3 border-b border-dark-100 flex items-center bg-dark-400 shrink-0">
-                    <svg class="w-4 h-4 text-zinc-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                    <span class="text-[13px] font-mono text-zinc-400" id="current-file-path">{{ $file }}</span>
-                    <span class="text-[13px] font-mono text-zinc-600 mx-1.5">:</span>
-                    <span class="text-[13px] font-mono text-brand-amber font-bold" id="current-file-line">{{ $line }}</span>
-                </div>
-                
-                <div class="flex-1 overflow-auto py-4 code-container scrollbar-hide" id="code-snippet-body">
-                    <!-- Snippet dynamically loaded via JS -->
-                </div>
-            </div>
-
-            <!-- Detail Tabs -->
-            <div class="flex-1 flex flex-col overflow-hidden bg-dark-400">
-                <div class="flex px-2 bg-dark-500 border-b border-dark-100 shrink-0 shadow-sm">
-                    <button class="tab-btn active uppercase tracking-wider text-xs" onclick="switchTab('environment')">Environment</button>
-                    <button class="tab-btn uppercase tracking-wider text-xs" onclick="switchTab('context')">Variables Sent to View</button>
-                </div>
-                
-                <div class="flex-1 overflow-y-auto p-8 scrollbar-hide">
-                    
-                    <!-- Environment Tab -->
-                    <div id="tab-environment" class="tab-content block">
-                        <div class="key-val">
-                            <div class="key-col">PHP Version</div>
-                            <div class="val-col font-bold">{{ $environment['php_version'] ?? PHP_VERSION }}</div>
-                        </div>
-                        <div class="key-val">
-                            <div class="key-col">App Environment</div>
-                            <div class="val-col"><span class="bg-brand-red/10 text-brand-red px-2 py-1 rounded text-xs font-bold uppercase">{{ $environment['app_env'] ?? 'local' }}</span></div>
-                        </div>
-                        <div class="flex items-center gap-3 p-4 bg-dark-500 rounded border border-dark-100 mt-6">
-                            <svg class="w-5 h-5 text-brand-amber flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            <p class="text-xs text-zinc-400 leading-relaxed font-medium">The execution continues since this is just an <b>E_WARNING</b>, but the layout rendering may be compromised. Check your Blade Template variables.</p>
-                        </div>
-                    </div>
-
-                    <!-- Context Tab -->
-                    <div id="tab-context" class="tab-content hidden">
-                        @if(!empty($exception_context))
-                            @foreach($exception_context as $key => $val)
-                            <div class="key-val">
-                                <div class="key-col text-brand-amber">{{ $key }}</div>
-                                <div class="val-col">
-                                    <pre class="bg-dark-100 p-3 rounded text-[11px] overflow-auto border border-dark-100 text-zinc-300">{{ is_string($val) ? $val : json_encode($val, JSON_PRETTY_PRINT) }}</pre>
-                                </div>
-                            </div>
-                            @endforeach
-                        @else
-                            <div class="flex items-center justify-center h-20 bg-dark-100 rounded border border-dashed border-dark-100">
-                                <span class="text-zinc-500 text-sm font-medium">No bound parameters in this view scope.</span>
-                            </div>
-                        @endif
-                    </div>
-
-                </div>
-            </div>
-
-        </main>
     </div>
 
-    <script>
-        // Combine the primary view error with the trace behind it
-        const primaryFrame = {
-            file: <?php echo json_encode($file); ?>,
-            line: <?php echo json_encode($line); ?>,
-            snippet: <?php echo json_encode($code_snippet); ?>
-        };
-        
-        const backendFrames = <?php echo json_encode($trace_parsed ?? []); ?>;
-        const frames = [primaryFrame, ...backendFrames];
-        
-        function selectFrame(index, element) {
-            // Update Active Class
-            document.querySelectorAll('.frame-item').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            
-            const frame = frames[index];
-            
-            // Update Header
-            document.getElementById('current-file-path').innerText = frame.file || 'Unknown File';
-            document.getElementById('current-file-line').innerText = frame.line || '?';
-            
-            // Render Snippet
-            const snippetBody = document.getElementById('code-snippet-body');
-            snippetBody.innerHTML = '';
-            
-            if (frame.snippet && Object.keys(frame.snippet).length > 0) {
-                let html = '';
-                for (const [lineNum, code] of Object.entries(frame.snippet)) {
-                    const isActive = parseInt(lineNum) === parseInt(frame.line) ? 'active' : '';
-                    const safeCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-                    
-                    html += `
-                        <div class="code-line ${isActive}">
-                            <div class="line-num">${lineNum}</div>
-                            <div class="line-code">${safeCode || ' '}</div>
+    <div class="main-grid">
+        <!-- Blade Template Source -->
+        <div class="card">
+            <div class="card-header">
+                <svg class="icon" width="14" height="14" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                </svg>
+                <h3>Blade Template</h3>
+            </div>
+            <div class="file-path">
+                <span>{{ $file ?? 'Unknown' }}</span>
+                <span style="color:#3f3f46">:</span>
+                <span class="hl">{{ $line ?? '?' }}</span>
+            </div>
+            <div class="code-container">
+                @if (!empty($code_snippet))
+                    @foreach ($code_snippet as $num => $code)
+                        <div class="code-line {{ $num == ($line ?? 0) ? 'active' : '' }}">
+                            <div class="line-num">{{ $num }}</div>
+                            <div class="line-code">{{ $code }}</div>
                         </div>
-                    `;
-                }
-                snippetBody.innerHTML = html;
-                
-                // Scroll to active line
-                setTimeout(() => {
-                    const activeLine = snippetBody.querySelector('.active');
-                    if(activeLine) {
-                        activeLine.scrollIntoView({ behavior: 'auto', block: 'center' });
-                    }
-                }, 10);
-            } else {
-                snippetBody.innerHTML = `
-                    <div class="flex items-center justify-center h-full text-zinc-500 text-sm font-medium">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-                        No code snippet available for this frame.
-                    </div>
-                `;
-            }
-        }
-        
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('block'));
-            
-            event.target.classList.add('active');
-            document.getElementById('tab-' + tabId).classList.remove('hidden');
-            document.getElementById('tab-' + tabId).classList.add('block');
-        }
+                    @endforeach
+                @else
+                    <div style="padding:24px;text-align:center;color:#52525b;font-size:13px;">Cannot read source
+                        template</div>
+                @endif
+            </div>
+        </div>
 
-        // Initialize First Frame
-        if(frames.length > 0) {
-            selectFrame(0, document.querySelector('.frame-item'));
-        }
-    </script>
+        <!-- Blade Tips -->
+        <div class="blade-tip">
+            <h3>
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                    </path>
+                </svg>
+                Blade Troubleshooting
+            </h3>
+            <ul>
+                <li>Jika <strong>"Undefined variable"</strong> — pastikan variabel dikirim dari Controller: <code>return
+                        view('page', ['var' => $value])</code></li>
+                <li>Jika <strong>"Class not found"</strong> — cek namespace dan pastikan <code>use</code> statement
+                    benar</li>
+                <li>Jika <strong>"Call to undefined function"</strong> — pastikan helper terdaftar di
+                    <code>helpers.php</code></li>
+                <li>Clear view cache: <code>php artisan view:clear</code></li>
+                <li>Cek syntax Blade directive: <code>@if</code>, <code>@foreach</code>, <code>@php</code> harus punya
+                    closing tag</li>
+            </ul>
+        </div>
+
+        <!-- Stack Trace (if exists) -->
+        @if (!empty($trace_parsed))
+            <div class="card">
+                <div class="card-header">
+                    <h3>Stack Trace ({{ count($trace_parsed) }} frames)</h3>
+                </div>
+                <div style="max-height:300px;overflow-y:auto;">
+                    @foreach ($trace_parsed as $frame)
+                        <div
+                            style="padding:8px 20px;border-bottom:1px solid #1e1e22;font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;align-items:center;gap:8px;">
+                            <span
+                                style="background:{{ $frame['is_app'] ? 'rgba(139,92,246,0.15)' : '#1e1e22' }};color:{{ $frame['is_app'] ? '#A78BFA' : '#52525b' }};padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;white-space:nowrap;">{{ $frame['is_app'] ? 'App' : 'Vendor' }}</span>
+                            <span
+                                style="color:#a1a1aa;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                @if ($frame['class'])<span
+                                        style="color:#52525b">{{ class_basename($frame['class']) }}{{ $frame['type'] }}</span>
+                                @endif
+                                <span style="color:#d4d4d8">{{ $frame['function'] }}</span>
+                            </span>
+                            <span style="color:#52525b;flex-shrink:0">{{ basename($frame['file']) }}:<span
+                                    style="color:#A78BFA">{{ $frame['line'] }}</span></span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        <!-- Info -->
+        <div class="info-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Request</h3>
+                </div>
+                <div class="kv-section">
+                    <div class="kv-row">
+                        <div class="kv-key">Method</div>
+                        <div class="kv-val">{{ $request_info['method'] ?? 'GET' }}</div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">URL</div>
+                        <div class="kv-val">{{ $request_info['uri'] ?? '/' }}</div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">Client IP</div>
+                        <div class="kv-val">{{ $request_info['ip'] ?? '127.0.0.1' }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3>Environment</h3>
+                </div>
+                <div class="kv-section">
+                    <div class="kv-row">
+                        <div class="kv-key">PHP</div>
+                        <div class="kv-val" style="color:#3B82F6;font-weight:700">
+                            {{ $environment['php_version'] ?? PHP_VERSION }}</div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">App Env</div>
+                        <div class="kv-val"><span
+                                class="view-badge">{{ strtoupper($environment['app_env'] ?? 'local') }}</span></div>
+                    </div>
+                    <div class="kv-row">
+                        <div class="kv-key">Memory</div>
+                        <div class="kv-val">{{ $environment['memory_usage'] ?? 'N/A' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <a href="{{ url('/') }}" class="btn">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Go Home
+            </a>
+            <a href="javascript:location.reload()" class="btn">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
+                Retry
+            </a>
+        </div>
+    </div>
 </body>
+
 </html>

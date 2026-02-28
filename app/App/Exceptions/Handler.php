@@ -579,13 +579,19 @@ class Handler
 
     private static function handleError($severity, $message, $file, $line, $env, $isFatal = false): void
     {
+        $severityName = self::getSeverityName($severity);
+
+        if (php_sapi_name() === 'cli') {
+            echo "\n\033[1;41;97m {$severityName} \033[0m {$message}\n";
+            echo "\033[38;5;244m at {$file}:{$line}\033[0m\n\n";
+            return;
+        }
+
         $originalFile = $file;
         $isBlade = false;
 
         // Blade Detection & Mapping (Cross-platform)
         [$file, $line, $isBlade] = self::detectBlade($file, $line, $message);
-
-        $severityName = self::getSeverityName($severity);
 
         $data = [
             'class' => $severityName,
@@ -615,6 +621,12 @@ class Handler
 
     private static function handleException(\Throwable $e, string $env): void
     {
+        if (php_sapi_name() === 'cli') {
+            echo "\n\033[1;41;97m " . get_class($e) . " \033[0m " . $e->getMessage() . "\n";
+            echo "\033[38;5;244m at " . $e->getFile() . ":" . $e->getLine() . "\033[0m\n\n";
+            return;
+        }
+
         $file = $e->getFile();
         $line = $e->getLine();
 
@@ -743,6 +755,12 @@ class Handler
 
     private static function renderDatabaseError(\Throwable $e, string $env): void
     {
+        if (php_sapi_name() === 'cli') {
+            echo "\n\033[1;41;97m Database Exception \033[0m " . $e->getMessage() . "\n";
+            echo "\033[38;5;244m at " . $e->getFile() . ":" . $e->getLine() . "\033[0m\n\n";
+            return;
+        }
+
         $data = [
             'message' => $e->getMessage(),
             'env_values' => $_ENV,

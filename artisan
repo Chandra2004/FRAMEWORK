@@ -7,24 +7,31 @@ use TheFramework\Console\BaseCommand;
 require __DIR__ . '/vendor/autoload.php';
 
 define('BASE_PATH', __DIR__);
+define('ROOT_DIR', __DIR__);
+
+// Load application environment, DI container, and config
+require_once __DIR__ . '/bootstrap/app.php';
 
 // ANSI Colors for the runner itself
-const C_BLUE    = "\033[38;5;39m";
-const C_GREEN   = "\033[38;5;28m";
-const C_YELLOW  = "\033[38;5;214m";
-const C_RED     = "\033[31m";
-const C_RESET   = "\033[0m";
-const C_BOLD    = "\033[1m";
+const C_GREEN = "\033[32m";
+const C_YELLOW = "\033[33m";
+const C_RED = "\033[31m";
+const C_CYAN = "\033[36m";
+const C_WHITE = "\033[37m";
+const C_GRAY = "\033[90m";
+const C_RESET = "\033[0m";
+const C_BOLD = "\033[1m";
+const C_BG_RED = "\033[41;37m";
 
 function showHeader()
 {
     echo PHP_EOL;
-    echo C_BLUE . C_BOLD . " 🚀 THE FRAMEWORK" . C_RESET . C_BLUE . " Artisan CLI Engine v5.0.3" . C_RESET . PHP_EOL;
-    echo C_BLUE . " ──────────────────────────────────────────────────" . C_RESET . PHP_EOL;
+    echo C_RED . C_BOLD . "  THE FRAMEWORK " . C_RESET . C_GREEN . "v5.0.1" . C_RESET . PHP_EOL . PHP_EOL;
 }
 
 // Load routes setup for route:list
-if (file_exists(__DIR__ . '/routes/web.php')) require_once __DIR__ . '/routes/web.php';
+if (file_exists(__DIR__ . '/routes/web.php'))
+    require_once __DIR__ . '/routes/web.php';
 
 // Dynamic Command Loader
 $commandsDir = __DIR__ . '/app/Console/Commands/';
@@ -51,24 +58,29 @@ array_shift($args);
 // LIST COMMAND LOGIC
 if ($commandName === 'list') {
     showHeader();
-    echo C_YELLOW . " Penggunaan:" . C_RESET . " php artisan [perintah] [opsi]\n\n";
+    echo C_YELLOW . "  Usage:" . C_RESET . PHP_EOL;
+    echo "    command [options] [arguments]\n\n";
 
     ksort($commands);
     $groups = [];
     foreach ($commands as $name => $cmd) {
         $parts = explode(':', $name);
-        $group = count($parts) > 1 ? strtoupper($parts[0]) : 'GENERAL';
+        $group = count($parts) > 1 ? strtolower($parts[0]) : '';
         $groups[$group][$name] = $cmd;
     }
     ksort($groups);
 
+    echo C_YELLOW . "  Available commands:" . C_RESET . PHP_EOL;
+
     foreach ($groups as $groupName => $groupCommands) {
-        echo " " . C_BLUE . C_BOLD . $groupName . C_RESET . PHP_EOL;
-        foreach ($groupCommands as $name => $cmd) {
-            echo "  " . C_GREEN . str_pad($name, 30) . C_RESET . $cmd->getDescription() . PHP_EOL;
+        if ($groupName !== '') {
+            echo "   " . C_YELLOW . $groupName . C_RESET . PHP_EOL;
         }
-        echo PHP_EOL;
+        foreach ($groupCommands as $name => $cmd) {
+            echo "    " . C_GREEN . str_pad($name, 30) . C_RESET . C_GRAY . $cmd->getDescription() . C_RESET . PHP_EOL;
+        }
     }
+    echo PHP_EOL;
     exit;
 }
 
@@ -76,7 +88,7 @@ if ($commandName === 'list') {
 if (!isset($commands[$commandName])) {
     showHeader();
     echo C_RED . " ✖ ERROR  Perintah [$commandName] tidak ditemukan." . C_RESET . PHP_EOL;
-    
+
     // Suggestion logic
     $bestMatch = null;
     $shortest = -1;
@@ -91,7 +103,7 @@ if (!isset($commands[$commandName])) {
     if ($bestMatch) {
         echo C_YELLOW . " Mungkin maksud Anda: " . C_RESET . C_GREEN . $bestMatch . C_RESET . PHP_EOL;
     }
-    
+
     echo PHP_EOL . " Jalankan " . C_CYAN . "php artisan list" . C_RESET . " untuk melihat daftar perintah." . PHP_EOL;
     exit(1);
 }

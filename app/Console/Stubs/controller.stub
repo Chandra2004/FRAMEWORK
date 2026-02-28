@@ -3,15 +3,12 @@
 namespace {{namespace}};
 
 use TheFramework\Http\Controllers\Controller;
-use TheFramework\App\Http\Request;
-use TheFramework\App\Http\View;
-use TheFramework\Helpers\Helper;
 
 class {{class}} extends Controller
 {
     public function index()
     {
-        return View::render('welcome', [
+        return view('welcome', [
             'title' => 'The Framework'
         ]);
     }

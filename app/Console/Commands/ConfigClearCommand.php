@@ -26,12 +26,12 @@ class ConfigClearCommand implements CommandInterface
 
         if (file_exists($cacheFile)) {
             if (unlink($cacheFile)) {
-                echo "\033[38;5;28m★ SUCCESS  Config cache berhasil dihapus.\033[0m\n";
+                echo "\n  \033[1;42;30m SUCCESS \033[0m Config cache berhasil dihapus.\n";
             } else {
-                echo "\033[38;5;124m✖ ERROR  Gagal menghapus file cache config.\033[0m\n";
+                echo "\n  \033[1;41;97m ERROR \033[0m Gagal menghapus file cache config.\n";
             }
         } else {
-            echo "\033[38;5;214m➤ INFO  Tidak ada file cache config yang ditemukan.\033[0m\n";
+            echo "\n  \033[1;44;97m INFO \033[0m Tidak ada file cache config yang ditemukan.\n";
         }
     }
 }

@@ -18,7 +18,7 @@ class SeedCommand implements CommandInterface
 
     public function run(array $args): void
     {
-        echo "\033[38;5;39m➤ INFO  Menjalankan seeder";
+        echo "\n  \033[1;44;97m INFO \033[0m Menjalankan seeder";
         for ($i = 0; $i < 3; $i++) {
             echo ".";
             usleep(200000);
@@ -57,15 +57,15 @@ class SeedCommand implements CommandInterface
                 if (class_exists($className)) {
                     $seeder = new $className();
                     if (method_exists($seeder, 'run')) {
-                        echo "\033[38;5;39m➤ INFO  Menjalankan seeder: {$fileName}\033[0m\n";
+                        echo "\n  \033[1;44;97m INFO \033[0m Menjalankan seeder: {$fileName}\n";
                         $seeder->run();
-                        echo "\033[38;5;28m★ SUCCESS  Seeder {$fileName} selesai\033[0m\n";
+                        echo "\n  \033[1;42;30m SUCCESS \033[0m Seeder {$fileName} selesai\n";
                         return;
                     }
                 }
             }
 
-            echo "\033[38;5;196m✖ ERROR  Seeder {$specificSeeder} tidak ditemukan atau tidak valid\033[0m\n";
+            echo "\n  \033[1;41;97m ERROR \033[0m Seeder {$specificSeeder} tidak ditemukan atau tidak valid\n";
             return;
         }
 
@@ -88,7 +88,7 @@ class SeedCommand implements CommandInterface
                 $className = 'Database\\Seeders\\' . $fileName;
             }
 
-            echo "\033[38;5;39m➤ INFO  Menjalankan seeder: {$fileName}\033[0m\n";
+            echo "\n  \033[1;44;97m INFO \033[0m Menjalankan seeder: {$fileName}\n";
 
             require_once $file;
 
@@ -97,19 +97,19 @@ class SeedCommand implements CommandInterface
                 if (method_exists($seeder, 'run')) {
                     try {
                         $seeder->run();
-                        echo "\033[38;5;28m★ SUCCESS  Seeder {$fileName} selesai\033[0m\n";
+                        echo "\n  \033[1;42;30m SUCCESS \033[0m Seeder {$fileName} selesai\n";
                     } catch (\Throwable $e) {
-                        echo "\033[38;5;196m✖ ERROR  Seeder {$fileName} gagal: {$e->getMessage()}\033[0m\n";
+                        echo "\n  \033[1;41;97m ERROR \033[0m Seeder {$fileName} gagal: {$e->getMessage()}\n";
                     }
                 } else {
-                    echo "\033[38;5;214m⚠ WARNING  Seeder {$fileName} tidak memiliki method 'run'\033[0m\n";
+                    echo "\n  \033[1;43;30m WARN \033[0m Seeder {$fileName} tidak memiliki method 'run'\n";
                 }
             } else {
-                echo "\033[38;5;196m✖ ERROR  Class {$className} tidak ditemukan\033[0m\n";
+                echo "\n  \033[1;41;97m ERROR \033[0m Class {$className} tidak ditemukan\n";
             }
         }
 
-        echo "\033[38;5;28m★ SUCCESS  Semua seeder selesai\033[0m\n";
+        echo "\n  \033[1;42;30m SUCCESS \033[0m Semua seeder selesai\n";
     }
 }
 

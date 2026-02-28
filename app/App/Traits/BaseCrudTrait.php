@@ -3,6 +3,7 @@
 namespace TheFramework\App\Traits;
 
 use Exception;
+use TheFramework\Helpers\Helper;
 
 
 /**
@@ -50,7 +51,7 @@ trait BaseCrudTrait
 
         return view($this->getViewPath() . '.index', [
             'title' => $this->getViewTitle('List'),
-            'notification' => flash('notification'), 
+            'notification' => flash('notification'),
             'items' => $data,
             'errors' => error(),
             'old' => old()

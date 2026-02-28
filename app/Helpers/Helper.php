@@ -27,7 +27,8 @@ class Helper
      */
     public static function url(string $path = ''): string
     {
-        if (preg_match('#^https?://#', $path)) return $path;
+        if (preg_match('#^https?://#', $path))
+            return $path;
         $baseUrl = Config::get('BASE_URL') ?: '/';
         return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
     }
@@ -62,20 +63,41 @@ class Helper
     public static function request($key = null, $default = null)
     {
         $data = array_merge($_GET, $_POST);
-        if ($key !== null) return $data[$key] ?? $default;
+        if ($key !== null)
+            return $data[$key] ?? $default;
 
         return new class ($data) {
             private $data;
-            public function __construct($data) { $this->data = $data; }
-            public function all() { return $this->data; }
-            public function only(array $keys) { return array_intersect_key($this->data, array_flip($keys)); }
-            public function except(array $keys) { return array_diff_key($this->data, array_flip($keys)); }
-            public function get($key, $default = null) { return $this->data[$key] ?? $default; }
-            public function has($key) { return isset($this->data[$key]); }
-            public function path() { return parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); }
-            public function ip() { return Helper::get_client_ip(); }
-            public function method() { return strtoupper($_SERVER['REQUEST_METHOD']); }
-            public function isMethod($method) { return strtoupper($_SERVER['REQUEST_METHOD']) === strtoupper($method); }
+            public function __construct($data)
+            {
+                $this->data = $data; }
+            public function all()
+            {
+                return $this->data; }
+            public function only(array $keys)
+            {
+                return array_intersect_key($this->data, array_flip($keys)); }
+            public function except(array $keys)
+            {
+                return array_diff_key($this->data, array_flip($keys)); }
+            public function get($key, $default = null)
+            {
+                return $this->data[$key] ?? $default; }
+            public function has($key)
+            {
+                return isset($this->data[$key]); }
+            public function path()
+            {
+                return parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); }
+            public function ip()
+            {
+                return Helper::get_client_ip(); }
+            public function method()
+            {
+                return strtoupper($_SERVER['REQUEST_METHOD']); }
+            public function isMethod($method)
+            {
+                return strtoupper($_SERVER['REQUEST_METHOD']) === strtoupper($method); }
         };
     }
 
@@ -99,9 +121,12 @@ class Helper
     /**
      * Validation & Old Input.
      */
-    public static function old(string $field, $default = null)
+    public static function old(?string $field = null, $default = null)
     {
         self::ensureSession();
+        if ($field === null) {
+            return $_SESSION['old_input'] ?? [];
+        }
         return $_SESSION['old_input'][$field] ?? $default;
     }
 
@@ -122,7 +147,7 @@ class Helper
      */
     public static function rupiah($angka): string
     {
-        return "Rp " . number_format((float)$angka, 0, ',', '.');
+        return "Rp " . number_format((float) $angka, 0, ',', '.');
     }
 
     public static function e($string): string
@@ -163,7 +188,7 @@ class Helper
     public static function is_ajax(): bool
     {
         return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
     }
 
     /**
@@ -233,8 +258,9 @@ class Helper
     public static function validateAuthToken(string $token, string $uid): bool
     {
         $sessionToken = self::session_get('auth_token');
-        if (!$sessionToken) return false;
-        
+        if (!$sessionToken)
+            return false;
+
         // Sederhana: Token harus sama dengan di session
         // Kita bisa tambahkan pengecekan fingerprint IP/User-Agent disini agar LEBIH AMAN.
         return hash_equals($sessionToken, $token);

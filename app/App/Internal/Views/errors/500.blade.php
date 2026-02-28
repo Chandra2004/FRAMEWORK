@@ -1,82 +1,180 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="{{ url('/assets/ico/favicon-debug.ico') }}">
-    <title>500 - Kesalahan Internal Server | The Framework</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>500 — Server Error</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        .glow-500 {
-            text-shadow: 0 0 30px rgba(244, 63, 94, 0.4);
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0a0a0c;
+            color: #f4f4f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            max-width: 520px;
+            padding: 40px;
+        }
+
+        .error-code {
+            font-size: 140px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -8px;
+        }
+
+        .error-code span {
+            background: linear-gradient(135deg, #EF4444, #F87171);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f4f4f5;
+            margin: 16px 0 8px;
+        }
+
+        .desc {
+            color: #71717a;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #a1a1aa;
+        }
+
+        .btn-secondary:hover {
+            background: #27272a;
+            color: #f4f4f5;
+        }
+
+        .reference {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #1e1e22;
+            color: #3f3f46;
+            font-size: 11px;
+            font-family: monospace;
         }
     </style>
 </head>
 
-<body
-    class="min-h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_50%_0%,_#1a0505_0%,_#0d1117_100%)]">
-    <div class="max-w-2xl w-full text-center space-y-8">
-        <div class="space-y-4">
-            <div class="relative inline-block">
-                <div class="absolute inset-0 bg-red-500/10 blur-3xl rounded-full"></div>
-                <i data-lucide="server-off" class="w-24 h-24 text-red-500 relative mx-auto mb-6"></i>
-            </div>
-
-            <h1 class="text-7xl font-black text-white glow-500 tracking-tighter">500</h1>
-            <h2 class="text-3xl font-bold text-white tracking-tight">Internal Server Error</h2>
-            <p class="text-slate-400 text-lg leading-relaxed max-w-lg mx-auto">
-                Terjadi kesalahan yang tidak terduga pada server kami. Jangan khawatir, tim pengembang telah diberitahu
-                secara otomatis.
-            </p>
+<body>
+    <div class="container">
+        <div class="icon">
+            <svg width="28" height="28" fill="none" stroke="#EF4444" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z">
+                </path>
+            </svg>
         </div>
-
-        <div class="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 backdrop-blur-sm max-w-md mx-auto">
-            <div class="flex items-start gap-4 text-left">
-                <div class="w-10 h-10 bg-red-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <i data-lucide="info" class="w-5 h-5 text-red-400"></i>
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-red-100 mb-1">Dukungan Sistem</h3>
-                    <p class="text-xs text-red-200/60 leading-relaxed">
-                        Jika Anda adalah pengembang, silakan aktifkan <code
-                            class="bg-red-500/20 px-1 rounded">APP_DEBUG=true</code> di file .env Anda untuk melihat
-                        detail kesalahan teknis.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <button onclick="location.reload()"
-                class="w-full sm:w-auto px-8 py-3 bg-white text-black font-black rounded-full hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                Segarkan Halaman
-            </button>
-            <a href="{{ url('/') }}"
-                class="w-full sm:w-auto px-8 py-3 bg-slate-900 border border-slate-700 text-white font-black rounded-full hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
-                <i data-lucide="home" class="w-4 h-4"></i>
-                Beranda
+        <div class="error-code"><span>500</span></div>
+        <h1 class="title">Internal Server Error</h1>
+        <p class="desc">Terjadi kesalahan internal pada server. Tim kami sudah diberitahu dan sedang memperbaikinya.
+            Silakan coba lagi nanti.</p>
+        <div class="actions">
+            <a href="{{ url('/') }}" class="btn btn-primary">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Kembali ke Home
+            </a>
+            <a href="javascript:location.reload()" class="btn btn-secondary">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                    </path>
+                </svg>
+                Coba Lagi
             </a>
         </div>
-
-        <div class="text-[10px] text-slate-700 font-mono tracking-widest uppercase italic">
-            Reference ID: {{ substr(md5(time()), 0, 10) }}
+        <div class="reference">
+            ref: {{ substr(md5(microtime()), 0, 12) }} • {{ date('Y-m-d H:i:s') }}
         </div>
     </div>
-
-    <script>
-        lucide.createIcons();
-    </script>
 </body>
 
 </html>

@@ -24,11 +24,11 @@ class MakeModelCommand extends BaseCommand
         }
 
         $createMigration = in_array('-m', $args) || in_array('--migration', $args);
-        
+
         $parts = explode('/', str_replace('\\', '/', $name));
         $className = array_pop($parts);
         $subNamespace = !empty($parts) ? "\\" . implode('\\', $parts) : '';
-        
+
         $targetDir = BASE_PATH . "/app/Models" . (empty($parts) ? "" : "/" . implode('/', $parts));
         $targetFile = $targetDir . "/$className.php";
 
@@ -37,21 +37,28 @@ class MakeModelCommand extends BaseCommand
             return;
         }
 
-        if (!is_dir($targetDir)) mkdir($targetDir, 0755, true);
+        if (!is_dir($targetDir))
+            mkdir($targetDir, 0755, true);
 
         // Simple Pluralization for table name
         $lowerName = strtolower($className);
-        $tableName = $lowerName . 's';
-        if (substr($lowerName, -1) === 'y') $tableName = substr($lowerName, 0, -1) . 'ies';
+        $lastChar = strtolower(substr($lowerName, -1));
+        if ($lastChar === 'y') {
+            $tableName = substr($lowerName, 0, -1) . 'ies';
+        } elseif (in_array(substr($lowerName, -2), ['sh', 'ch']) || in_array($lastChar, ['s', 'x', 'z'])) {
+            $tableName = $lowerName . 'es';
+        } else {
+            $tableName = $lowerName . 's';
+        }
 
         $stubPath = BASE_PATH . "/app/Console/Stubs/model.stub";
         $content = file_get_contents($stubPath);
         $content = str_replace([
-            '{{namespace}}', 
-            '{{class}}', 
+            '{{namespace}}',
+            '{{class}}',
             '{{table}}'
         ], [
-            "TheFramework\\Models$subNamespace", 
+            "TheFramework\\Models$subNamespace",
             $className,
             $tableName
         ], $content);
