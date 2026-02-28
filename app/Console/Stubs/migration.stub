@@ -5,7 +5,7 @@ namespace Database\Migrations;
 use TheFramework\App\Schema\Schema;
 use TheFramework\App\Schema\Blueprint;
 
-return new class
+class {{class}}
 {
     /**
      * Run the migrations.
@@ -26,4 +26,4 @@ return new class
     {
         Schema::dropIfExists('{{table}}');
     }
-};
+}

@@ -60,6 +60,7 @@ class MakeMigrationCommand extends BaseCommand
         $stubPath = BASE_PATH . "/app/Console/Stubs/migration.stub";
         $content = file_get_contents($stubPath);
         $content = str_replace('{{table}}', $tableName, $content);
+        $content = str_replace('{{class}}', "Migration_" . str_replace('.php', '', $fileName), $content);
 
         if (!is_dir(dirname($targetFile)))
             mkdir(dirname($targetFile), 0755, true);
