@@ -303,6 +303,10 @@ class Container
 
                 try {
                     $results[] = $this->make($typeName);
+                } catch (\TheFramework\App\Exceptions\ValidationException $e) {
+                    throw $e; // Biarkan ValidationException bubble up (jangan ditangkap)
+                } catch (\TheFramework\App\Exceptions\AuthorizationException $e) {
+                    throw $e; // Biarkan AuthorizationException bubble up
                 } catch (\Throwable $e) {
                     if ($dependency->isDefaultValueAvailable()) {
                         $results[] = $dependency->getDefaultValue();

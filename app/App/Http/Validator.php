@@ -47,10 +47,12 @@ class Validator
     {
         // Simple wildcard implementation: users.*.email => matches users.0.email, users.1.email
         $segments = explode('.*.', $field, 2);
-        if (count($segments) !== 2) return;
+        if (count($segments) !== 2)
+            return;
 
         $arrayData = $this->getValue($this->inputData, $segments[0]);
-        if (!is_array($arrayData)) return;
+        if (!is_array($arrayData))
+            return;
 
         foreach ($arrayData as $i => $item) {
             $computedField = "{$segments[0]}.{$i}.{$segments[1]}";
@@ -65,7 +67,8 @@ class Validator
         $skipFurther = false;
 
         foreach ($ruleList as $ruleItem) {
-            if ($skipFurther) break;
+            if ($skipFurther)
+                break;
 
             [$rule, $params] = $this->parseRule($ruleItem);
 
@@ -96,7 +99,8 @@ class Validator
 
     protected function shouldValidate($rule, $value): bool
     {
-        if ($rule === 'required' || $rule === 'required_if') return true;
+        if ($rule === 'required' || $rule === 'required_if')
+            return true;
         return !in_array($value, [null, '', []], true);
     }
 
@@ -108,7 +112,8 @@ class Validator
 
     protected function getValue(array $data, string $field)
     {
-        if (isset($data[$field])) return $data[$field];
+        if (isset($data[$field]))
+            return $data[$field];
         foreach (explode('.', $field) as $segment) {
             if (!is_array($data) || !array_key_exists($segment, $data)) {
                 return null;
@@ -132,7 +137,7 @@ class Validator
     {
         $messageKey = "{$field}.{$rule}";
         $message = $this->customMessages[$messageKey] ?? $this->customMessages[$rule] ?? $defaultMessage;
-        
+
         if (!isset($this->errors[$field])) {
             $this->errors[$field] = [];
         }
@@ -329,44 +334,132 @@ class Validator
 
     protected function getSize($value)
     {
-        if (is_numeric($value) && !is_string($value)) return $value;
-        if (is_string($value)) return mb_strlen($value);
-        if (is_array($value) && isset($value['size'])) return round($value['size'] / 1024, 2); // KB
-        if (is_array($value)) return count($value);
+        if (is_numeric($value) && !is_string($value))
+            return $value;
+        if (is_string($value))
+            return mb_strlen($value);
+        if (is_array($value) && isset($value['size']))
+            return $value['size']; // Return raw bytes
+        if (is_array($value))
+            return count($value);
         return 0;
+    }
+
+    /**
+     * Parses size strings like "2MB", "500KB", "1GB" into bytes.
+     * Defaults to KB (Kilobytes) if no unit is provided, matching Laravel.
+     */
+    protected function parseSizeToBytes(string $sizeParam): float
+    {
+        $sizeParam = strtoupper(trim($sizeParam));
+        $value = (float) preg_replace('/[^0-9.]/', '', $sizeParam);
+
+        if (str_ends_with($sizeParam, 'GB') || str_ends_with($sizeParam, 'G')) {
+            return $value * 1024 * 1024 * 1024;
+        } elseif (str_ends_with($sizeParam, 'MB') || str_ends_with($sizeParam, 'M')) {
+            return $value * 1024 * 1024;
+        } elseif (str_ends_with($sizeParam, 'KB') || str_ends_with($sizeParam, 'K')) {
+            return $value * 1024;
+        } else {
+            // Default assumes KB
+            return $value * 1024;
+        }
+    }
+
+    /**
+     * Converts a raw byte amount into a smart human-readable string (KB, MB, GB).
+     */
+    protected function formatBytesToSmartString(float $bytes): string
+    {
+        if ($bytes >= 1073741824) {
+            $val = $bytes / 1073741824;
+            return (floor($val) == $val ? number_format($val, 0) : number_format($val, 2)) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            $val = $bytes / 1048576;
+            return (floor($val) == $val ? number_format($val, 0) : number_format($val, 2)) . ' MB';
+        } else {
+            $val = max(0, $bytes / 1024);
+            return (floor($val) == $val ? number_format($val, 0) : number_format($val, 2)) . ' KB';
+        }
     }
 
     protected function validate_min(string $field, string $label, $value, array $params): void
     {
-        $min = (float) ($params[0] ?? 0);
-        if ($this->getSize($value) < $min) {
-            $this->addError($field, 'min', "{$label} must be at least {$min}.");
+        $paramRaw = $params[0] ?? '0';
+        $size = $this->getSize($value);
+
+        if (is_array($value) && isset($value['size'])) {
+            $minBytes = $this->parseSizeToBytes($paramRaw);
+            if ($size < $minBytes) {
+                $smartSize = $this->formatBytesToSmartString($minBytes);
+                $this->addError($field, 'min.file', "{$label} must be at least {$smartSize}.");
+            }
+        } else {
+            $min = (float) $paramRaw;
+            if ($size < $min) {
+                $this->addError($field, 'min', "{$label} must be at least {$min}.");
+            }
         }
     }
 
     protected function validate_max(string $field, string $label, $value, array $params): void
     {
-        $max = (float) ($params[0] ?? 0);
-        if ($this->getSize($value) > $max) {
-            $this->addError($field, 'max', "{$label} may not be greater than {$max}.");
+        $paramRaw = $params[0] ?? '0';
+        $size = $this->getSize($value);
+
+        if (is_array($value) && isset($value['size'])) {
+            $maxBytes = $this->parseSizeToBytes($paramRaw);
+            if ($size > $maxBytes) {
+                $smartSize = $this->formatBytesToSmartString($maxBytes);
+                $this->addError($field, 'max.file', "{$label} may not be greater than {$smartSize}.");
+            }
+        } else {
+            $max = (float) $paramRaw;
+            if ($size > $max) {
+                $this->addError($field, 'max', "{$label} may not be greater than {$max}.");
+            }
         }
     }
 
     protected function validate_between(string $field, string $label, $value, array $params): void
     {
-        $min = (float) ($params[0] ?? 0);
-        $max = (float) ($params[1] ?? 0);
+        $minRaw = $params[0] ?? '0';
+        $maxRaw = $params[1] ?? '0';
         $size = $this->getSize($value);
-        if ($size < $min || $size > $max) {
-            $this->addError($field, 'between', "{$label} must be between {$min} and {$max}.");
+
+        if (is_array($value) && isset($value['size'])) {
+            $minBytes = $this->parseSizeToBytes($minRaw);
+            $maxBytes = $this->parseSizeToBytes($maxRaw);
+            if ($size < $minBytes || $size > $maxBytes) {
+                $smartMin = $this->formatBytesToSmartString($minBytes);
+                $smartMax = $this->formatBytesToSmartString($maxBytes);
+                $this->addError($field, 'between.file', "{$label} must be between {$smartMin} and {$smartMax}.");
+            }
+        } else {
+            $min = (float) $minRaw;
+            $max = (float) $maxRaw;
+            if ($size < $min || $size > $max) {
+                $this->addError($field, 'between', "{$label} must be between {$min} and {$max}.");
+            }
         }
     }
 
     protected function validate_size(string $field, string $label, $value, array $params): void
     {
-        $sizeReq = (float) ($params[0] ?? 0);
-        if ($this->getSize($value) !== $sizeReq) {
-            $this->addError($field, 'size', "{$label} must be exactly {$sizeReq}.");
+        $sizeRaw = $params[0] ?? '0';
+        $size = $this->getSize($value);
+
+        if (is_array($value) && isset($value['size'])) {
+            $exactBytes = $this->parseSizeToBytes($sizeRaw);
+            if ($size !== $exactBytes) {
+                $smartExact = $this->formatBytesToSmartString($exactBytes);
+                $this->addError($field, 'size.file', "{$label} must be exactly {$smartExact}.");
+            }
+        } else {
+            $sizeReq = (float) $sizeRaw;
+            if ($size !== $sizeReq) {
+                $this->addError($field, 'size', "{$label} must be exactly {$sizeReq}.");
+            }
         }
     }
 
@@ -453,11 +546,12 @@ class Validator
         $exceptId = $params[2] ?? null;
         $idColumn = $params[3] ?? 'id';
 
-        if (!$table) throw new Exception("Rule unique must specify a table.");
+        if (!$table)
+            throw new Exception("Rule unique must specify a table.");
 
         $db = Database::getInstance();
         $sql = "SELECT COUNT(*) as count FROM `$table` WHERE `$column` = :val";
-        
+
         if ($exceptId && $exceptId !== 'NULL') {
             $sql .= " AND `$idColumn` != :except";
         }
@@ -479,7 +573,8 @@ class Validator
         $table = $params[0] ?? null;
         $column = $params[1] ?? $field;
 
-        if (!$table) throw new Exception("Rule exists must specify a table.");
+        if (!$table)
+            throw new Exception("Rule exists must specify a table.");
 
         $db = Database::getInstance();
         $db->query("SELECT COUNT(*) as count FROM `$table` WHERE `$column` = :val");

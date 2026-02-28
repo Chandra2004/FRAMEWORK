@@ -113,8 +113,22 @@ class Helper
     public static function get_flash(string $key)
     {
         self::ensureSession();
-        $value = $_SESSION['flash_system'][$key] ?? null;
-        unset($_SESSION['flash_system'][$key]);
+
+        $value = null;
+        if (isset($_SESSION['flash_system'][$key])) {
+            $value = $_SESSION['flash_system'][$key];
+            unset($_SESSION['flash_system'][$key]);
+        } elseif (isset($_SESSION[$key])) { // Fallback for root session items like 'notification'
+            $value = $_SESSION[$key];
+            unset($_SESSION[$key]);
+        }
+
+        if (is_array($value) && isset($value['expires_at'])) {
+            if (time() > $value['expires_at']) {
+                return null; // Expired
+            }
+        }
+
         return $value;
     }
 
@@ -124,16 +138,17 @@ class Helper
     public static function old(?string $field = null, $default = null)
     {
         self::ensureSession();
+        $oldInput = $_SESSION['old_input'] ?? $_SESSION['_old_input'] ?? [];
         if ($field === null) {
-            return $_SESSION['old_input'] ?? [];
+            return $oldInput;
         }
-        return $_SESSION['old_input'][$field] ?? $default;
+        return $oldInput[$field] ?? $default;
     }
 
     public static function validation_errors(?string $field = null)
     {
         self::ensureSession();
-        $errors = $_SESSION['validation_errors'] ?? [];
+        $errors = $_SESSION['validation_errors'] ?? $_SESSION['_errors'] ?? [];
         return $field === null ? $errors : ($errors[$field] ?? null);
     }
 

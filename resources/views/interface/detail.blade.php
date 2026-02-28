@@ -1,7 +1,10 @@
 @extends('template.layout')
 
 @section('meta_title', 'User Profile: ' . $user['name'] . ' | THE-FRAMEWORK')
-@section('meta_description', 'View and manage profile details for ' . $user['name'] . '. Account management powered by
+@section('meta_description',
+    'View and manage profile details for ' .
+    $user['name'] .
+    '. Account management powered by
     THE-FRAMEWORK.')
 
 @section('main-content')

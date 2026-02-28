@@ -148,7 +148,7 @@
                                     class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors">
                                     <i data-lucide="user" class="w-5 h-5"></i>
                                 </div>
-                                <input type="text" name="name" id="name" required
+                                <input type="text" name="name" id="name" 
                                     class="block w-full rounded-xl border-slate-700 bg-slate-950 pl-11 py-3.5 text-white placeholder-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none"
                                     placeholder="e.g. John Doe">
                             </div>
@@ -163,7 +163,7 @@
                                     class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors">
                                     <i data-lucide="mail" class="w-5 h-5"></i>
                                 </div>
-                                <input type="email" name="email" id="email" required
+                                <input type="email" name="email" id="email" 
                                     class="block w-full rounded-xl border-slate-700 bg-slate-950 pl-11 py-3.5 text-white placeholder-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none"
                                     placeholder="john@example.com">
                             </div>

@@ -16,7 +16,7 @@ class UserRequest extends FormRequest
         return [
             'name' => 'required|min:3|max:100',
             'email' => 'required|email',
-            'profile_picture' => 'nullable|file|images|max:2048',
+            'profile_picture' => 'nullable|images|max:1024',
             'delete_profile_picture' => 'nullable'
         ];
     }

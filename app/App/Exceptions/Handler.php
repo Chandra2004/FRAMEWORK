@@ -457,6 +457,21 @@ class Handler
             // Flash old input (except dontFlash fields)
             $input = array_diff_key($_POST, array_flip(self::$dontFlash));
             $_SESSION['_old_input'] = $input;
+
+            // Construct "Gagal Validasi" logic from old FormRequest
+            $errors = $e->errors();
+            $firstKey = array_key_first($errors);
+            $firstMsg = is_array($errors[$firstKey]) ? $errors[$firstKey][0] : $errors[$firstKey];
+
+            $redirectMsg = "Gagal Validasi: " . $firstMsg;
+            if (count($errors) > 1) {
+                $redirectMsg .= " (+" . (count($errors) - 1) . " error lainnya)";
+            }
+
+            $_SESSION['notification'] = [
+                'status' => 'error',
+                'message' => $redirectMsg
+            ];
         }
 
         $redirectTo = $e->getRedirectTo() ?? ($_SERVER['HTTP_REFERER'] ?? '/');
