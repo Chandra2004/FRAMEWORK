@@ -1,514 +1,201 @@
-# ✅ Validation (Ultimate Edition)
+# ✅ Validation — v5.0.1 Premium
 
-Framework menyediakan validator yang powerful dengan 50+ built-in rules untuk memvalidasi input pengguna sebelum memproses data.
+The Framework v5 menyediakan sistem validasi yang sangat kuat (Ultimate Edition) dengan **50+ built-in rules**. Anda dapat memvalidasi input pengguna secara otomatis menggunakan **Form Request** atau secara manual di dalam Controller.
 
 ---
 
 ## 📋 Daftar Isi
 
-1. [Overview: 2 Cara Validasi](#overview-2-cara-validasi)
-2. [Cara 1: Manual Validation (Controller)](#cara-1-manual-validation-controller)
-3. [Cara 2: Form Request (Recommended)](#cara-2-form-request-recommended)
-4. [Menampilkan Error di View](#menampilkan-error-di-view)
-5. [Daftar Rules Lengkap](#daftar-rules-lengkap)
-6. [Database Validation](#database-validation)
-7. [File Validation](#file-validation)
-8. [Custom Labels](#custom-labels)
+1. [Overview Validasi](#overview-validasi)
+2. [Cara 1: Form Request (Direkomendasikan)](#cara-1-form-request-direkomendasikan)
+3. [Cara 2: Manual Validation (Controller)](#cara-2-manual-validation-controller)
+4. [Daftar Rules Lengkap (Tabel)](#daftar-rules-lengkap-tabel)
+5. [Validasi Database](#validasi-database)
+6. [Validasi File & Gambar](#validasi-file--gambar)
+7. [Kustomisasi Pesan & Label](#kustomisasi-pesan--label)
 
 ---
 
-## Overview: 2 Cara Validasi
+## Overview Validasi
 
-Framework ini menyediakan **2 cara** untuk validasi input:
+Ada dua pendekatan utama untuk melakukan validasi di Framework ini:
 
-| Cara                  | Lokasi           | Use Case                       | Auto Redirect? |
-| :-------------------- | :--------------- | :----------------------------- | :------------: |
-| **Manual Validation** | Dalam Controller | Simple forms, quick validation |   ❌ Manual    |
-| **Form Request**      | Dedicated class  | Complex forms, reusable rules  |  ✅ **Auto**   |
-
----
-
-## Cara 1: Manual Validation (Controller)
-
-**Best for:** Simple forms, quick prototyping, one-time validation.
-
-### Step 1: Validate in Controller
-
-```php
-use TheFramework\App\Validator;
-use TheFramework\Helpers\Helper;
-
-public function store() {
-    $validator = new Validator();
-
-    $isValid = $validator->validate($_POST, [
-        'username' => 'required|alpha_dash|min:4|max:20',
-        'email'    => 'required|email|unique:users,email',
-        'password' => 'required|min:8|confirmed',
-        'age'      => 'nullable|numeric|between:17,99'
-    ]);
-
-    if (!$isValid) {
-        // Manual flash errors & old input
-        $_SESSION['errors'] = $validator->errors();
-        $_SESSION['old'] = $_POST;
-
-        return Helper::redirect('/register');
-    }
-
-    // Validation passed
-    User::create([
-        'username' => $_POST['username'],
-        'email' => $_POST['email'],
-        'password' => Helper::hash_password($_POST['password'])
-    ]);
-
-    return Helper::redirect('/users', 'success', 'User created!');
-}
-```
-
-### Step 2: Display Errors in View
-
-```php
-<!-- Display all errors -->
-<?php if ($errors = $_SESSION['errors'] ?? null): ?>
-    <div class="alert alert-danger">
-        <?php foreach ($errors as $error): ?>
-            <li><?= Helper::e($error) ?></li>
-        <?php endforeach; ?>
-    </div>
-<?php endif; ?>
-
-<!-- Repopulate form -->
-<input type="text" name="username" value="<?= Helper::old('username') ?>">
-
-<?php
-// Clean up session
-unset($_SESSION['errors'], $_SESSION['old']);
-?>
-```
-
-**Pros:**
-
-- ✅ Simple, straightforward
-- ✅ No extra files needed
-
-**Cons:**
-
-- ❌ Manual error flashing
-- ❌ Manual redirect
-- ❌ Code duplication jika form sama dipakai di banyak tempat
+| Fitur             | Form Request                           | Manual Validation          |
+| :---------------- | :------------------------------------- | :------------------------- |
+| **Lokasi**        | Dedicated Class                        | Controller                 |
+| **Auto-Redirect** | ✅ Ya (Otomatis ke Halaman Sebelumnya) | ❌ Tidak (Manual)          |
+| **Flash Data**    | ✅ Ya (Otomatis `errors` & `old`)      | ❌ Tidak (Manual)          |
+| **Keamanan**      | ✅ Sangat Tinggi (Mendukung Authorize) | ⚠️ Tergantung Implementasi |
 
 ---
 
-## Cara 2: Form Request (Recommended)
+## Cara 1: Form Request (Direkomendasikan)
 
-**Best for:** Complex forms, reusable validation, production apps.
+Ini adalah cara paling bersih dan modern. Validasi terjadi **sebelum** method controller dieksekusi.
 
-### Step 1: Generate Form Request
-
+### Step 1: Buat Form Request
+Gunakan Artisan untuk membuat class request baru:
 ```bash
-php artisan make:request CreateUserRequest
+php artisan make:request StoreUserRequest
 ```
 
-**Output:**
-
-```
-★ SUCCESS  Request dibuat: CreateUserRequest (app/Http/Requests/CreateUserRequest.php)
-```
-
-### Step 2: Define Rules
-
-File: `app/Http/Requests/CreateUserRequest.php`
+### Step 2: Tentukan Aturan (Rules)
+Buka file `app/Http/Requests/StoreUserRequest.php`:
 
 ```php
-<?php
+namespace TheFramework\App\Http\Requests;
 
-namespace TheFramework\Http\Requests;
+use TheFramework\App\Http\FormRequest;
 
-use TheFramework\App\FormRequest;
-
-class CreateUserRequest extends FormRequest
+class StoreUserRequest extends FormRequest
 {
-    /**
-     * Authorization check (optional)
-     */
-    public function authorize(): bool
-    {
-        return true; // or check user permission
-    }
+    public function authorize(): bool { return true; }
 
-    /**
-     * Validation rules
-     */
     public function rules(): array
     {
         return [
-            'username' => 'required|alpha_dash|min:4|max:20|unique:users,username',
+            'username' => 'required|alpha_dash|min:4|unique:users,username',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
-            'age'      => 'nullable|numeric|between:13,120',
-        ];
-    }
-
-    /**
-     * Custom labels for error messages
-     */
-    public function labels(): array
-    {
-        return [
-            'username' => 'Nama Pengguna',
-            'email'    => 'Alamat Email',
-            'password' => 'Kata Sandi',
-            'age'      => 'Umur',
+            'avatar'   => 'nullable|image|max:2MB',
         ];
     }
 }
 ```
 
-### Step 3: Use in Controller
+### Step 3: Inject ke Controller
+
+Cukup tambahkan type-hint pada method controller. Framework akan mengurus sisanya.
 
 ```php
-use TheFramework\Http\Requests\CreateUserRequest;
-use TheFramework\Models\User;
-use TheFramework\Helpers\Helper;
-
-class UserController
+public function store(StoreUserRequest $request)
 {
-    /**
-     * ✨ MAGIC: Validation happens AUTOMATICALLY!
-     * If validation fails, auto redirects back with errors.
-     * If we reach here, validation PASSED!
-     */
-    public function store(CreateUserRequest $request)
-    {
-        // No need to check validation!
-        // Get only validated data (safe from mass assignment)
-        $data = $request->validated();
+    // Jika sampai di baris ini, data DIJAMIN VALID!
+    $validated = $request->validated();
 
-        // Hash password
-        $data['password'] = Helper::hash_password($data['password']);
+    User::create($validated);
 
-        // Create user
-        User::create($data);
-
-        return Helper::redirect('/users', 'success', 'User created!');
-    }
+    return redirect('/dashboard')->success('User berhasil didaftarkan!');
 }
 ```
 
-### Step 4: Display Errors in View (Same)
+---
+
+## Cara 2: Manual Validation (Controller)
+
+Gunakan method `$request->validate()` jika Anda ingin melakukan validasi cepat di tempat.
 
 ```php
-<!-- Errors automatically flashed by FormRequest -->
-<?php if ($errors = $_SESSION['errors'] ?? null): ?>
-    <div class="alert alert-danger">
-        <?php foreach ($errors as $error): ?>
-            <li><?= Helper::e($error) ?></li>
-        <?php endforeach; ?>
-    </div>
+public function update(Request $request)
+{
+    $validated = $request->validate([
+        'title' => 'required|max:255',
+        'content' => 'required',
+    ]);
+
+    // Lanjutkan proses...
+}
+```
+
+> **Note:** Method ini akan melempar `ValidationException` yang otomatis ditangkap oleh **Global Exception Handler** untuk melakukan redirect back dengan pesan error.
+
+---
+
+## Daftar Rules Lengkap (Tabel)
+
+### 1. Basic & Presence Rules
+| Rule | Deskripsi | Contoh |
+| :--- | :--- | :--- |
+| `required` | Data wajib ada dan tidak boleh kosong. | `'name' => 'required'` |
+| `nullable` | Boleh kosong, skip validasi lain jika kosong. | `'bio' => 'nullable\|max:500'` |
+| `accepted` | Harus bernilai "yes", "on", 1, atau true. | `'terms' => 'accepted'` |
+| `present` | Key harus ada di input, walaupun nilainya kosong. | `'comment' => 'present'` |
+
+### 2. Type Checking Rules
+| Rule | Deskripsi | Contoh |
+| :--- | :--- | :--- |
+| `string` | Harus berupa string teks. | `'note' => 'string'` |
+| `numeric` | Harus berupa angka (integer atau float). | `'price' => 'numeric'` |
+| `integer` | Harus berupa angka bulat. | `'age' => 'integer'` |
+| `boolean` | Harus berupa nilai boolean (true, false, 0, 1). | `'status' => 'boolean'` |
+| `array` | Harus berupa tipe data array. | `'items' => 'array'` |
+| `json` | Harus berupa string JSON yang valid. | `'data' => 'json'` |
+
+### 3. String & Format Rules
+| Rule | Deskripsi | Contoh |
+| :--- | :--- | :--- |
+| `alpha` | Hanya boleh berisi huruf. | `'code' => 'alpha'` |
+| `alpha_num` | Hanya boleh berisi huruf dan angka. | `'id' => 'alpha_num'` |
+| `alpha_dash` | Huruf, angka, dash (-), dan underscore (_). | `'slug' => 'alpha_dash'` |
+| `email` | Harus format alamat email yang valid. | `'email' => 'email'` |
+| `url` | Harus format URL yang valid. | `'site' => 'url'` |
+| `active_url` | Alamat URL yang valid dan host-nya aktif. | `'site' => 'active_url'` |
+| `ip` | Alamat IP yang valid (v4 atau v6). | `'ip' => 'ip'` |
+| `uuid` | Format UUID yang valid. | `'uuid' => 'uuid'` |
+| `regex:pattern`| Nilai harus cocok dengan regex pattern. | `'pin' => 'regex:/^[0-9]{6}$/'` |
+
+### 4. Size & Comparison Rules
+| Rule | Deskripsi | Contoh |
+| :--- | :--- | :--- |
+| `min:val` | Minimal panjang (string) atau nilai (numeric). | `'pass' => 'min:8'` |
+| `max:val` | Maksimal panjang atau nilai (Mendukung unit file). | `'foto' => 'max:2MB'` |
+| `between:x,y` | Nilai harus di antara rentang X dan Y. | `'age' => 'between:17,99'` |
+| `size:val` | Ukuran harus tepat senilai VAL. | `'pin' => 'size:6'` |
+| `digits:n` | Harus angka dengan panjang tepat N digit. | `'otp' => 'digits:4'` |
+| `same:field` | Nilai harus sama dengan field lain. | `'p_conf' => 'same:password'` |
+| `confirmed` | Harus sama dengan field `{name}_confirmation`. | `'password' => 'confirmed'` |
+| `different:f` | Nilai harus berbeda dengan field F. | `'new' => 'different:old'` |
+
+### 5. Date Rules
+| Rule | Deskripsi | Contoh |
+| :--- | :--- | :--- |
+| `date` | Format tanggal yang valid (strtotime). | `'born' => 'date'` |
+| `date_format:F`| Tanggal harus sesuai format F (misal: Y-m-d).| `'at' => 'date_format:Y-m-d'` |
+| `after:date` | Tanggal harus setelah DATE tertentu. | `'end' => 'after:today'` |
+| `before:date` | Tanggal harus sebelum DATE tertentu. | `'start' => 'before:tomorrow'` |
+
+---
+
+## Validasi Database
+
+| Rule | Deskripsi | Contoh |
+| :--- | :--- | :--- |
+| `unique:table,col` | Data belum ada di tabel database. | `'email' => 'unique:users,email'` |
+| `exists:table,col` | Data harus ada di tabel database. | `'cat_id' => 'exists:categories,id'`|
+
+**Tips Unique (Ignore ID):**
+`'email' => "unique:users,email,{$id},id"` — Gunakan ini saat update agar tidak bentrok dengan email user itu sendiri.
+
+---
+
+## Validasi File & Gambar
+
+| Rule | Deskripsi | Contoh |
+| :--- | :--- | :--- |
+| `image` | Harus file gambar (jpg, png, webp, svg, dll). | `'foto' => 'image'` |
+| `mimes:e1,e2` | Harus file dengan ekstensi tertentu. | `'doc' => 'mimes:pdf,zip'` |
+| `max:2MB` | Maksimal ukuran file (cerdas dengan unit). | `'file' => 'max:2MB'` |
+
+---
+
+## Kustomisasi Pesan & Label
+
+### Menampilkan Error di View
+Gunakan global helper `error()` atau `@error` (di Blade) untuk mengecek kesalahan.
+
+```php
+<input name="email" value="<?= old('email') ?>">
+<?php if (has_error('email')): ?>
+    <span class="text-red"><?= error('email') ?></span>
 <?php endif; ?>
-
-<!-- Old input automatically flashed -->
-<input type="text" name="username" value="<?= Helper::old('username') ?>">
 ```
 
-**Pros:**
-
-- ✅ **Auto validation** on controller injection
-- ✅ **Auto redirect back** jika error
-- ✅ **Auto flash errors & old input**
-- ✅ **Reusable** (bisa dipakai di update, store, dll)
-- ✅ **Clean controller** - no validation clutter
-- ✅ **Type safety** - IDE autocomplete
-- ✅ **Authorization** built-in
-
-**Cons:**
-
-- ❌ Satu file ekstra (tapi worth it!)
-
----
-
-## Menampilkan Error di View
-
-Di View (`resources/views/register.php`), tampilkan pesan error:
-
-```html
-<!-- Input Username -->
-<input type="text" name="username" value="<?= old('username') ?>" />
-
-<?php if (isset($errors['username'])): ?>
-<div class="text-danger"><?= e($errors['username']) ?></div>
-<?php endif; ?>
+Di Blade:
+```blade
+@error('email')
+    <div class="alert text-red">{{ $message }}</div>
+@enderror
 ```
-
-**Helper untuk Old Input:**
-
-```php
-function old($key) {
-    return $_SESSION['old'][$key] ?? '';
-}
-```
-
----
-
-## Daftar Rules Lengkap
-
-### Basic Rules
-
-| Rule       | Deskripsi                                | Contoh                           |
-| :--------- | :--------------------------------------- | :------------------------------- |
-| `required` | Field tidak boleh kosong                 | `'name' => 'required'`           |
-| `nullable` | Boleh null/kosong, skip validasi lainnya | `'phone' => 'nullable\|numeric'` |
-| `accepted` | Checkbox harus di-check (yes/on/1/true)  | `'terms' => 'accepted'`          |
-
-### Type Validation
-
-| Rule         | Deskripsi                      | Contoh                    |
-| :----------- | :----------------------------- | :------------------------ |
-| `string`     | Harus berupa teks              | `'bio' => 'string'`       |
-| `numeric`    | Harus angka (int atau float)   | `'price' => 'numeric'`    |
-| `integer`    | Harus bilangan bulat           | `'quantity' => 'integer'` |
-| `boolean`    | Harus boolean (true/false/1/0) | `'active' => 'boolean'`   |
-| `alpha`      | Hanya huruf A-Z a-z            | `'name' => 'alpha'`       |
-| `alpha_num`  | Huruf dan angka                | `'code' => 'alpha_num'`   |
-| `alpha_dash` | Huruf, angka, dash, underscore | `'slug' => 'alpha_dash'`  |
-
-### Format Validation
-
-| Rule                 | Deskripsi               | Contoh                                  |
-| :------------------- | :---------------------- | :-------------------------------------- |
-| `email`              | Format email valid      | `'email' => 'email'`                    |
-| `url`                | Format URL valid        | `'website' => 'url'`                    |
-| `ip`                 | Alamat IP valid (v4/v6) | `'ip_address' => 'ip'`                  |
-| `json`               | String JSON valid       | `'metadata' => 'json'`                  |
-| `date`               | Tanggal valid           | `'birthdate' => 'date'`                 |
-| `date_format:format` | Tanggal sesuai format   | `'published_at' => 'date_format:Y-m-d'` |
-
-### Size Validation
-
-| Rule          | Deskripsi                                          | Contoh                     |
-| :------------ | :------------------------------------------------- | :------------------------- |
-| `min:x`       | Minimal x karakter (string) atau x nilai (numeric) | `'password' => 'min:8'`    |
-| `max:x`       | Maksimal x karakter                                | `'title' => 'max:255'`     |
-| `between:x,y` | Panjang atau nilai antara x dan y                  | `'age' => 'between:17,99'` |
-| `size:x`      | Tepat x karakter                                   | `'pin' => 'size:4'`        |
-
-### Comparison
-
-| Rule         | Deskripsi                            | Contoh                                  |
-| :----------- | :----------------------------------- | :-------------------------------------- |
-| `same:field` | Nilai harus sama dengan field lain   | `'password_confirm' => 'same:password'` |
-| `confirmed`  | Auto cek field `{name}_confirmation` | `'password' => 'confirmed'`             |
-| `in:a,b,c`   | Nilai harus salah satu dari list     | `'gender' => 'in:male,female,other'`    |
-| `not_in:x,y` | Nilai TIDAK boleh dari list          | `'status' => 'not_in:banned,deleted'`   |
-
----
-
-## Database Validation
-
-Validator bisa query database untuk validasi unique dan exists.
-
-### Rule: `unique`
-
-Cek apakah nilai belum ada di database (cocok untuk email/username).
-
-**Basic Usage:**
-
-```php
-'email' => 'required|email|unique:users,email'
-// Format: unique:table,column
-```
-
-**Ignore ID (Untuk Update):**
-
-```php
-// Saat update profil user ID 5, ignore email user 5 sendiri
-'email' => 'required|email|unique:users,email,5,id'
-// Format: unique:table,column,except_id,id_column
-```
-
-**Contoh Real (Update Profile):**
-
-```php
-$userId = $_SESSION['user_id'];
-
-$validator->validate($_POST, [
-    'email' => "required|email|unique:users,email,{$userId},id",
-    'username' => "required|unique:users,username,{$userId},id"
-]);
-```
-
-### Rule: `exists`
-
-Cek apakah nilai EXISTS di database (cocok untuk foreign key).
-
-```php
-'category_id' => 'required|exists:categories,id',
-'user_id' => 'required|exists:users,id'
-// Format: exists:table,column
-```
-
-**Contoh Real (Blog Post):**
-
-```php
-$validator->validate($_POST, [
-    'title' => 'required|min:5',
-    'category_id' => 'required|exists:categories,id', // Cek kategori ada
-    'author_id' => 'required|exists:users,id'         // Cek user ada
-]);
-```
-
----
-
-## File Validation
-
-Validasi file upload (image, dokumen, dll).
-
-### Rule: `mimes`
-
-Validasi ekstensi file.
-
-```php
-'avatar' => 'required|mimes:jpg,jpeg,png,gif',
-'document' => 'nullable|mimes:pdf,doc,docx'
-// Format: mimes:ext1,ext2,ext3
-```
-
-### Rule: `image`
-
-Shortcut untuk `mimes:jpg,jpeg,png,bmp,gif,svg,webp`.
-
-```php
-'profile_picture' => 'required|image|max:2048'
-// max:2048 = maksimal 2MB
-```
-
-### Rule: `max` (Untuk File)
-
-Ukuran file maksimal dalam KB.
-
-```php
-'video' => 'mimes:mp4,avi|max:10240' // Maksimal 10MB
-```
-
-**Catatan:** File upload di PHP berupa array:
-
-```php
-[
-    'name' => 'photo.jpg',
-    'type' => 'image/jpeg',
-    'tmp_name' => '/tmp/phpXXXX',
-    'error' => 0,
-    'size' => 15360  // in bytes
-]
-```
-
----
-
-## Custom Labels
-
-Ubah nama field di pesan error menjadi bahasa Indonesia atau lebih deskriptif.
-
-```php
-$rules = [
-    'username' => 'required|min:4',
-    'email' => 'required|email'
-];
-
-$labels = [
-    'username' => 'Nama Pengguna',
-    'email' => 'Alamat Email'
-];
-
-$validator->validate($_POST, $rules, $labels);
-
-// Error message:
-// "Nama Pengguna wajib diisi."
-// "Alamat Email format email tidak valid."
-```
-
----
-
-## Advanced Examples
-
-### Registration Form
-
-```php
-$validator->validate($_POST, [
-    'username' => 'required|alpha_dash|min:4|max:20|unique:users,username',
-    'email'    => 'required|email|unique:users,email',
-    'password' => 'required|min:8|confirmed',
-    'age'      => 'required|numeric|between:13,120',
-    'gender'   => 'required|in:male,female,other',
-    'terms'    => 'accepted'
-]);
-```
-
-### Blog Post Form
-
-```php
-$validator->validate($_POST, [
-    'title'       => 'required|min:5|max:255',
-    'slug'        => 'required|alpha_dash|unique:posts,slug',
-    'content'     => 'required|min:50',
-    'category_id' => 'required|exists:categories,id',
-    'image'       => 'nullable|image|max:2048',
-    'published'   => 'boolean'
-]);
-```
-
-### Profile Update
-
-```php
-$userId = $_SESSION['user_id'];
-
-$validator->validate($_POST, [
-    'email'    => "required|email|unique:users,email,{$userId},id",
-    'bio'      => 'nullable|string|max:500',
-    'avatar'   => 'nullable|image|max:1024',
-    'website'  => 'nullable|url'
-]);
-```
-
----
-
-## Error Handling Best Practices
-
-### ✅ DO
-
-```php
-// Return early jika validasi gagal
-if (!$validator->validate($_POST, $rules)) {
-    return redirect()->back()->withErrors($validator->errors());
-}
-
-// Pisahkan validation logic ke Request class
-class RegisterRequest {
-    public function rules() {
-        return ['email' => 'required|email|unique:users,email'];
-    }
-}
-```
-
-### ❌ DON'T
-
-```php
-// Jangan skip validasi
-User::create($_POST); // Bahaya! Bisa mass assignment vulnerability
-
-// Jangan validasi di View
-// Validasi HARUS di Controller/Request
-```
-
----
-
-## Next Steps
-
-- 📖 [Database](database.md)
-- 📖 [ORM Guide](orm.md)
-- 📖 [Security](security.md)
-- 📖 [Tutorial: Auth System](tutorial-auth.md)
 
 ---
 

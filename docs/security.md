@@ -4,11 +4,13 @@ The Framework dibangun dengan prinsip **Security First**. Version 5.0.1 memiliki
 
 ---
 
+**Security Grade:** **A+** (98/100) — Production Ready
+
+---
+
 ## 🎯 Security Features Overview
 
-### Built-in Protection (v5.0.1)
-
-| Threat                            | Protection            | Status  |
+| Ancaman                           | Proteksi              | Status  |
 | --------------------------------- | --------------------- | ------- |
 | SQL Injection                     | Prepared Statements   | ✅ 100% |
 | XSS (Cross-Site Scripting)        | Auto-escaping + WAF   | ✅ 100% |
@@ -18,8 +20,6 @@ The Framework dibangun dengan prinsip **Security First**. Version 5.0.1 memiliki
 | Clickjacking                      | X-Frame-Options       | ✅ 100% |
 | HTTPS Downgrade                   | HSTS Headers          | ✅ 100% |
 | SVG XSS                           | Restricted Uploads    | ✅ 100% |
-
-**Security Grade:** **A+** (98/100) - Production Ready
 
 ---
 
@@ -91,21 +91,21 @@ Router::group(['middleware' => []], function() {
 
 **Cross-Site Scripting** terjadi saat aplikasi menampilkan input user tanpa escaping.
 
-### Auto-Escaping in Blade
+#### Manual Escaping (Blade)
 
-```blade
-{{-- ✅ Safe (auto-escaped) --}}
-<h1>Hello {{ $userName }}</h1>
+```php
+{{-- ✅ SAFE (auto-escaped) --}}
+{{ $userName }}
 
-{{-- ⚠️ Unsafe (raw output) - only use for trusted data --}}
-<div>{!! $trustedHtml !!}</div>
+{{-- ⚠️ UNSAFE (raw output) --}}
+{!! $trustedHtml !!}
 ```
 
-### Manual Escaping
+#### Manual Escaping (PHP)
 
 ```php
 // ✅ SAFE
-echo Helper::e($userInput);
+echo \TheFramework\Helpers\Helper::e($userInput);
 echo htmlspecialchars($userInput, ENT_QUOTES, 'UTF-8');
 
 // ❌ DANGEROUS
@@ -165,15 +165,17 @@ User::orderBy($column, 'DESC');
 
 **NEW in v5.0.1:** Enhanced WAF dengan detection untuk semua attack vectors.
 
-### Protected Patterns
+### Protected Patterns (WAF)
+
+Framework menggunakan regex yang dioptimalkan untuk meminimalkan _false positive_.
 
 ```php
 // app/Middleware/WAFMiddleware.php
 $patterns = [
-    'sql_injection' => '/(\b(union\s+select|insert\s+into|delete\s+from|drop\s+table)\b)/i',
-    'xss' => '/(<script|javascript:|on(load|error|click)=)/i',
-    'path_traversal' => '/(\.\.\/|\.\.\\)/i',
-    'command_injection' => '/(\b(exec|system|shell_exec)\s*\(|`|\$\()/i' // Enhanced v5.0.1
+    'sql_injection' => '/(\b(union\s+select|insert\s+into.+values|delete\s+from|update\s+\w+\s+set|drop\s+table|alter\s+table|truncate\s+table)\b)/i',
+    'xss' => '/(<script|javascript:|vbscript:|on(load|error|click|mouseover|submit|reset|focus|blur)\s*=)/i',
+    'path_traversal' => '#\.\.[\\\\/]#',
+    'command_injection' => '/(\b(exec|system|shell_exec|passthru|proc_open|popen|eval|assert)\s*\(|`)/i'
 ];
 ```
 
@@ -218,15 +220,17 @@ ALLOW_WEB_MIGRATION=true  # Must be explicitly enabled
 SYSTEM_ALLOWED_IPS=127.0.0.1,182.8.66.200
 ```
 
-**How it works:**
+**Mekanisme Verifikasi:**
 
 ```php
 // routes/system.php
 $clientIp = Helper::get_client_ip();
-$whitelist = explode(',', env('SYSTEM_ALLOWED_IPS'));
+$allowedIps = \TheFramework\App\Core\Config::get('SYSTEM_ALLOWED_IPS', '127.0.0.1');
+$ipWhitelist = array_map('trim', explode(',', $allowedIps));
 
-if (!in_array($clientIp, $whitelist)) {
-    abort(403, "IP not whitelisted");
+if (!in_array($clientIp, $ipWhitelist) && !in_array('*', $ipWhitelist)) {
+    header('HTTP/1.0 403 Forbidden');
+    die("IP Whitelist Rejection");
 }
 ```
 
@@ -286,20 +290,20 @@ public function before() {
 
 ## 🔐 Data Encryption
 
-Framework uses **Defuse PHP Encryption** (industry standard).
+Framework menggunakan class `Crypter` yang memanfaatkan `AES-256-CBC` dengan `HMAC-SHA256` untuk menjamin integritas data (Authenticated Encryption).
 
-### Encrypt Sensitive Data
+### Menggunakan Crypter
 
 ```php
 use TheFramework\Helpers\Crypter;
 
-// Encrypt
-$encrypted = Crypter::encrypt('Sensitive data');
+// Enkripsi
+$encrypted = Crypter::encrypt('Data rahasia');
 
-// Store in database
+// Simpan di database
 User::where('id', 1)->update(['secret' => $encrypted]);
 
-// Decrypt
+// Dekripsi
 $decrypted = Crypter::decrypt($user->secret);
 ```
 
@@ -307,10 +311,10 @@ $decrypted = Crypter::decrypt($user->secret);
 
 ```bash
 # .env
-APP_KEY=base64:abc123...  # NEVER share this!
+APP_KEY=base64:abc123...  # JANGAN PERNAH menyebarkan ini!
 ```
 
-**⚠️ If `APP_KEY` changes, all encrypted data becomes unreadable!**
+**⚠️ Jika `APP_KEY` berubah, semua data yang telah dienkripsi sebelumnya tidak akan pernah bisa didekrip lagi!**
 
 ### Secure Key Storage
 
@@ -454,6 +458,7 @@ We will respond within **48 hours**.
 
 ## 📚 Related Documentation
 
+- [Encryption Guide](encryption.md) ⭐ NEW
 - [Web Command Center](web-command-center.md)
 - [Deployment Guide](deployment.md)
 - [Environment Configuration](environment.md)

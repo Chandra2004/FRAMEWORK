@@ -27,6 +27,9 @@ Gunakan perintah `setup` untuk mengotomatiskan pembuatan `.env`, generate `APP_K
 php artisan setup
 ```
 
+> [!TIP]
+> Perintah `setup` akan memandu Anda melalui konfigurasi `.env`, pembuatan `APP_KEY`, pengaturan keamanan _Web Command Center_, hingga konfigurasi database secara interaktif.
+
 ---
 
 ## 🚀 Langkah 3: Jalankan!

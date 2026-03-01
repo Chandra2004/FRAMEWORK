@@ -1,136 +1,166 @@
-# 🎨 Views & Templating
+# 🎨 Views & Templating — v5.0.1 Premium
 
-Framework ini menggunakan engine templating berbasis **Native PHP** yang telah ditingkatkan dengan helper function agar serasa seperti Blade di Laravel. Sederhana, tapi sangat cepat karena tidak butuh kompilasi berat.
+The Framework v5.0 menyediakan sistem rendering yang fleksibel dengan dukungan **Hybrid Engine**. Anda dapat menggunakan **Illuminate Blade** untuk fitur modern yang kaya, atau tetap menggunakan **Native PHP** untuk performa mentah tanpa kompilasi.
 
 ---
 
 ## 📋 Daftar Isi
 
-1.  [Membuat & Merender View](#membuat--merender-view)
-2.  [Mengirim Data ke View](#mengirim-data-ke-view)
-3.  [Syntax View (Cheatsheet)](#syntax-view-cheatsheet)
-4.  [Layouts & Inheritance (Moderen)](#layouts--inheritance-moderen)
-5.  [Partial Views (Include)](#partial-views-include)
+1. [Prioritas Rendering](#prioritas-rendering)
+2. [Membuat & Merender View](#membuat--merender-view)
+3. [Global Data Sharing](#global-data-sharing-) — **PREMIUM**
+4. [Blade vs Native PHP (Cheatsheet)](#blade-vs-native-php-cheatsheet)
+5. [Sistem Layouts](#sistem-layouts)
+6. [Partial Views & Components](#partial-views--components)
+7. [API & Method Reference](#api--method-reference)
+
+---
+
+## Prioritas Rendering
+
+Framework akan mencari file view di folder `resources/views/` dengan urutan prioritas sebagai berikut:
+
+1. `{view_name}.blade.php` (Jika ditemukan, akan dikompilasi oleh Blade)
+2. `{view_name}.php` (Jika poin 1 tidak ada, akan dieksekusi sebagai PHP murni)
 
 ---
 
 ## Membuat & Merender View
 
-Simpan file view di folder `resources/views/`. Gunakan ekstensi `.php`.
-
-**Contoh: `resources/views/welcome.php`**
-
-Di Controller:
+Gunakan global helper `view()` untuk merender tampilan dari Controller.
 
 ```php
-use TheFramework\Core\View;
+namespace TheFramework\Http\Controllers;
 
-public function index() {
-    return View::render('welcome');
+class WelcomeController extends Controller {
+    public function index() {
+        // Otomatis mencari resources/views/welcome.blade.php atau welcome.php
+        return view('welcome', [
+            'title' => 'The Framework v5.0',
+            'version' => '5.0.1'
+        ]);
+    }
 }
 ```
 
+### Penulisan Path
+
+Anda dapat menggunakan format dot-notation (direkomendasikan) atau slash:
+
+- `auth.login` → `resources/views/auth/login.blade.php`
+- `admin/dashboard` → `resources/views/admin/dashboard.php`
+
 ---
 
-## Mengirim Data ke View
+## Global Data Sharing 🚀
 
-Data array asosiatif akan diekstrak menjadi variabel PHP.
+Anda dapat membagikan data ke **seluruh view** secara global tanpa perlu mengirimnya satu-per-satu di setiap controller. Sangat berguna untuk data user login, pengaturan situs, atau menu navigasi.
 
 ```php
-// Controller
-View::render('dashboard', [
-    'username' => 'Chandra',
-    'total_sales' => 5000000
-]);
+use TheFramework\App\Http\View;
+
+// Di AppServiceProvider atau Middleware
+View::share('app_name', 'My Premium App');
+View::share('user', session('user'));
 ```
 
-```html
-<!-- dashboard.php -->
-<h1>Selamat Datang, <?= $username ?>!</h1>
-<p>Total Penjualan: <?= Helper::rupiah($total_sales) ?></p>
-```
+Sekarang variabel `$app_name` dan `$user` tersedia di semua file Blade dan PHP native.
 
 ---
 
-## Syntax View (Cheatsheet)
+## Blade vs Native PHP (Cheatsheet)
 
-Framework v4.0 merekomendasikan penggunaan Native PHP Short Tag untuk performa terbaik.
+The Framework v5 merekomendasikan **Blade** untuk frontend yang kompleks, namun **Native PHP** tetap tersedia sebagai alternatif ultra-cepat.
 
-| Fitur        | Blade (Laravel) | The Framework (PHP Native)                                |
-| :----------- | :-------------- | :-------------------------------------------------------- |
-| **Echo**     | `{{ $var }}`    | `<?= $var ?>` (Otomatis XSS Safe jika pakai helper `e()`) |
-| **Raw**      | `{!! $var !!}`  | `<?= $var ?>`                                             |
-| **If**       | `@if(...)`      | `<?php if(...): ?>`                                       |
-| **Else**     | `@else`         | `<?php else: ?>`                                          |
-| **End If**   | `@endif`        | `<?php endif; ?>`                                         |
-| **Loop**     | `@foreach(...)` | `<?php foreach(...): ?>`                                  |
-| **End Loop** | `@endforeach`   | `<?php endforeach; ?>`                                    |
-
-> **Pro Tip:** Gunakan syntax `if ... : endif` (colon syntax) agar HTML Anda tetap terlihat rapi dan tidak penuh kurung kurawal.
+| Fitur                | Blade Style (`.blade.php`) | Native Style (`.php`)                      |
+| :------------------- | :------------------------- | :----------------------------------------- |
+| **Echo (Escaped)**   | `{{ $var }}`               | `<?= e($var) ?>`                           |
+| **Raw Echo**         | `{!! $var !!}`             | `<?= $var ?>`                              |
+| **Kondisi**          | `@if($check) ... @endif`   | `<?php if($check): ?> ... <?php endif; ?>` |
+| **Perulangan**       | `@foreach(...)`            | `<?php foreach(...): ?>`                   |
+| **CSRF Field**       | `@csrf`                    | `<?= csrf_field() ?>`                      |
+| **Rupiah Formatter** | `@rupiah($val)`            | `<?= rupiah($val) ?>`                      |
 
 ---
 
-## Layouts & Inheritance (Moderen)
+## Sistem Layouts
 
-Alih-alih menggunakan warisan kelas yang rumit, kita menggunakan pola **"Composition"**.
+### 1. Gaya Blade (Inheritance)
 
-**1. Buat Master Layout (`resources/views/layouts/app.php`)**
+Metode paling modern menggunakan `@extends` dan `@section`.
 
-```html
-<!DOCTYPE html>
+`layouts/app.blade.php`:
+
+```blade
 <html>
-  <head>
-    <title><?= $title ?? 'The Framework' ?></title>
-  </head>
-  <body>
-    <nav>...</nav>
-
-    <div class="container">
-      <!-- Slot Konten Utama -->
-      <?= $content ?>
-    </div>
-
-    <footer>...</footer>
-  </body>
+    <head><title>@yield('title')</title></head>
+    <body>
+        @yield('content')
+    </body>
 </html>
 ```
 
-**2. Buat Halaman (`resources/views/home.php`)**
-Tidak perlu `@extends`. Cukup render konten, lalu bungkus dengan layout.
+`home.blade.php`:
 
-Tapi tunggu, cara paling elegan di PHP Native adalah pola "Header-Footer Include".
+```blade
+@extends('layouts.app')
+@section('title', 'Beranda')
+@section('content')
+    <h1>Selamat Datang!</h1>
+@endsection
+```
 
-**Pola Header-Footer (Disarankan):**
+### 2. Gaya Native (Include)
 
-`resources/views/home.php`
+Sangat cepat dan sederhana.
+
+`home.php`:
 
 ```php
-<?php include view_path('layouts/header'); ?>
+<?php View::partial('layouts.header', ['title' => 'Home']); ?>
 
-    <h1>Halaman Home</h1>
-    <p>Halo dunia!</p>
+    <h1>Halaman Utama</h1>
 
-<?php include view_path('layouts/footer'); ?>
+<?php View::partial('layouts.footer'); ?>
 ```
 
 ---
 
-## Partial Views (Include)
+## Partial Views & Components
 
-Mencegah duplikasi kode (misal: Card Produk yang dipakai berulang).
+Gunakan `View::partial()` untuk memecah UI menjadi potongan-potongan kecil yang dapat digunakan kembali (Reusable Components).
 
 ```php
-<!-- parent.php -->
-<div class="grid">
-    <?php foreach($products as $product): ?>
-        <?php View::partial('components/product-card', ['item' => $product]); ?>
-    <?php endforeach; ?>
+// Di dalam file view manapun
+<div class="sidebar">
+    <?php View::partial('components.sidebar-menu', ['active' => 'dashboard']); ?>
 </div>
 ```
 
-```html
-<!-- components/product-card.php -->
-<div class="card">
-  <h3><?= $item->name ?></h3>
+---
+
+## API & Method Reference
+
+### Class: `TheFramework\App\Http\View`
+
+| Method                               | Deskripsi                                                      |
+| :----------------------------------- | :------------------------------------------------------------- |
+| `render(string $view, array $data)`  | Merender view dan langsung mengirim output ke browser.         |
+| `partial(string $view, array $data)` | Alias untuk `render()`, digunakan untuk sub-view.              |
+| `share(string\|array $key, $val)`    | Bagikan data secara global ke semua view.                      |
+| `exists(string $view)`               | Memeriksa apakah file view ada di direktori `resources/views`. |
+
+### Global Helpers
+
+- `view($name, $data)`: Fungsi cepat untuk merender view.
+- `view_path($path)`: Mendapatkan path absolut ke folder `resources/views`.
+- `e($value)`: Melakukan encode HTML (XSS Protection).
+- `asset($path)`: Mendapatkan URL asset dengan dukungan **Auto-Versioning (Paten)**.
+
+---
+
+<div align="center">
+
+[Back to Documentation](README.md) • [Main README](../README.md)
+
 </div>
-```

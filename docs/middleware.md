@@ -1,6 +1,6 @@
-# 🔀 Middleware (v5.0.2 - Paten)
+# 🔀 Middleware (v5.0.1 - Paten)
 
-Middleware adalah layer yang memproses HTTP request sebelum mencapai controller (atau setelah response dikembalikan). Pada v5.0.2, middleware telah dimodernisasi menggunakan **Fluent Helpers**.
+Middleware adalah layer yang memproses HTTP request sebelum mencapai controller (atau setelah response dikembalikan). Pada v5.0.1, middleware telah dimodernisasi menggunakan **Fluent Helpers**.
 
 ---
 
@@ -19,13 +19,13 @@ Setiap middleware harus mengimplementasikan `TheFramework\Middleware\Middleware`
 
 Framework ini menyertakan sistem pertahanan "Tri-Layer" secara default:
 
-| Middleware            | Purpose                                      | Status      |
-| --------------------- | -------------------------------------------- | ----------- |
-| `WAFMiddleware`       | Menangkal SQLi, XSS, RCE, & Path Traversal   | ✅ Global   |
-| `CsrfMiddleware`      | Validasi Token CSRF (POST, PUT, DELETE, etc) | ✅ Global   |
-| `AuthMiddleware`      | Proteksi auth session & token validation     | ❌ Manual   |
-| `ApiAuthMiddleware`   | Dual-path Auth (CSRF Web & Bearer Token API) | ❌ Manual   |
-| `LanguageMiddleware`  | Penanganan multi-bahasa otomatis             | ✅ Global   |
+| Middleware           | Purpose                                      | Status    |
+| -------------------- | -------------------------------------------- | --------- |
+| `WAFMiddleware`      | Menangkal SQLi, XSS, RCE, & Path Traversal   | ✅ Global |
+| `CsrfMiddleware`     | Validasi Token CSRF (POST, PUT, DELETE, etc) | ✅ Global |
+| `AuthMiddleware`     | Proteksi auth session & token validation     | ❌ Manual |
+| `ApiAuthMiddleware`  | Dual-path Auth (CSRF Web & Bearer Token API) | ❌ Manual |
+| `LanguageMiddleware` | Penanganan multi-bahasa otomatis             | ✅ Global |
 
 ---
 
@@ -57,7 +57,7 @@ class LogRequestMiddleware implements Middleware
 
         // 2. Gunakan logic Anda
         error_log("[$ip] $method: $path");
-        
+
         // 3. (Opsional) Hentikan request jika perlu
         if ($path === '/terlarang') {
             return abort(403, 'Akses ke area ini dilarang!');
@@ -141,6 +141,7 @@ public function before()
 ### 3. `WAFMiddleware` (Security Shield)
 
 Secara otomatis memblokir request mencurigakan. Anda dapat mengaturnya di `.env`:
+
 - `APP_ENV=production` -> Error akan di-hidden (Security silent).
 - `APP_ENV=local` -> Detail blokir akan ditampilkan (Debug mode).
 
@@ -148,7 +149,7 @@ Secara otomatis memblokir request mencurigakan. Anda dapat mengaturnya di `.env`
 
 ## 💡 Terminating Request
 
-Pada v5.0.2, disarankan menghentikan request menggunakan helper:
+Pada v5.0.1, disarankan menghentikan request menggunakan helper:
 
 - `return abort(403, $msg)`: Menampilkan halaman error 403 cantik.
 - `return redirect($url, $status, $msg)`: Mengalihkan ke halaman lain.

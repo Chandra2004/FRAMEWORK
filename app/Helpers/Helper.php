@@ -306,4 +306,12 @@ class Helper
     {
         return Str::slug($text);
     }
+
+    /**
+     * Alias for slug() to match documentation.
+     */
+    public static function slugify(string $text): string
+    {
+        return self::slug($text);
+    }
 }

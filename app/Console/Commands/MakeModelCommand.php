@@ -16,6 +16,15 @@ class MakeModelCommand extends BaseCommand
         return 'Buat model baru dengan auto-pluralization & opsi migrasi';
     }
 
+    private function snake(string $value): string
+    {
+        if (!ctype_lower($value)) {
+            $value = preg_replace('/\s+/u', '', ucwords($value));
+            $value = strtolower(preg_replace('/(?<!^)[A-Z]/u', '_$0', $value));
+        }
+        return $value;
+    }
+
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;
@@ -41,14 +50,14 @@ class MakeModelCommand extends BaseCommand
             mkdir($targetDir, 0755, true);
 
         // Simple Pluralization for table name
-        $lowerName = strtolower($className);
-        $lastChar = strtolower(substr($lowerName, -1));
+        $snakeName = $this->snake($className);
+        $lastChar = strtolower(substr($snakeName, -1));
         if ($lastChar === 'y') {
-            $tableName = substr($lowerName, 0, -1) . 'ies';
-        } elseif (in_array(substr($lowerName, -2), ['sh', 'ch']) || in_array($lastChar, ['s', 'x', 'z'])) {
-            $tableName = $lowerName . 'es';
+            $tableName = substr($snakeName, 0, -1) . 'ies';
+        } elseif (in_array(substr($snakeName, -2), ['sh', 'ch']) || in_array($lastChar, ['s', 'x', 'z'])) {
+            $tableName = $snakeName . 'es';
         } else {
-            $tableName = $lowerName . 's';
+            $tableName = $snakeName . 's';
         }
 
         $stubPath = BASE_PATH . "/app/Console/Stubs/model.stub";

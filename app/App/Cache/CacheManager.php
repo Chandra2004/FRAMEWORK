@@ -52,11 +52,27 @@ class CacheManager
     // ========================================================
 
     /**
+     * Auto-configure dari Config (v5.1.0)
+     */
+    public static function configure(): void
+    {
+        // Gunakan dot notation jika ada, fallback ke ENV direct
+        $driver = \TheFramework\App\Core\Config::get('app.cache_driver', \TheFramework\App\Core\Config::get('CACHE_DRIVER', 'file'));
+        $prefix = \TheFramework\App\Core\Config::get('app.cache_prefix', \TheFramework\App\Core\Config::get('CACHE_PREFIX', 'tf_'));
+        $ttl = (int) \TheFramework\App\Core\Config::get('app.cache_ttl', \TheFramework\App\Core\Config::get('CACHE_TTL', 3600));
+
+        static::driver($driver);
+        static::setPrefix($prefix);
+        static::$defaultTtl = $ttl;
+    }
+
+    /**
      * Set driver cache: 'file', 'array', 'database'
      */
     public static function driver(string $driver): void
     {
-        static::$driver = $driver;
+        $validDrivers = ['file', 'array', 'database'];
+        static::$driver = in_array($driver, $validDrivers) ? $driver : 'file';
     }
 
     /**

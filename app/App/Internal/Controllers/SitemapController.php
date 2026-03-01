@@ -35,14 +35,19 @@ class SitemapController
         foreach ($routes as $route) {
             $path = $route['path'];
 
-            if ($route['method'] !== 'GET') continue;
-            if (str_starts_with($path, '/_system')) continue;
-            if (str_starts_with($path, '/api')) continue;
+            if ($route['method'] !== 'GET')
+                continue;
+            if (str_starts_with($path, '/_system'))
+                continue;
+            if (str_starts_with($path, '/api'))
+                continue;
 
             // Hindari rute dinamis (Sitemap statis)
-            if (preg_match('/[\{\}\(\)\*]/', $path)) continue;
+            if (preg_match('/[\{\}\(\)\*]/', $path))
+                continue;
 
-            if (in_array($path, $uniquePaths)) continue;
+            if (in_array($path, $uniquePaths))
+                continue;
             $uniquePaths[] = $path;
 
             $xml .= '    <url>' . PHP_EOL;
@@ -51,6 +56,29 @@ class SitemapController
             $xml .= '        <changefreq>daily</changefreq>' . PHP_EOL;
             $xml .= '        <priority>' . ($path === '/' ? '1.0' : '0.8') . '</priority>' . PHP_EOL;
             $xml .= '    </url>' . PHP_EOL;
+        }
+
+        // 2. DYNAMIC CONTENT: POSTS (Premium Feature)
+        // If the Post model exists, scan entries automatically
+        $postModel = "\\TheFramework\\Models\\Post";
+        if (class_exists($postModel)) {
+            try {
+                $posts = (new $postModel)->query()->latest()->get();
+                foreach ($posts as $post) {
+                    $val = is_object($post) ? ($post->slug ?? $post->uid ?? $post->id) : ($post['slug'] ?? $post['uid'] ?? $post['id'] ?? null);
+                    if (!$val)
+                        continue;
+
+                    $xml .= '    <url>' . PHP_EOL;
+                    $xml .= '        <loc>' . htmlspecialchars($baseUrl . '/blog/' . $val) . '</loc>' . PHP_EOL;
+                    $xml .= '        <lastmod>' . (is_object($post) ? ($post->updated_at ?? date('Y-m-d')) : ($post['updated_at'] ?? date('Y-m-d'))) . '</lastmod>' . PHP_EOL;
+                    $xml .= '        <changefreq>weekly</changefreq>' . PHP_EOL;
+                    $xml .= '        <priority>0.6</priority>' . PHP_EOL;
+                    $xml .= '    </url>' . PHP_EOL;
+                }
+            } catch (\Exception $e) {
+                // Silently skip if query fails (table doesn't exist etc)
+            }
         }
 
         $xml .= '</urlset>';

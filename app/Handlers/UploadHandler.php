@@ -127,7 +127,9 @@ class UploadHandler
     public static function url(string $filename, string $subDir = ''): string
     {
         $base = Config::get('BASE_URL', 'http://localhost:8080');
-        return $base . '/file/serve?path=' . urlencode($subDir . '/' . $filename);
+        // Gunakan format bersih yang didukung oleh bootstrap/app.php & FileController
+        // Format: /file/folder/filename.ext
+        return $base . '/file/' . ltrim($subDir, '/') . '/' . $filename;
     }
 
     // =========================================================

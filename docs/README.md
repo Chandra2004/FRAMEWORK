@@ -1,6 +1,6 @@
 <div align="center">
 
-**Complete Guide to The Framework v5.0.2**
+**Complete Guide to The Framework v5.0.1**
 
 [Home](../README.md) • Documentation • [Get Started](#getting-started)
 
@@ -8,7 +8,7 @@
 
 ---
 
-**✨ New in v5.0.2 (The Fluent DX Update):**
+**✨ New in v5.0.1 (The Fluent DX Update):**
 
 - 🛠️ **Clean Architecture:** Framework internal controllers moved to `App\Internal`.
 - 🚀 **Fluent Helpers:** Modern `view()`, `redirect()`, `json()`, and `flash()` syntax.
@@ -36,7 +36,8 @@
 11. [Blade Engine](blade.md) - Custom directives & initialization ⭐ NEW
 12. [Session Manager](session.md) - Secure session, flash data ⭐ NEW
 13. [Security](security.md) - CSRF, XSS, WAF
-14. [Validation](validation.md) - Input validation
+14. [Encryption](encryption.md) - AES-256 data protection ⭐ NEW
+15. [Validation](validation.md) - Input validation
 
 ### 🗄️ Database
 
@@ -204,7 +205,7 @@ Visit `/hello/World` → See "Hello, World!"
 
 | Version   | Status         | PHP  | Release Date | End of Life |
 | --------- | -------------- | ---- | ------------ | ----------- |
-| **5.0.2** | ✅ **Current** | 8.3+ | Feb 2026     | Feb 2028    |
+| **5.0.1** | ✅ **Current** | 8.3+ | Feb 2026     | Feb 2028    |
 | 5.0.1     | ✅ Supported   | 8.3+ | Feb 2026     | Feb 2028    |
 | 5.0.0     | ✅ Supported   | 8.3+ | Jan 2026     | Jan 2028    |
 | 3.x       | ❌ End of life | 8.1+ | -            | -           |

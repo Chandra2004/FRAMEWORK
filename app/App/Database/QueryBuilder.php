@@ -17,6 +17,9 @@ class QueryBuilder
     private $limit;
     private $offset;
 
+    private $cacheTtl = null;
+    private $cacheKey = null;
+
     private $wheres = [];
     private $havings = [];
     private $joins = [];
@@ -216,6 +219,22 @@ class QueryBuilder
         ];
 
         return $this;
+    }
+
+    public function whereRaw(string $sql, array $bindings = [], string $boolean = 'AND')
+    {
+        $this->wheres[] = [
+            'type' => 'raw',
+            'sql' => $sql,
+            'bindings' => $bindings,
+            'boolean' => $boolean
+        ];
+        return $this;
+    }
+
+    public function orWhereRaw(string $sql, array $bindings = [])
+    {
+        return $this->whereRaw($sql, $bindings, 'OR');
     }
 
     public function whereNested(Closure $callback, $boolean = 'AND')
@@ -532,6 +551,44 @@ class QueryBuilder
         return $this;
     }
 
+    public function innerJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'INNER');
+    }
+
+    public function leftJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'LEFT');
+    }
+
+    public function leftOuterJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'LEFT OUTER');
+    }
+
+    public function rightJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'RIGHT');
+    }
+
+    public function rightOuterJoin(string $table, string $first, string $operator, string $second)
+    {
+        return $this->join($table, $first, $operator, $second, 'RIGHT OUTER');
+    }
+
+    public function fullOuterJoin(string $table, string $first, string $operator, string $second)
+    {
+        // MySQL doesn't natively support FULL OUTER JOIN, but for DX we'll pass it if requested
+        // Or handle it via UNION in better implementation. For now just pass SQL.
+        return $this->join($table, $first, $operator, $second, 'FULL OUTER');
+    }
+
+    public function crossJoin(string $table)
+    {
+        $this->joins[] = "CROSS JOIN `{$table}`";
+        return $this;
+    }
+
     public function orderBy(string $column, string $direction = 'ASC')
     {
         $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
@@ -724,6 +781,10 @@ class QueryBuilder
                     $part = "JSON_LENGTH({$this->wrapColumn($where['column'])}) {$where['operator']} {$paramName}";
                     $bindings[$paramName] = $where['value'];
                     $counter++;
+                    break;
+                case 'raw':
+                    $part = $where['sql'];
+                    $bindings = array_merge($bindings, $where['bindings']);
                     break;
             }
             $sqlParts[] = "{$boolean} {$part}";
@@ -931,11 +992,25 @@ class QueryBuilder
     private function executeQuery()
     {
         [$sql, $bindings] = $this->toSql();
+
+        if ($this->cacheTtl !== null) {
+            $key = $this->cacheKey ?? 'query_' . md5($sql . serialize($bindings));
+            return \TheFramework\App\Cache\CacheManager::remember($key, $this->cacheTtl, function () use ($sql, $bindings) {
+                return $this->rawExecute($sql, $bindings);
+            });
+        }
+
+        return $this->rawExecute($sql, $bindings);
+    }
+
+    protected function rawExecute(string $sql, array $bindings)
+    {
         $this->db->query($sql);
         foreach ($bindings as $param => $value)
             $this->db->bind($param, $value);
         $this->db->execute();
         $results = $this->db->resultSet();
+
         if ($this->model) {
             $models = $this->getModels($results);
             if (!empty($this->withRelations))
@@ -1463,6 +1538,13 @@ class QueryBuilder
         return $this;
     }
 
+    public function remember(int $seconds, ?string $key = null)
+    {
+        $this->cacheTtl = $seconds;
+        $this->cacheKey = $key;
+        return $this;
+    }
+
     // ========================================================
     //  AGGREGATES (max, min, avg, sum)
     // ========================================================
@@ -1792,6 +1874,16 @@ class QueryBuilder
     {
         $this->groupBy[] = $expression;
         return $this;
+    }
+
+    public function search(array|string $columns, string $value): static
+    {
+        $columns = is_array($columns) ? $columns : [$columns];
+        return $this->whereNested(function ($q) use ($columns, $value) {
+            foreach ($columns as $column) {
+                $q->orWhere($column, 'LIKE', "%{$value}%");
+            }
+        });
     }
 
     // ========================================================

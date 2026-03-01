@@ -1,22 +1,20 @@
 # 🎮 Controllers
 
-Controllers berisi logika aplikasi untuk menangani HTTP requests dan mengembalikan responses.
+Controller adalah pusat logika aplikasi. Tugasnya menerima HTTP request, berinteraksi dengan model/service, dan mengembalikan response (HTML atau JSON).
 
 ---
 
-## Basic Controller
+## 🏗️ Struktur Dasar
 
-### Create Controller
+Controller dapat dibuat dengan cepat menggunakan Artisan:
 
 ```bash
 php artisan make:controller UserController
 ```
 
-Generated file: `app/Http/Controllers/UserController.php`
+File akan dibuat di: `app/Http/Controllers/UserController.php`.
 
 ```php
-<?php
-
 namespace TheFramework\Http\Controllers;
 
 use TheFramework\Models\User;
@@ -25,396 +23,171 @@ class UserController extends Controller
 {
     public function index()
     {
+        // Mengambil data dari Model
         $users = User::all();
-        return view('users.index', ['users' => $users]);
-    }
 
-    public function show($id)
-    {
-        $user = User::find($id);
-
-        if (!$user) {
-            return abort(404, "User not found");
-        }
-
-        return view('users.show', ['user' => $user]);
-    }
-
-    public function store()
-    {
-        $data = request()->all();
-        $user = User::create($data);
-
-        return redirect('/users', 'success', 'User berhasil ditambahkan');
-    }
-}
-```
-
----
-
-## 🏛️ Directory Structure
-
-The Framework v5.0 memisahkan secara ketat antara area kerja developer dan inti sistem:
-
-- **`app/Http/Controllers`**: Khusus untuk controller buatan Anda (Application Area).
-- **`app/App/Internal/Controllers`**: Berisi controller inti (Debug, Error, File, Sitemap) yang menangani fitur framework. Area ini tidak boleh diubah untuk menjaga stabilitas sistem.
-
----
-
-## Dependency Injection
-
-Framework secara otomatis menyuntikkan (inject) dependensi via Constructor atau Method parameters.
-
-### Constructor Injection
-
-```php
-<?php
-
-namespace TheFramework\Http\Controllers;
-
-use TheFramework\Services\UserService;
-
-class UserController extends Controller
-{
-    private $userService;
-
-    public function __construct(UserService $userService)
-    {
-        $this->userService = $userService;
-    }
-
-    public function index()
-    {
-        $users = $this->userService->getAllUsers();
+        // Mengembalikan view dengan data
         return view('users.index', compact('users'));
     }
 }
 ```
 
-### Method Injection
+---
+
+## 💉 Dependency Injection
+
+Framework ini mendukung injection service atau class apapun via Constructor atau langsung pada Method.
+
+### 1. Constructor Injection
+
+Cocok untuk service yang dipakai di banyak method dalam satu class.
 
 ```php
-public function show($id, UserService $service)
+private UserService $userService;
+
+public function __construct(UserService $userService)
 {
-    // $id dari route parameter
-    // $service auto-injected
-    $user = $service->findUser($id);
-    return view('users.show', ['user' => $user]);
+    $this->userService = $userService;
+}
+
+public function index() {
+    $data = $this->userService->getAll();
+    return view('users.index', compact('data'));
+}
+```
+
+### 2. Method Injection
+
+Sangat praktis untuk class yang hanya dibutuhkan pada aksi tertentu.
+
+```php
+public function show($id, UserAnalytics $analytics)
+{
+    $analytics->trackVisit($id); // Auto-injected oleh Container
+    return view('users.show', ['user' => User::find($id)]);
 }
 ```
 
 ---
 
-## Route Parameters
+## ✅ Premium Validation (FormRequest)
 
-### Single Parameter
+Validasi manual yang panjang di dalam controller dapat digantikan dengan **FormRequest Injection** untuk kode yang lebih bersih.
 
 ```php
-// routes/web.php
-Router::get('/users/{id}', [UserController::class, 'show']);
+use TheFramework\Http\Requests\UserRequest;
 
-// Controller
-public function show($id)
+// Validasi otomatis dijalankan SEBELUM method ini dipanggil
+public function store(UserRequest $request)
 {
-    $user = User::find($id);
-    return view('users.show', ['user' => $user]);
+    // Jika sampai sini, berarti input sudah valid
+    User::create($request->all());
+
+    return redirect('/users', 'success', 'User berhasil didaftarkan!');
 }
 ```
 
-### Multiple Parameters
-
-```php
-// routes/web.php
-Router::get('/posts/{postId}/comments/{commentId}', [CommentController::class, 'show']);
-
-// Controller
-public function show($postId, $commentId)
-{
-    $comment = Comment::where('post_id', $postId)
-                      ->where('id', $commentId)
-                      ->first();
-    return view('comments.show', ['comment' => $comment]);
-}
-```
+> [!TIP]
+> Jika validasi gagal, sistem akan otomatis melakukan redirect back dengan menyimpan pesan error ke session dan mengembalikan input lama (_old input_).
 
 ---
 
-## Request Handling
+## 📥 Request Handling
 
-Anda dapat menggunakan global helper `request()` untuk mengakses input.
-
-### Get All Input
+Gunakan global helper `request()` untuk mengakses data input dari user.
 
 ```php
-public function store()
-{
-    $allData = request()->all();  // Semua data POST/GET/JSON
-    User::create($allData);
-}
-```
-
-### Get Specific Input
-
-```php
+// Ambil satu input
 $name = request('name');
-$email = request('email');
 
-// Dengan nilai default
-$country = request('country', 'Indonesia');
-```
+// Ambil semua input (sebagai array)
+$data = request()->all();
 
-### Check if Input Exists
+// Ambil hanya field tertentu
+$subset = request()->only(['email', 'username']);
 
-```php
-if (request()->has('email')) {
-    // Process email
-}
+// Cek keberadaan input
+if (request()->has('profile_picture')) { ... }
 ```
 
 ---
 
-## Responses (Paten v5.0)
+## 📤 Responses & Helpers
 
-Framework mendukung cara pengembalian response yang sangat bersih (fluent).
+Framework menyediakan helper global yang _expressive_ dan _fluent_.
 
-### Return View
+### 1. HTML View
 
 ```php
-public function index()
-{
-    return view('users.index', [
-        'users' => User::all(),
-        'notification' => flash('notification') // Ambil flash message
-    ]);
-}
+return view('path.to.view', ['key' => 'value']);
 ```
 
-### Return JSON (API)
+### 2. JSON Response (API)
+
+Cocok untuk pembuatan REST API.
 
 ```php
-public function apiIndex()
-{
-    return json([
-        'success' => true,
-        'data' => User::all()
-    ]);
-}
+return json([
+    'status' => 'success',
+    'data' => $users
+], 200);
 ```
 
-### Redirect
+### 3. Redirect & Notifications
+
+Sistem redirect ini mendukung pengiriman notifikasi secara instan dalam satu baris.
 
 ```php
-public function store()
-{
-    User::create(request()->all());
+// Redirect dasar
+return redirect('/dashboard');
 
-    // Redirect sederhana
-    return redirect('/users');
+// Redirect + Notifikasi (Otomatis masuk ke flash message)
+return redirect('/users', 'success', 'Data berhasil diperbarui!');
 
-    // Redirect dengan Notifikasi (Premium)
-    return redirect('/users', 'success', 'Data berhasil disimpan!');
-    
-    // Redirect Kembali (Back)
-    return redirect()->back('warning', 'Aksi dibatalkan');
-}
+// Redirect Kembali (Back)
+return redirect()->back('warning', 'Aksi dibatalkan oleh sistem');
+// Atau gunakan helper singkat:
+return back('error', 'Gagal memproses data');
 ```
 
 ---
 
-## Resource Controller (CRUD)
+## 📁 Internal vs Application Area
 
-### Create Resource Controller
+The Framework v5.0 menjaga integritas inti sistem dengan pemisahan folder:
+
+| Folder                         | Tujuan                                 | Izin Ubah        |
+| ------------------------------ | -------------------------------------- | ---------------- |
+| `app/Http/Controllers`         | Area kerja Developer (Fitur Aplikasi)  | ✅ Bebas         |
+| `app/App/Internal/Controllers` | Inti Framework (Debug, Sitemap, Error) | ❌ Jangan diubah |
+
+Pelajari bagaimana framework menangani error atau sitemap dengan memeriksa file di folder `Internal`.
+
+---
+
+## 🚀 Resource Controller (CRUD)
+
+Untuk efisiensi tinggi, controller CRUD lengkap dapat dibuat sekaligus:
 
 ```bash
-php artisan make:controller PostController --resource
+php artisan make:controller ProductController --resource
 ```
 
-Generates methods:
-
-- `index()` - List all
-- `create()` - Show create form
-- `store()` - Save new record
-- `show($id)` - Show single record
-- `edit($id)` - Show edit form
-- `update($id)` - Update record
-- `destroy($id)` - Delete record
-
-### Register Resource Route
+Kemudian daftarkan di `routes/web.php`:
 
 ```php
-// routes/web.php
-Router::resource('/posts', PostController::class);
+Router::resource('/products', ProductController::class);
 ```
 
-Automatically creates routes:
-
-| Method | URI                | Action  | Route Name    |
-| ------ | ------------------ | ------- | ------------- |
-| GET    | /posts             | index   | posts.index   |
-| GET    | /posts/create      | create  | posts.create  |
-| POST   | /posts             | store   | posts.store   |
-| GET    | /posts/{id}        | show    | posts.show    |
-| GET    | /posts/{id}/edit   | edit    | posts.edit    |
-| POST   | /posts/{id}        | update  | posts.update  |
-| POST   | /posts/{id}/delete | destroy | posts.destroy |
+Sistem akan otomatis memetakan aksi `index`, `create`, `store`, `show`, `edit`, `update`, dan `destroy`.
 
 ---
 
-## Validation in Controller
+## Best Practices
 
-```php
-use TheFramework\App\Validator;
-
-public function store(Request $request)
-{
-    $validator = new Validator($request->input(), [
-        'name' => ['required', 'min:3'],
-        'email' => ['required', 'email', 'unique:users'],
-        'password' => ['required', 'min:8']
-    ]);
-
-    if ($validator->fails()) {
-        $_SESSION['errors'] = $validator->errors();
-        return redirect('/users/create');
-    }
-
-    User::create($request->input());
-    return redirect('/users');
-}
-```
-
----
-
-## File Upload in Controller
-
-```php
-use TheFramework\Config\UploadHandler;
-
-public function uploadAvatar(Request $request)
-{
-    $upload = new UploadHandler('avatar');
-
-    if ($upload->isUploaded()) {
-        $filename = $upload->saveToPublic('avatars');
-
-        auth()->user()->update(['avatar' => $filename]);
-
-        return redirect('/profile');
-    }
-
-    $_SESSION['error'] = $upload->getError();
-    return redirect('/profile');
-}
-```
-
----
-
-## Controller Best Practices
-
-### ✅ DO
-
-```php
-// Keep controllers thin
-public function store(Request $request, UserService $service)
-{
-    $service->createUser($request->input());
-    return redirect('/users');
-}
-
-// Use services for business logic
-class UserService
-{
-    public function createUser(array $data)
-    {
-        // Validation
-        // Email sending
-        // Database transaction
-        // etc.
-    }
-}
-```
-
-### ❌ DON'T
-
-```php
-// Fat controller (bad)
-public function store(Request $request)
-{
-    // Validation logic
-    // Email sending
-    // Database transaction
-    // File processing
-    // External API calls
-    // etc. (100+ lines)
-}
-```
-
----
-
-## Middleware in Controller
-
-### Apply Middleware
-
-```php
-// routes/web.php
-Router::get('/admin/users', [AdminController::class, 'index'])
-    ->middleware([AuthMiddleware::class, AdminMiddleware::class]);
-```
-
----
-
-## API Controllers
-
-### Create API Controller
-
-```php
-<?php
-
-namespace TheFramework\Http\Controllers\Api;
-
-use TheFramework\App\Request;
-use TheFramework\Models\User;
-
-class UserApiController
-{
-    public function index()
-    {
-        $users = User::all();
-
-        return $this->jsonResponse([
-            'success' => true,
-            'data' => $users
-        ]);
-    }
-
-    public function store(Request $request)
-    {
-        $user = User::create($request->input());
-
-        return $this->jsonResponse([
-            'success' => true,
-            'data' => $user
-        ], 201);
-    }
-
-    private function jsonResponse($data, $status = 200)
-    {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-}
-```
-
----
-
-## Next Steps
-
-- 📖 [Routing](routing.md)
-- 📖 [Validation](validation.md)
-- 📖 [Middleware](middleware.md)
-- 📖 [Services](services.md)
+1.  **Thin Controllers**: Jangan masukkan logika bisnis di controller. Pindahkan ke **Service** atau **Repository**.
+2.  **Explicit Return**: Selalu gunakan `return view()` atau `return redirect()` agar alur eksekusi jelas terlihat.
+3.  **Type Hinting**: Gunakan type hinting pada parameter method agar Container bisa melakukan _Auto-Wiring_ dengan tepat.
 
 ---
 

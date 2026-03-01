@@ -8,7 +8,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D%208.3-8892BF.svg)](https://php.net/)
-[![Version](https://img.shields.io/badge/version-5.0.2-red.svg)](https://github.com/chandra2004/the-framework/releases)
+[![Version](https://img.shields.io/badge/version-5.0.1-red.svg)](https://github.com/chandra2004/the-framework/releases)
 [![Security](https://img.shields.io/badge/security-A%2B--grade-brightgreen.svg)](SECURITY.md)
 
 [Website](https://framework.rf.gd) • [Documentation](#-documentation) • [Get Started](#-quick-start) • [Changelog](CHANGELOG.md)
@@ -34,7 +34,7 @@
 
 ---
 
-## 🔄 What's New in v5.0.2?
+## 🔄 What's New in v5.0.1?
 
 **The "Fluent DX" Update**
 

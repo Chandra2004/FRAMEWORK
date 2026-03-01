@@ -41,7 +41,7 @@ Di tahap ini, framework menyiapkan lingkungan kerjanya:
 
 #### C. Routing & Dispatching
 
-Router (`TheFramework\App\Router`) tidak hanya mencocokkan string URL, tapi juga:
+Router (`TheFramework\App\Http\Router`) tidak hanya mencocokkan string URL, tapi juga:
 
 1.  **RegEx Parsing**: Mengubah parameter seperti `{id}` menjadi regex `(?P<id>[^/]+)`.
 2.  **Method Matching**: Memastikan request GET tidak masuk ke route POST.
@@ -60,12 +60,12 @@ Sebelum masuk Controller, request harus melewati lapisan keamanan yang disebut M
 
 The Framework dibangun di atas komponen-komponen statis yang efisien (Singleton Pattern).
 
-### Application Container (`App`)
+### Dependency Injection Container (`Container`)
 
-Class utama yang mengatur konfigurasi global.
+Jantung dari framework yang mengatur instansiasi class dan dependensi secara otomatis.
 
-- Lokasi: `app/Core/App.php` (Konseptual)
-- Peran: Menyimpan state aplikasi dan konfigurasi.
+- Lokasi: `app/App/Core/Container.php`
+- Peran: Mengelola Singleton (seperti Database) dan Auto-wiring dependensi.
 
 ### Database Connection (`Database` & `Model`)
 
@@ -77,9 +77,9 @@ Menggunakan **PDO Wrapper** yang aman.
 
 ### View Engine
 
-Sistem templating berbasis PHP Native dengan fitur ekstra.
+Sistem templating berbasis PHP Native yang mendukung Blade (via Illuminate).
 
-- Lokasi: `app/Core/View.php`
+- Lokasi: `app/App/Http/View.php`
 - Fitur:
   - **Data Extraction**: Array `['name' => 'Budi']` diubah menjadi variabel `$name = 'Budi'`.
   - **Path Resolution**: Mencari file view di `resources/views`.
@@ -113,7 +113,7 @@ Fitur unik framework ini adalah **Web Maintenance Tool** (`routes/system.php`).
 Arsitekturnya dirancang untuk melompati batasan Shared Hosting:
 
 1.  **Bypass CLI**: Menggunakan HTTP Request sebagai trigger untuk tugas-tugas sistem.
-2.  **Security Gate**: Dilindungi oleh Double-Check (Environment Variable `ALLOW_WEB_MIGRATION` + Secret `APP_KEY`).
+2.  **Security Gate**: Dilindungi oleh Triple-Check (Feature Toggle `ALLOW_WEB_MIGRATION`, IP Whitelist, dan optional Basic Auth).
 3.  **Direct Execution**: Menjalankan migrasi database langsung menggunakan PHP Class tanpa melalui `exec()` atau `shell_exec()` yang sering diblokir hosting.
 
 ---

@@ -1,46 +1,46 @@
-# 📝 Tutorial: Membangun Aplikasi Bertenaga (Clean Architecture)
+# 📝 Tutorial: Membangun Aplikasi Enterprise (Clean Architecture)
 
-Tutorial ini akan memandu Anda membuat aplikasi dengan operasi CRUD menggunakan **The Framework v5.0**. Anda akan diajak menyelami praktik **Clean Architecture** yang digunakan oleh framework ini, yang terdiri dari 5 lapisan utama: Router, Form Request, Controller, Service, dan Repository.
+Tutorial ini akan memandu Anda dalam membangun aplikasi CRUD (Create, Read, Update, Delete) menggunakan **The Framework v5.0.1 Premium**. Kita akan menerapkan pola **Clean Architecture** yang memisahkan tanggung jawab ke dalam 5 lapisan utama untuk memastikan aplikasi Anda mudah dipelihara (_maintainable_) dan dikembangkan (_scalable_).
 
 ---
 
 ## 📋 Daftar Isi
 
-1. [Pemahaman Arsitektur (Wajib Dibaca)](#pemahaman-arsitektur-wajib-dibaca)
+1. [Pemahaman Arsitektur (Layered Pattern)](#pemahaman-arsitektur-layered-pattern)
 2. [Persiapan Struktur (Tabel & Model)](#persiapan-struktur-tabel--model)
-3. [Membuat Lapisan Validasi (Form Request)](#membuat-lapisan-validasi-form-request)
-4. [Membuat Lapisan Data (Repository)](#membuat-lapisan-data-repository)
-5. [Membuat Lapisan Bisnis (Service)](#membuat-lapisan-bisnis-service)
-6. [Membuat Lapisan HTTP (Controller)](#membuat-lapisan-http-controller)
+3. [Lapisan Validasi (Form Request)](#lapisan-validasi-form-request)
+4. [Lapisan Data (Repository)](#lapisan-data-repository)
+5. [Lapisan Bisnis (Service)](#lapisan-bisnis-service)
+6. [Lapisan HTTP (Controller)](#lapisan-http-controller)
 7. [Mendaftarkan Rute (Router)](#mendaftarkan-rute-router)
 
 ---
 
-## Pemahaman Arsitektur (Wajib Dibaca)
+## Pemahaman Arsitektur (Layered Pattern)
 
-Banyak framework mengajarkan untuk menuliskan seluruh logika aplikasi (Validasi + Upload File + Simpan Database) di dalam Controller. Di **The Framework v5.0**, kita menggunakan arsitektur kelas enterprise untuk kemudahan _scaling_:
+Berbeda dengan framework monolitik tradisional, **The Framework v5.0** mendorong pemisahan logika agar Controller tetap ramping (_Skinny Controller_):
 
-1. **Route (`routes/web.php`)**: Menerima request masuk dari URL dan meneruskannya ke Controller.
-2. **Form Request (`app/Http/Requests`)**: Mencegat request sebelum masuk ke Controller untuk divalidasi.
-3. **Controller (`app/Http/Controllers`)**: Menghandle response HTTP (Redirect, Render HTML, JSON).
-4. **Service (`app/Services`)**: Tempat logika "kotor" berada (Cek Email ganda, Simpan/Hapus Gambar, Algoritma).
-5. **Repository (`app/Repositories`)**: Pekerja keras database (Menjalankan Query Insert/Update/Delete khusus menggunakan Transaksi PDO).
+1. **Route (`routes/web.php`)**: Gerbang utama yang menerima request URL dan mengarahkannya ke Controller.
+2. **Form Request (`app/Http/Requests`)**: Mencegat request sebelum masuk ke Controller untuk divalidasi secara otomatis.
+3. **Controller (`app/Http/Controllers`)**: Fokus pada penanganan alur HTTP (mengirim Response JSON, Redirect, atau Render View).
+4. **Service (`app/Services`)**: Menangani logika bisnis inti (algoritma, pengolahan file, integrasi API pihak ketiga).
+5. **Repository (`app/Repositories`)**: Fokus murni pada akses data ke database, memastikan integritas query dan transaksi.
 
-Mari kita mulai membuat Management User Sederhana sebagai contohnya!
+Mari kita implementasikan sistem Manajemen User sebagai studi kasus.
 
 ---
 
 ## Persiapan Struktur (Tabel & Model)
 
-### 1. Buat Tabel
+### 1. Migrasi Database
 
-Pertama, kita harus membuat migrasi untuk tabel ke database:
+Gunakan perintah Artisan untuk membuat file migrasi:
 
 ```bash
 php artisan make:migration create_users_table
 ```
 
-File: `database/migrations/xxxx_create_users_table.php`
+Edit file di `database/migrations/`:
 
 ```php
 public function up(): void {
@@ -54,26 +54,22 @@ public function up(): void {
 }
 ```
 
-Lalu eksekusi migrasinya: `php artisan migrate`
+Jalankan perintah: `php artisan migrate`
 
-### 2. Definisikan Model
+### 2. Definisi Model
 
-Buat model menggunakan Artisan:
-
-```bash
-php artisan make:model User
-```
-
-File: `app/Models/User.php`
+Buat model `User` di `app/Models/User.php`:
 
 ```php
 namespace TheFramework\Models;
+
 use TheFramework\App\Database\Model;
 
 class User extends Model
 {
     protected $table = 'users';
-    protected $primaryKey = 'uid'; // Custom UID
+    protected $primaryKey = 'uid'; // Menggunakan UID sebagai Primary Key
+    public $incrementing = false;  // Karena UID bukan integer auto-increment
 
     protected $fillable = ['uid', 'name', 'email', 'profile_picture'];
 }
@@ -81,56 +77,47 @@ class User extends Model
 
 ---
 
-## Membuat Lapisan Validasi (Form Request)
+## Lapisan Validasi (Form Request)
 
-Buat request khusus untuk mengelola aturan "Name" dan "Email":
+Buat request khusus untuk memisahkan aturan validasi dari logika bisnis:
 
 ```bash
 php artisan make:request UserRequest
 ```
 
-File: `app/Http/Requests/UserRequest.php`
+File: `app/App/Http/Requests/UserRequest.php`
 
 ```php
-namespace TheFramework\Http\Requests;
-use TheFramework\App\Http\Request;
+namespace TheFramework\App\Http\Requests;
 
-class UserRequest extends Request
+use TheFramework\App\Http\FormRequest;
+
+class UserRequest extends FormRequest
 {
     public function rules(): array
     {
         return [
-            'name' => 'required|min:3|max:100',
-            'email' => 'required|email',
-            'profile_picture' => 'nullable|file|images|max:2048',
+            'name'            => 'required|min:3|max:100',
+            'email'           => 'required|email|unique:users,email',
+            'profile_picture' => 'nullable|image|max:2MB',
         ];
     }
 
-    public function updateRule(): array
+    public function messages(): array
     {
-        // Gabungkan rules utama dengan perintah delete gambar saat UPDATE
-        return array_merge($this->rules(), [
-            'delete_profile_picture' => 'nullable'
-        ]);
-    }
-
-    public function validated(): array
-    {
-        return $this->validate($this->rules());
-    }
-
-    public function updateValidated(): array
-    {
-        return $this->validate($this->updateRule());
+        return [
+            'name.required' => 'Nama wajib diisi.',
+            'email.email'   => 'Format email tidak valid.',
+        ];
     }
 }
 ```
 
 ---
 
-## Membuat Lapisan Data (Repository)
+## Lapisan Data (Repository)
 
-Repo bertanggung jawab murni berkomunikasi dengan sintaks database, termasuk Transaksi Rollback-nya.
+Repository menangani interaksi langsung dengan database. Gunakan Transaksi PDO untuk menjamin atomisitas data.
 
 File: `app/Repositories/UserRepository.php`
 
@@ -152,7 +139,7 @@ class UserRepository
     }
 
     public function getAll() {
-        return $this->model->query()->orderBy('updated_at', 'DESC')->get();
+        return $this->model->latest()->get();
     }
 
     public function getInformation(string $uid) {
@@ -160,15 +147,15 @@ class UserRepository
     }
 
     // Transaksi Database yang Aman untuk Insert
-    public function createRepo(array $data) {
+    public function create(array $data) {
         try {
             $this->db->beginTransaction();
-            $this->model->create($data);
+            $user = $this->model->create($data);
             $this->db->commit();
-            return true;
+            return $user;
         } catch (Exception $e) {
-            $this->db->rollback();
-            throw $e; // Lempar error ke layer atasnya (Service)
+            $this->db->rollBack();
+            throw $e;
         }
     }
 
@@ -181,9 +168,9 @@ class UserRepository
 
 ---
 
-## Membuat Lapisan Bisnis (Service)
+## Lapisan Bisnis (Service)
 
-Disinilah Anda harus menempatkan logika (contohnya memastikan tidak ada email ganda) dan mendelegasikan perintah upload pada `UploadHandler`.
+Service menengahi Controller dan Repository. Di sini kita menaruh logika kompleks seperti pengolahan file gambar.
 
 File: `app/Services/UserService.php`
 
@@ -194,7 +181,7 @@ use Exception;
 use TheFramework\Repositories\UserRepository;
 use TheFramework\Handlers\UploadHandler;
 use TheFramework\Helpers\Helper;
-use TheFramework\Http\Requests\UserRequest;
+use TheFramework\App\Http\Requests\UserRequest;
 
 class UserService
 {
@@ -204,32 +191,37 @@ class UserService
         $this->repo = new UserRepository();
     }
 
-    public function createUserService(UserRequest $request)
+    public function registerUser(UserRequest $request)
     {
         $photoName = null;
 
-        // 1. Eksekusi file upload
+        // 1. Proses Upload Gambar ke WebP (Private Storage)
         if ($request->hasFile('profile_picture')) {
             $photoName = UploadHandler::handleUploadToWebP(
-                $request->file('profile_picture'), '/user-pictures', 'foto_'
+                $request->file('profile_picture'),
+                '/user-pictures',
+                'user_'
             );
+
             if (UploadHandler::isError($photoName)) {
                 throw new Exception(UploadHandler::getErrorMessage($photoName));
             }
         }
 
-        // 2. Siapkan Data yang Di-*validate* Form Request
+        // 2. Persiapan Data (Sudah tervalidasi oleh FormRequest)
         $data = $request->validated();
-        $data['profile_picture'] = $photoName;
         $data['uid'] = Helper::uuid();
+        $data['profile_picture'] = $photoName;
 
-        // 3. Delegate insert ke Repository
+        // 3. Simpan via Repository
         try {
-            return $this->repo->createRepo($data);
+            return $this->repo->create($data);
         } catch (Exception $e) {
-            // Rollback manual! Jika gagal insert DB, hapus file foto yang terlanjur ter-upload.
-            if ($photoName) UploadHandler::delete($photoName, '/user-pictures');
-            throw new Exception('Gagal Data: ' . $e->getMessage());
+            // Cleanup: Hapus file jika database gagal diupdate (Atomic Operation)
+            if ($photoName) {
+                UploadHandler::delete($photoName, '/user-pictures');
+            }
+            throw new Exception("Gagal menyimpan data ke database.");
         }
     }
 }
@@ -237,9 +229,9 @@ class UserService
 
 ---
 
-## Membuat Lapisan HTTP (Controller)
+## Lapisan HTTP (Controller)
 
-Perhatikan betapa "bersihnya" Controller kita karena semua logika telah ditaruh di tempat yang semestinya:
+Controller sekarang menjadi sangat bersih karena hanya bertugas menjembatani Request ke Service.
 
 File: `app/Http/Controllers/HomeController.php`
 
@@ -247,12 +239,12 @@ File: `app/Http/Controllers/HomeController.php`
 namespace TheFramework\Http\Controllers;
 
 use Exception;
-use TheFramework\Http\Requests\UserRequest;
+use TheFramework\App\Http\Requests\UserRequest;
 use TheFramework\Services\UserService;
 
 class HomeController extends Controller
 {
-    private UserService $userService;
+    protected UserService $userService;
 
     public function __construct() {
         $this->userService = new UserService();
@@ -265,12 +257,12 @@ class HomeController extends Controller
         ]);
     }
 
-    // Eksekusi Pembuatan Data (Dependency Injection UserRequest!)
-    public function createUser(UserRequest $request) {
+    public function createUser(UserRequest $request)
+    {
         try {
-            $this->userService->createUserService($request);
+            $this->userService->registerUser($request);
 
-            return redirect('/users', 'success', 'Berhasil Ditambahkan');
+            return redirect('/users', 'success', 'User berhasil didaftarkan ke sistem.');
         } catch (Exception $e) {
             return redirect('/users', 'error', $e->getMessage());
         }
@@ -282,7 +274,7 @@ class HomeController extends Controller
 
 ## Mendaftarkan Rute (Router)
 
-The Framework v5.0 mendukung router berbasis Prefix, Group, dan Middleware mutakhir di `routes/web.php`:
+Daftarkan rute di `routes/web.php` dengan perlindungan Middleware keamanan.
 
 ```php
 <?php
@@ -297,7 +289,7 @@ Router::get('/users', HomeController::class, 'users');
 Router::group(
     [
         'prefix'     => '/users',
-        'middleware' => [CsrfMiddleware::class] // Lindungi API
+        'middleware' => [CsrfMiddleware::class] // Lindungi dari serangan Cross-Site Request Forgery
     ],
     function () {
         Router::post('/create', HomeController::class, 'createUser');
@@ -309,6 +301,6 @@ Router::group(
 
 ### Kesimpulan
 
-Aplikasi Anda kini bukan lagi sekadar aplikasi _Blog Procedural_, Anda baru saja menyusun arsitektur perangkat lunak dengan kontrol versi database tersendiri dan pola yang kuat untuk keamanan, file processing _atomic_ (file batal simpan jika server query DB Error), dan HTTP Middleware tingkat lanjut.
+Dengan mengikuti pola ini, aplikasi Anda memiliki struktur yang sangat kuat. Jika di masa depan Anda ingin mengubah database atau mengganti sistem penyimpanan file, Anda hanya perlu mengedit `Repository` atau `Service` saja tanpa menyentuh `Controller`.
 
-**Good Job! Terapkan Arsitektur ini di setiap aplikasi the framework Anda.**
+**Selamat! Anda telah menerapkan standar Enterprise pada aplikasi The Framework.**

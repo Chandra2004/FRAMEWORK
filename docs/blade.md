@@ -21,13 +21,14 @@ Framework ini menggunakan **Illuminate Blade** dari Laravel sebagai template eng
 
 ### Fitur Utama
 
-| Fitur | Deskripsi |
-|---|---|
-| **Singleton Pattern** | Instance Blade hanya dibuat sekali, digunakan berulang |
-| **Anti-Recursion Guard** | Mencegah infinite loop saat error terjadi saat inisialisasi |
-| **Custom Directives** | `@csrf`, `@auth`, `@guest`, `@error`, `@rupiah`, `@session`, `@config` |
-| **View Namespaces** | Dukungan namespace `Internal::` untuk views framework internal |
-| **Auto Cache Dir** | Otomatis membuat direktori cache di `storage/framework/views` |
+| Fitur                    | Deskripsi                                                               |
+| ------------------------ | ----------------------------------------------------------------------- |
+| **Singleton Pattern**    | Instance Blade hanya dibuat sekali, digunakan berulang.                 |
+| **Anti-Recursion Guard** | Mencegah infinite loop saat error terjadi saat inisialisasi.            |
+| **Custom Directives**    | `@csrf`, `@auth`, `@guest`, `@error`, `@rupiah`, `@session`, `@config`. |
+| **View Namespaces**      | Dukungan namespace `Internal::` untuk views framework internal.         |
+| **Auto Cache Dir**       | Otomatis membuat direktori cache di `storage/framework/views`.          |
+| **Data Sharing**         | Kemampuan `View::share()` untuk data yang bisa diakses seluruh halaman. |
 
 ---
 
@@ -79,7 +80,7 @@ Meng-generate hidden input field dengan token CSRF untuk melindungi form dari se
 **Output HTML:**
 
 ```html
-<input type="hidden" name="_token" value="abc123...">
+<input type="hidden" name="_token" value="abc123..." />
 ```
 
 ---
@@ -102,10 +103,10 @@ Menampilkan konten berdasarkan status autentikasi user.
 
 **Cara Kerja:**
 
-| Directive | Kondisi |
-|---|---|
-| `@auth` | `session('user') !== null` → User sudah login |
-| `@guest` | `session('user') === null` → User belum login |
+| Directive | Kondisi                                       |
+| --------- | --------------------------------------------- |
+| `@auth`   | `session('user') !== null` → User sudah login |
+| `@guest`  | `session('user') === null` → User belum login |
 
 ---
 
@@ -162,7 +163,7 @@ Cek apakah session key tertentu ada, lalu tampilkan konten.
 
 ### `@config('key')` — Configuration Value
 
-Menampilkan nilai konfigurasi langsung di template.
+Menampilkan nilai konfigurasi langsung di template tanpa perlu memanggil helper `config()`.
 
 ```blade
 <title>@config('app.name')</title>
@@ -171,6 +172,28 @@ Menampilkan nilai konfigurasi langsung di template.
 <footer>
     &copy; {{ date('Y') }} @config('app.name')
 </footer>
+```
+
+---
+
+### 🛡️ Standard Blade Directives
+
+Karena framework ini menggunakan `illuminate/view`, semua direktori standar Laravel berikut ini **tersedia dan bekerja 100%**:
+
+- **Control Structures**: `@if`, `@else`, `@elseif`, `@unless`, `@switch`.
+- **Loops**: `@foreach`, `@forelse`, `@for`, `@while`.
+- **Layouts**: `@extends`, `@section`, `@yield`, `@stack`, `@push`.
+- **Includes**: `@include`, `@each`.
+- **PHP Blocks**: `@php ... @endphp`.
+
+```blade
+@if($users->isEmpty())
+    <p>Data kosong.</p>
+@else
+    @foreach($users as $user)
+        <li>{{ $user->name }}</li>
+    @endforeach
+@endif
 ```
 
 ---
@@ -188,20 +211,51 @@ return View::render('blog.index');      // resources/views/blog/index.blade.php
 return View::render('layouts.app');     // resources/views/layouts/app.blade.php
 ```
 
-### Internal Views (Framework)
+> **⚠️ Penting:** View namespace `Internal::` dicadangkan untuk framework. Developer sebaiknya menempatkan view mereka di `resources/views/`.
 
-Path: `app/App/Internal/Views/`
+---
 
-Namespace: `Internal::`
+## 💎 Advanced Techniques
+
+### Global Data Sharing
+
+Gunakan `View::share()` untuk membagikan data ke **seluruh haman** secara otomatis (misalnya data menu, setting profile, atau notifikasi global). Biasanya dilakukan di `AppServiceProvider` atau Middleware.
 
 ```php
-// Digunakan oleh framework internal, bukan oleh developer
-return View::render('Internal::errors.404');    // Halaman 404
-return View::render('Internal::errors.500');    // Halaman 500
-return View::render('Internal::_system.index'); // Web Command Center
+// Di logic Controller atau Provider
+View::share('site_version', '5.0.1');
+View::share('current_user', session('user'));
+
+// Di file Blade manapun
+<p>Version: {{ $site_version }}</p>
 ```
 
-> **⚠️ Penting:** View namespace `Internal::` dicadangkan untuk framework. Developer sebaiknya menempatkan view mereka di `resources/views/`.
+### Path & Naming Convention
+
+Framework mendukung dua gaya penulisan path view:
+
+1. **Dot Notation** (Rekomendasi): `auth.login` → `resources/views/auth/login.blade.php`
+2. **Slash Notation**: `auth/login` → `resources/views/auth/login.blade.php`
+
+### Dot Notation vs Variable
+
+Ingat bahwa Blade sangat sensitif. Pastikan tidak ada spasi di antara nama view:
+
+- ✅ `view('users.index')`
+- ❌ `view('users . index')`
+
+---
+
+## 🌍 Localization dalam Blade
+
+Gunakan helper `__()` untuk menampilkan teks multibahasa (sesuai `app.locale` di `.env`).
+
+```blade
+<h1>{{ __('messages.welcome') }}</h1>
+
+{{-- Dengan Parameter --}}
+<p>{{ __('messages.greet', ['name' => session('user')['name']]) }}</p>
+```
 
 ---
 
@@ -309,7 +363,7 @@ https://yoursite.com/_system/clear-cache
 @endsection
 ```
 
-### Menampilkan Harga
+### Rendering Harga (Paten)
 
 ```blade
 {{-- resources/views/products/show.blade.php --}}
@@ -321,14 +375,23 @@ https://yoursite.com/_system/clear-cache
 </div>
 ```
 
+### Asset Management
+
+Selalu gunakan helper `asset()` di Blade untuk cache busting otomatis (menambahkan versioning string berdasarkan file modification time).
+
+```blade
+<link rel="stylesheet" href="{{ asset('css/app.css') }}">
+{{-- Output: <link rel="stylesheet" href="/assets/css/app.css?v=1704067200"> --}}
+```
+
 ---
 
 ## ⚙️ Method Reference
 
-| Method | Return | Deskripsi |
-|---|---|---|
-| `BladeInit::init()` | `Factory\|null` | Inisialisasi Blade engine (singleton) |
-| `BladeInit::getInstance()` | `Factory\|null` | Alias untuk `init()` |
+| Method                     | Return          | Deskripsi                             |
+| -------------------------- | --------------- | ------------------------------------- |
+| `BladeInit::init()`        | `Factory\|null` | Inisialisasi Blade engine (singleton) |
+| `BladeInit::getInstance()` | `Factory\|null` | Alias untuk `init()`                  |
 
 ---
 

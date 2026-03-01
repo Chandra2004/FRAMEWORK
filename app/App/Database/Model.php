@@ -25,6 +25,7 @@ use Closure;
  * @method static mixed firstOrCreate(array $attributes, array $values = [])
  * @method static mixed updateOrCreate(array $attributes, array $values)
  * @method static int upsert(array $values, array $uniqueBy, array $update)
+ * @method static \TheFramework\App\Database\QueryBuilder search(array|string $columns, string $value)
  */
 
 abstract class Model implements \JsonSerializable, ArrayAccess
@@ -697,8 +698,9 @@ abstract class Model implements \JsonSerializable, ArrayAccess
 
     public function newInstance(array $attributes = [], bool $exists = false)
     {
-        $model = new static((array) $attributes);
+        $model = new static;
         $model->exists = $exists;
+        $model->setRawAttributes((array) $attributes, true);
         return $model;
     }
 

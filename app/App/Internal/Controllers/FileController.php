@@ -18,68 +18,101 @@ class FileController
     public function Serve($params = [])
     {
         $allowedFolders = self::getAllowedFolders();
-        $forbiddenExtensions = ['php', 'phtml', 'phar', 'exe', 'sh', 'bat', 'sql'];
+        $forbiddenExtensions = ['php', 'phtml', 'phar', 'exe', 'sh', 'bat', 'sql', 'htaccess', 'env'];
 
         $requested = '';
 
-        if (is_array($params) && isset($params[0])) {
-            $requested = $params[0];
-        } elseif (is_string($params) && $params !== '') {
-            $requested = $params;
+        // 1. Coba ambil dari Query String (?path=...)
+        if (isset($_GET['path'])) {
+            $requested = $_GET['path'];
         }
-
+        // 2. Coba ambil dari Route Params (/file/folder/filename)
+        elseif (is_array($params) && !empty($params)) {
+            // Join semua params jika ada multiple (misal: folder/subfolder/file)
+            $requested = implode('/', $params);
+        }
+        // 3. Fallback: Parse dari URI (mencocokkan /file/...)
         if ($requested === '') {
             $uri = $_SERVER['REQUEST_URI'] ?? '';
             $uri = parse_url($uri, PHP_URL_PATH);
-            $requested = preg_replace('#^/file#', '', $uri);
+            if (str_starts_with($uri, '/file')) {
+                $requested = preg_replace('#^/file#', '', $uri);
+            }
         }
 
+        if ($requested === '') {
+            $this->abort(400, "Bad Request: Path tidak ditentukan.");
+        }
+
+        // Normalisasi path
         $requested = '/' . ltrim($requested, '/');
 
-        $privateDir = ROOT_DIR . '/private-uploads';
-        $filePath = realpath($privateDir . $requested);
+        // Gunakan Config untuk direktori upload (mendukung kustomisasi .env)
+        $uploadDir = Config::get('UPLOAD_DIR', '/private-uploads');
+        $privateRoot = ROOT_DIR . $uploadDir;
 
-        // proteksi: pastikan file tetap di dalam private-uploads
-        if ($filePath === false || strpos($filePath, realpath($privateDir)) !== 0) {
+        $filePath = realpath($privateRoot . $requested);
+
+        // Security check: Pastikan file berada di dalam root upload yang diizinkan (Anti-Traversal)
+        if ($filePath === false || !str_starts_with($filePath, realpath($privateRoot))) {
             $this->abort(404, "File tidak ditemukan.");
         }
 
-        // whitelist folder
+        // Whitelist folder check
         $relativePath = ltrim($requested, '/');
         $parts = explode('/', $relativePath);
-        $folder = $parts[0] ?? '';
+        $topFolder = $parts[0] ?? '';
 
-        if (!in_array($folder, $allowedFolders)) {
-            $this->abort(403, "Folder tidak diizinkan.");
+        if (!in_array($topFolder, $allowedFolders)) {
+            $this->abort(403, "Akses folder '{$topFolder}' tidak diizinkan.");
         }
 
-        // blacklist ekstensix
+        // Blacklist ekstensi check
         $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-
         if (in_array($ext, $forbiddenExtensions)) {
-            $this->abort(403, "Ekstensi file tidak diizinkan.");
+            $this->abort(403, "Tipe file tidak diizinkan untuk diakses.");
         }
 
-        // cek file ada
+        // Serve file dengan header yang tepat
         if (file_exists($filePath)) {
+            // Bersihkan buffer untuk mencegah output korup
+            if (ob_get_length())
+                ob_end_clean();
+
             $mime = mime_content_type($filePath);
+
+            // Fix MIME type untuk beberapa ekstensi populer yang sering salah deteksi
+            $mimeMap = [
+                'css' => 'text/css',
+                'js' => 'application/javascript',
+                'svg' => 'image/svg+xml',
+            ];
+            if (isset($mimeMap[$ext]))
+                $mime = $mimeMap[$ext];
+
             header("Content-Type: " . $mime);
             header("Content-Length: " . filesize($filePath));
+            header("Cache-Control: public, max-age=86400"); // Cache file selama 24 jam
             readfile($filePath);
             exit;
         } else {
-            $this->abort(404, "File tidak ditemukan.");
+            $this->abort(404, "File tidak ditemukan di disk.");
         }
     }
 
     private function abort(int $code, string $message): void
     {
         if (strtolower(Config::get('APP_ENV')) === 'production') {
-            if ($code === 404) ErrorController::error404();
-            else ErrorController::error403();
+            http_response_code($code);
+            if ($code === 404)
+                ErrorController::error404();
+            elseif ($code === 403)
+                ErrorController::error403();
+            else
+                echo "Error {$code}";
         } else {
             http_response_code($code);
-            echo $message;
+            echo "<h3>File Error {$code}</h3><p>{$message}</p>";
         }
         exit;
     }

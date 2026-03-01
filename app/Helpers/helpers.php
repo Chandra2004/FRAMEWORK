@@ -68,6 +68,16 @@ if (!function_exists('view')) {
     }
 }
 
+if (!function_exists('view_path')) {
+    /**
+     * Dapatkan path absolut ke direktori view atau file view tertentu.
+     */
+    function view_path(string $path = '')
+    {
+        return base_path('resources/views' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+    }
+}
+
 if (!function_exists('config')) {
     function config(string $key, $default = null)
     {
@@ -93,6 +103,30 @@ if (!function_exists('session')) {
             return null;
         }
         return $_SESSION[$key] ?? $default;
+    }
+}
+
+if (!function_exists('cache')) {
+    /**
+     * Fluent Global Cache Helper — The Framework v5.1.0
+     * 
+     * Contoh: cache('key') -> get
+     *         cache(['key' => 'val']) -> put
+     *         cache() -> CacheManager instance
+     */
+    function cache(string|array|null $key = null, $default = null)
+    {
+        $cache = \TheFramework\App\Cache\CacheManager::class;
+
+        if ($key === null) {
+            return $cache;
+        }
+
+        if (is_array($key)) {
+            return $cache::putMany($key);
+        }
+
+        return $cache::get($key, $default);
     }
 }
 

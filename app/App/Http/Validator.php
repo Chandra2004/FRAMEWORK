@@ -338,8 +338,18 @@ class Validator
             return $value;
         if (is_string($value))
             return mb_strlen($value);
-        if (is_array($value) && isset($value['size']))
-            return $value['size']; // Return raw bytes
+        if ($this->is_file_input($value)) {
+            // Handle single or multiple files
+            if (isset($value['size']) && !is_array($value['size'])) {
+                return $value['size'];
+            }
+            // For multiple files, sum the sizes
+            $sum = 0;
+            foreach ($value as $file) {
+                $sum += $file['size'] ?? 0;
+            }
+            return $sum;
+        }
         if (is_array($value))
             return count($value);
         return 0;
@@ -584,5 +594,45 @@ class Validator
         if (!$result || $result['count'] == 0) {
             $this->addError($field, 'exists', "The selected {$label} is invalid.");
         }
+    }
+
+    /* ==================================================
+       🔹 FILE RULES
+    ================================================== */
+
+    protected function validate_mimes(string $field, string $label, $value, array $params): void
+    {
+        if (!$this->is_file_input($value))
+            return;
+
+        // Handle single or multiple files
+        $files = isset($value['name']) && !is_array($value['name']) ? [$value] : $value;
+
+        foreach ($files as $file) {
+            if ($file['error'] !== UPLOAD_ERR_OK)
+                continue;
+
+            if (!$this->checkExtension($file['name'], $params)) {
+                $this->addError($field, 'mimes', "{$label} must be a file of type: " . implode(', ', $params) . ".");
+                break;
+            }
+        }
+    }
+
+    protected function validate_image(string $field, string $label, $value, array $params): void
+    {
+        $imageMimes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
+        $this->validate_mimes($field, $label, $value, $imageMimes);
+    }
+
+    private function checkExtension(string $filename, array $allowedExtensions): bool
+    {
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        return in_array($extension, $allowedExtensions);
+    }
+
+    private function is_file_input($value): bool
+    {
+        return is_array($value) && (isset($value['tmp_name']) || (isset($value[0]['tmp_name'])));
     }
 }

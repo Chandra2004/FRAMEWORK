@@ -1,85 +1,128 @@
-# 🔐 Authentication Tutorial
+# 🔐 Authentication System — v5.0.1 Premium
 
-**Coming Soon!**
-
-This tutorial will cover:
-
-1. User Registration System
-2. Login \u0026 Logout Flow
-3. Session Management
-4. Password Reset
-5. Email Verification
-6. Remember Me functionality
-7. Social Auth (OAuth)
+Tutorial ini akan memandu Anda membangun sistem autentikasi (Login & Registrasi) yang aman menggunakan fitur bawaan **The Framework v5.0.1**.
 
 ---
 
-## Quick Auth Setup
+## 🏗️ 1. Persiapan Model User
 
-### 1. Create Users Table
+Pastikan model `User` sudah dikonfigurasi untuk menangani hashing password secara otomatis atau melalui Service.
 
-```bash
-php artisan migrate
-```
-
-### 2. User Model
+File: `app/Models/User.php`
 
 ```php
-<?php
-
 namespace TheFramework\Models;
 
-use TheFramework\App\Model;
+use TheFramework\App\Database\Model;
 
 class User extends Model
 {
-    protected $fillable = ['name', 'email', 'password'];
-    protected $hidden = ['password', 'remember_token'];
-}
-```
-
-### 3. Registration Controller
-
-```php
-public function register(Request $request)
-{
-    $data = $request->input();
-    $data['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
-
-    User::create($data);
-
-    return redirect('/login');
-}
-```
-
-### 4. Login Controller
-
-```php
-public function login(Request $request)
-{
-    $email = $request->input('email');
-    $password = $request->input('password');
-
-    $user = User::where('email', $email)->first();
-
-    if ($user && password_verify($password, $user->password)) {
-        $_SESSION['user_id'] = $user->id;
-        return redirect('/dashboard');
-    }
-
-    return redirect('/login')->with('error', 'Invalid credentials');
+    protected $table = 'users';
+    protected $fillable = ['uid', 'name', 'email', 'password', 'role'];
+    protected $hidden = ['password']; // Jangan sertakan password saat dikonversi ke JSON/Array
 }
 ```
 
 ---
 
-📖 **Full tutorial dengan complete authentication system coming in v5.1.0!**
+## 🛠️ 2. Registrasi (Service Layer)
 
-📧 Request features: support@the-framework.ct.ws
+Gunakan `Helper::hash_password()` yang menggunakan algoritma BCRYPT (Cost 12) untuk keamanan maksimal.
+
+File: `app/Services/AuthService.php`
+
+```php
+namespace TheFramework\Services;
+
+use TheFramework\Models\User;
+use TheFramework\Helpers\Helper;
+
+class AuthService
+{
+    public function register(array $data)
+    {
+        $data['uid'] = Helper::uuid();
+        $data['password'] = Helper::hash_password($data['password']);
+
+        return User::create($data);
+    }
+}
+```
+
+---
+
+## 🔑 3. Login & Session Management
+
+Proses pengecekan kredensial dilakukan di Controller atau Service dengan membandingkan hash.
+
+File: `app/Http/Controllers/AuthController.php`
+
+```php
+namespace TheFramework\Http\Controllers;
+
+use TheFramework\App\Http\Request;
+use TheFramework\Models\User;
+use TheFramework\Helpers\Helper;
+
+class AuthController extends Controller
+{
+    public function login(Request $request)
+    {
+        $email = $request->input('email');
+        $password = $request->input('password');
+
+        $user = User::where('email', '=', $email)->first();
+
+        if ($user && password_verify($password, $user->password)) {
+            // Set session aman
+            Helper::session_write('user_id', $user->uid);
+            Helper::session_write('user_name', $user->name);
+
+            return redirect('/dashboard', 'success', 'Selamat datang kembali, ' . $user->name);
+        }
+
+        return redirect('/login', 'error', 'Email atau password salah.');
+    }
+
+    public function logout()
+    {
+        Helper::session_destroy_all();
+        return redirect('/login', 'success', 'Anda telah berhasil keluar.');
+    }
+}
+```
+
+---
+
+## 🔒 4. Melindungi Rute (Middleware)
+
+Gunakan middleware untuk memastikan hanya user yang sudah login yang dapat mengakses halaman tertentu.
+
+```php
+Router::group(
+    [
+        'prefix' => '/admin',
+        'middleware' => [AuthMiddleware::class]
+    ],
+    function() {
+        Router::get('/dashboard', AdminController::class, 'index');
+    }
+);
+```
+
+---
+
+## ✅ Keamanan Tambahan
+
+1. **Session Fixation**: Framework secara otomatis meregenerasi ID session setiap kali login untuk mencegah pembajakan session.
+2. **CSRF Protection**: Selalu gunakan `@csrf` di setiap form login/registrasi Anda di Blade.
+3. **Password Hashing**: Jangan pernah menyimpan password dalam bentuk teks biasa (_plain-text_). Gunakan `Helper::hash_password()`.
 
 ---
 
 <div align="center">
+
+**The Framework Auth Engine — Secure by Design** 🛡️
 
 [Back to Documentation](README.md) • [Main README](../README.md)
 

@@ -1,137 +1,223 @@
-# 🛣️ Routing
+# 🛣️ Deep Dive: Routing System (v5.0.1)
 
-Routing adalah peta jalan aplikasi Anda. Ia mengatur URL mana yang akan memicu Controller mana.
+Routing adalah infrastruktur vital yang menghubungkan request URL dari browser menuju logika bisnis di Controller. The Framework menyediakan sistem routing yang cepat, fleksibel, dan mendukung _Nested Grouping_ serta _Dependency Injection_.
 
 ---
 
 ## 📋 Daftar Isi
 
-1.  [Dasar Routing](#dasar-routing)
-2.  [Parameter Rute](#parameter-rute)
-3.  [Named Routes](#named-routes)
-4.  [Grouping & Prefix](#grouping--prefix)
-5.  [Middleware pada Route](#middleware-pada-route)
-6.  [Method Spoofing (Form PUT/DELETE)](#method-spoofing)
+- [Dasar-Dasar Routing](#dasar-dasar-routing)
+- [Shorthand & Special Routes](#shorthand--special-routes)
+- [Resourceful Routing (CRUD)](#resourceful-routing-crud)
+- [Parameter & Regex Parsing](#parameter--regex-parsing)
+- [Named Routes](#named-routes)
+- [Middleware & Grouping](#middleware--grouping)
+- [Dependency Injection di Route](#dependency-injection-di-route)
+- [Optimasi & Caching](#optimasi--caching)
+- [Method Spoofing](#method-spoofing)
+- [App Modes Override](#app-modes-override)
 
 ---
 
-## Dasar Routing
+## Dasar-Dasar Routing
 
-Definisikan rute di `routes/web.php`.
+Semua rute didefinisikan di dalam file `routes/web.php`. Anda dapat menggunakan method `Router::add()` atau method shorthand untuk fleksibilitas maksimal.
 
-### Basic Verbs
+### 1. Shorthand Methods (Recommended)
 
-The Framework mendukung semua verb HTTP standar.
+Cara termudah dan paling bersih untuk mendefinisikan rute:
 
 ```php
 use TheFramework\App\Http\Router;
 
-Router::add('GET', '/home', HomeController::class, 'index');
-Router::add('POST', '/post/store', PostController::class, 'store');
-Router::add('PUT', '/post/update', PostController::class, 'update');
-Router::add('DELETE', '/post/delete', PostController::class, 'destroy');
+Router::get('/profile', UserController::class, 'show');
+Router::post('/profile', UserController::class, 'update');
+Router::put('/user/{id}', UserController::class, 'update');
+Router::patch('/user/{id}', UserController::class, 'updatePartial');
+Router::delete('/user/{id}', UserController::class, 'destroy');
+Router::any('/webhook', WebhookController::class, 'handle');
 ```
 
-### Menggunakan Closure (Fungsi Langsung)
+---
 
-Untuk halaman statis sederhana, Anda tidak wajib membuat controller.
+## Shorthand & Special Routes
+
+Selain verb HTTP standar, tersedia method khusus untuk menghemat penulisan kode:
+
+### 1. View Route
+
+Gunakan `Router::view()` jika rute tersebut hanya bertugas menampilkan halaman statis (Blade).
 
 ```php
-Router::add('GET', '/about', function() {
-    return View::render('about');
+// Tanpa Controller
+Router::view('/welcome', 'interface.welcome', ['title' => 'Selamat Datang']);
+```
+
+### 2. Redirect Route
+
+Berguna untuk mengarahkan rute lama ke rute baru secara instan.
+
+```php
+Router::redirect('/old-about', '/about-us', 301);
+```
+
+### 3. Fallback Route (404 Handler)
+
+Mendefinisikan rute yang akan dieksekusi jika tidak ada satupun rute di atas yang cocok.
+
+```php
+Router::fallback(function() {
+    return view('errors.404');
 });
 ```
 
 ---
 
-## Parameter Rute
+## Resourceful Routing (CRUD)
 
-Anda sering perlu menangkap ID dari URL (misal `/user/5`).
-
-### Parameter Wajib `{param}`
+Untuk mengotomatisasi 7 rute standar CRUD (Create, Read, Update, Delete), gunakan `Router::resource`. Fitur ini sangat menghemat waktu saat membangun modul.
 
 ```php
-// URL: /user/5
-Router::add('GET', '/user/{id}', UserController::class, 'show');
+Router::resource('/products', ProductController::class);
 ```
 
-Di Controller, parameter ini otomatis di-mappping ke argumen method:
+**Rute yang dihasilkan secara otomatis:**
 
-```php
-public function show($id) {
-    echo "User ID: " . $id;
-}
-```
-
-### Parameter Ganda
-
-```php
-// URL: /post/10/comments/50
-Router::add('GET', '/post/{postId}/comments/{commentId}', function($postId, $commentId) {
-    // ...
-});
-```
-
-> **Info Teknis:** `{id}` diparsing menjadi RegEx `(?P<id>[^/]+)` yang berarti "string apapun kecuali garis miring".
+| Verb | URI                     | Action  | Nama Method Controller |
+| :--- | :---------------------- | :------ | :--------------------- |
+| GET  | `/products`             | index   | `index()`              |
+| GET  | `/products/create`      | create  | `create()`             |
+| POST | `/products`             | store   | `store()`              |
+| GET  | `/products/{id}`        | show    | `show($id)`            |
+| GET  | `/products/{id}/edit`   | edit    | `edit($id)`            |
+| POST | `/products/{id}`        | update  | `update($id)`          |
+| POST | `/products/{id}/delete` | destroy | `destroy($id)`         |
 
 ---
 
-## Grouping & Prefix
+## Parameter & Regex Parsing
 
-Mengelompokkan rute yang mirip membuat kode lebih rapi.
+Framework menggunakan RegEx engine yang efisien untuk menangkap variabel dari URL.
+
+### Parameter Wajib
+
+Gunakan kurung kurawal `{name}`. Parameter ini akan dikirimkan ke argumen method Controller Anda berdasarkan urutan.
 
 ```php
-Router::group(['prefix' => '/admin', 'middleware' => ['AuthMiddleware']], function() {
-
-    // URL: /admin/dashboard
-    Router::add('GET', '/dashboard', AdminController::class, 'dashboard');
-
-    // URL: /admin/users
-    Router::add('GET', '/users', AdminController::class, 'users');
-
+Router::get('/post/{slug}/{id}', function($slug, $id) {
+    echo "Membaca post $slug dengan ID: $id";
 });
+```
+
+> **Catatan Teknis:** Secara default, parameter akan menangkap karakter apapun kecuali `/`. Jika Anda butuh validasi format ID, rute tersebut dapat dikombinasikan dengan middleware validasi.
+
+---
+
+## Named Routes
+
+Memberikan nama pada rute sangat krusial agar aplikasi Anda tetap _maintainable_. Jika suatu saat folder atau URL berubah, Anda tidak perlu mengubah link satu per satu di file Blade.
+
+```php
+Router::get('/user/dashboard/main', AdminController::class, 'index')->name('admin.home');
+```
+
+**Cara Menggunakannya di View/Code:**
+
+```php
+// Di Blade
+<a href="{{ Helper::url('admin.home') }}">Dashboard</a>
+
+// Di Controller
+Helper::redirect('admin.home');
 ```
 
 ---
 
-## Middleware pada Route
+## Middleware & Grouping
 
-Anda bisa memasang middleware (filter) pada rute spesifik.
+Organisir rute Anda menggunakan `Router::group`. Anda bisa menerapkan _Prefix_ (URL awalan) dan _Middleware_ (Keamanan) sekaligus.
 
 ```php
-Router::add('GET', '/profile', UserController::class, 'profile', [AuthMiddleware::class]);
+Router::group(['prefix' => '/api/v1', 'middleware' => [AuthMiddleware::class]], function() {
+
+    Router::get('/users', UserController::class, 'index'); // URL: /api/v1/users
+    Router::get('/posts', PostController::class, 'index');  // URL: /api/v1/posts
+
+});
 ```
 
-Rute ini hanya bisa diakses jika `AuthMiddleware` meloloskan request.
+The Framework mendukung **Nested Groups** (Grup di dalam grup), di mana prefix dan middleware akan digabungkan (merge) secara otomatis.
+
+---
+
+## Dependency Injection di Route
+
+Router The Framework memiliki fitur **Auto-Wiring**. Anda dapat meminta objek apapun di argumen Closure atau Controller, dan Router akan menyediakannya secara otomatis dari Container.
+
+```php
+use TheFramework\App\Http\Request;
+use TheFramework\Services\PaymentService;
+
+Router::post('/checkout', function(Request $request, PaymentService $payment) {
+    $amount = $request->input('amount');
+    $payment->pay($amount);
+});
+```
+
+Sistem akan cerdas memisahkan mana yang merupakan **Parameter URL** (seperti `{id}`) dan mana yang merupakan **Dependency Service**.
+
+---
+
+## Optimasi & Caching
+
+Untuk aplikasi skala besar, pencarian rute via RegEx setiap kali request datang bisa memakan waktu. Gunakan perintah Artisan untuk mengunci rute ke dalam file cache yang cepat.
+
+```bash
+php artisan route:cache  # Mengunci rute
+php artisan route:clear  # Menghapus cache rute
+```
 
 ---
 
 ## Method Spoofing
 
-Browser HTML Form hanya mendukung `GET` dan `POST`. Untuk melakukan `PUT` atau `DELETE`, gunakan teknik _Method Spoofing_.
-
-Dalam form `resources/views/edit.php`:
+Browser lama (HTML Form) hanya mengenal GET dan POST. Untuk menjalankan method PUT atau DELETE, Framework mendukung spoofing melalui field `_method`.
 
 ```html
-<form action="/users/update/1" method="POST">
-  <!-- Tambahkan input hidden ini -->
+<form action="/update/1" method="POST">
   <input type="hidden" name="_method" value="PUT" />
-
   <button type="submit">Update</button>
 </form>
 ```
 
-Framework akan membaca `_method` dan memperlakukannya sebagai request `PUT`.
+---
+
+## App Modes Override
+
+Variabel `APP_ENV` di file `.env` dapat mengubah perilaku Router secara global tanpa harus mengubah kode rute:
+
+1.  **Maintenance Mode**: Jika `APP_ENV=maintenance`, semua rute akan diarahkan ke halaman pemeliharaan (kecuali rute internal `_system`).
+2.  **Payment Mode**: Berguna jika aplikasi Anda berbasis langganan. Jika diset `payment`, user akan diarahkan ke halaman invoice/pembayaran.
+3.  **Local Mode**: Di mode ini, Router akan otomatis melayani static assets dari folder `resources` jika file fisik di folder `public` belum tersedia (Sangat berguna saat development).
 
 ---
 
 ## 🔍 Debugging Rute
 
-Anda dapat melihat daftar semua rute yang terdaftar melalui Artisan CLI:
+Gunakan perintah Artisan untuk melihat visualisasi peta rute aplikasi Anda:
 
 ```bash
 php artisan route:list
 ```
 
-Ini akan menampilkan tabel rapi yang berisi Method, URI, Action (Controller), dan Middleware yang terpasang pada rute tersebut.
+Anda akan melihat tabel berisi **Method**, **URI**, **Name**, **Action**, dan **Middleware** yang terpasang secara transparan.
 
+---
+
+<div align="center">
+
+**Routing — Pintu gerbang utama menuju efisiensi kode Anda.**
+
+[Kembali ke Dokumentasi Utama](README.md)
+
+</div>

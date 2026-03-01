@@ -21,12 +21,12 @@ FRAMEWORK/
 
 ### 🔒 Kenapa `private-uploads` Bukan `public/uploads`?
 
-| Aspek | `public/uploads` ❌ | `private-uploads/` ✅ |
-| :--- | :--- | :--- |
-| **Akses langsung** | Siapapun bisa akses via URL | Hanya bisa via route + auth |
-| **Keamanan** | File PHP bisa di-eksekusi | Dilindungi `.htaccess` |
-| **Kontrol** | Tidak ada otorisasi | Bisa cek permission per user |
-| **SEO** | Bisa di-index Google | Tidak bisa di-crawl |
+| Aspek              | `public/uploads` ❌         | `private-uploads/` ✅        |
+| :----------------- | :-------------------------- | :--------------------------- |
+| **Akses langsung** | Siapapun bisa akses via URL | Hanya bisa via route + auth  |
+| **Keamanan**       | File PHP bisa di-eksekusi   | Dilindungi `.htaccess`       |
+| **Kontrol**        | Tidak ada otorisasi         | Bisa cek permission per user |
+| **SEO**            | Bisa di-index Google        | Tidak bisa di-crawl          |
 
 ---
 
@@ -48,6 +48,7 @@ UPLOAD_WEBP_QUALITY=80
 ```
 
 Config file: `config/upload.php`
+
 ```php
 return [
     'default_dir'  => $_ENV['UPLOAD_DIR'] ?? '/private-uploads',
@@ -83,14 +84,14 @@ return [
                     └───────────────┘
 ```
 
-| Layer | File | Tanggung Jawab |
-| :--- | :--- | :--- |
-| **Controller** | `HomeController.php` | Mengatur alur request/response |
-| **Service** | `UserService.php` | Business logic + upload + cleanup |
+| Layer          | File                 | Tanggung Jawab                                |
+| :------------- | :------------------- | :-------------------------------------------- |
+| **Controller** | `HomeController.php` | Mengatur alur request/response                |
+| **Service**    | `UserService.php`    | Business logic + upload + cleanup             |
 | **Repository** | `UserRepository.php` | Query database (find, create, update, delete) |
-| **Model** | `User.php` | Definisi tabel & kolom |
-| **Handler** | `UploadHandler.php` | Upload, konversi, hapus file |
-| **Request** | `UserRequest.php` | Validasi input form |
+| **Model**      | `User.php`           | Definisi tabel & kolom                        |
+| **Handler**    | `UploadHandler.php`  | Upload, konversi, hapus file                  |
+| **Request**    | `UserRequest.php`    | Validasi input form                           |
 
 ---
 
@@ -134,8 +135,10 @@ UploadHandler::path('foto_xxx.webp', '/user-pictures');
 
 // 7. Dapatkan URL serve (via route)
 UploadHandler::url('foto_xxx.webp', '/user-pictures');
-// → http://localhost:3000/file/serve?path=/user-pictures/foto_xxx.webp
+// → http://localhost:8080/file/user-pictures/foto_xxx.webp
 ```
+
+> **Note:** Karena file disimpan di luar folder publik, URL ini akan memicu `FileController` untuk memvalidasi akses sebelum menyajikan file ke browser.
 
 ### Instance Methods (core engine)
 
@@ -195,7 +198,7 @@ class UserRepository
         }
         return (bool) $query->first();
     }
-    
+
     public function create(array $data): bool { ... }
     public function update(array $data, string $uid): bool { ... }
     public function delete(string $uid): bool { ... }
@@ -265,22 +268,25 @@ class HomeController extends Controller
 ## 🛡️ Keamanan Upload
 
 ### Ekstensi yang Diblokir Otomatis
+
 ```
 php, phtml, phar, exe, sh, bat, cmd, com, vbs, js, htaccess
 ```
 
 ### Error Messages (Bahasa Indonesia)
-| Error Code | Pesan |
-| :--- | :--- |
-| `UPLOAD_ERR_INI_SIZE` | Ukuran file melebihi batas `upload_max_filesize` di php.ini |
-| `UPLOAD_ERR_FORM_SIZE` | Ukuran file melebihi batas `MAX_FILE_SIZE` di form |
-| `UPLOAD_ERR_PARTIAL` | File hanya ter-upload sebagian |
-| `UPLOAD_ERR_NO_FILE` | Tidak ada file yang di-upload |
-| `UPLOAD_ERR_NO_TMP_DIR` | Folder temporary tidak ditemukan |
-| `UPLOAD_ERR_CANT_WRITE` | Gagal menulis file ke disk |
-| `UPLOAD_ERR_EXTENSION` | Upload dihentikan oleh ekstensi PHP |
+
+| Error Code              | Pesan                                                       |
+| :---------------------- | :---------------------------------------------------------- |
+| `UPLOAD_ERR_INI_SIZE`   | Ukuran file melebihi batas `upload_max_filesize` di php.ini |
+| `UPLOAD_ERR_FORM_SIZE`  | Ukuran file melebihi batas `MAX_FILE_SIZE` di form          |
+| `UPLOAD_ERR_PARTIAL`    | File hanya ter-upload sebagian                              |
+| `UPLOAD_ERR_NO_FILE`    | Tidak ada file yang di-upload                               |
+| `UPLOAD_ERR_NO_TMP_DIR` | Folder temporary tidak ditemukan                            |
+| `UPLOAD_ERR_CANT_WRITE` | Gagal menulis file ke disk                                  |
+| `UPLOAD_ERR_EXTENSION`  | Upload dihentikan oleh ekstensi PHP                         |
 
 ### Nama File Aman
+
 Format: `{prefix}{tanggal}_{jam}_{random_hex}.{ext}`
 
 Contoh: `foto_20260226_183045_a1b2c3d4.webp`
@@ -296,21 +302,30 @@ Contoh: `foto_20260226_183045_a1b2c3d4.webp`
 
 ```html
 <form action="/users/create" method="POST" enctype="multipart/form-data">
-    @csrf
+  @csrf
 
-    <input type="text" name="name" value="{{ old('name') }}" placeholder="Nama">
-    @error('name')
-        <span class="error">{{ $message }}</span>
-    @enderror
+  <input type="text" name="name" value="{{ old('name') }}" placeholder="Nama" />
+  @error('name')
+  <span class="error">{{ $message }}</span>
+  @enderror
 
-    <input type="email" name="email" value="{{ old('email') }}" placeholder="Email">
+  <input
+    type="email"
+    name="email"
+    value="{{ old('email') }}"
+    placeholder="Email"
+  />
 
-    <input type="file" name="profile_picture" accept="image/jpeg,image/png,image/jpg">
-    @error('profile_picture')
-        <span class="error">{{ $message }}</span>
-    @enderror
+  <input
+    type="file"
+    name="profile_picture"
+    accept="image/jpeg,image/png,image/jpg"
+  />
+  @error('profile_picture')
+  <span class="error">{{ $message }}</span>
+  @enderror
 
-    <button type="submit">Simpan</button>
+  <button type="submit">Simpan</button>
 </form>
 ```
 
@@ -343,6 +358,7 @@ flowchart TD
 ## ✅ Best Practices
 
 ### DO's ✅
+
 1. Selalu simpan file di **`private-uploads/`** (bukan public)
 2. Gunakan **`UploadHandler::handleUploadToWebP()`** untuk gambar
 3. Selalu cek **`UploadHandler::isError()`** setelah upload
@@ -351,6 +367,7 @@ flowchart TD
 6. Gunakan **Service** untuk business logic, bukan Controller
 
 ### DON'Ts ❌
+
 1. ❌ Jangan simpan file ke `public/`
 2. ❌ Jangan pakai nama file asli dari user
 3. ❌ Jangan skip validasi ekstensi

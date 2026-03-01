@@ -1,346 +1,110 @@
-# 🌐 Web Command Center
+# 🌐 Web Command Center (WCC)
 
-## Overview
-
-**Web Command Center** adalah fitur killer dari The Framework yang memungkinkan Anda menjalankan operasi maintenance database dan sistem **langsung dari browser**, tanpa perlu akses SSH.
-
-### Why This Matters?
-
-Mayoritas hosting gratis (InfinityFree, 000webhost, Hostinger Free) **tidak menyediakan SSH access**. Developer terpaksa:
-
-- ❌ Upload SQL file manual via phpMyAdmin
-- ❌ Edit file via FTP satu-per-satu
-- ❌ Tidak bisa run migration otomatis
-
-**The Framework solves this!** ✅
+**Web Command Center** adalah fitur _flagship_ dari The Framework yang memungkinkan pengelolaan server, database, dan maintenance aplikasi **langsung dari browser**. Dirancang khusus untuk lingkungan yang tidak memiliki akses SSH (seperti Shared Hosting gratisan).
 
 ---
 
-## 🔐 Security (v5.0.1)
+## 🏗️ Arsitektur & Keamanan
 
-Web Command Center dilindungi dengan **3-layer security**:
+WCC beroperasi melalui file `routes/system.php` dan dilindungi oleh **3-Layer Premium Security** untuk memastikan akses hanya diberikan kepada pihak berwenang.
 
-### Layer 1: Feature Toggle
+### 1. Layer 1: Master Switch
+
+Fitur ini mati secara default dan harus diaktifkan secara eksplisit di file `.env`.
 
 ```bash
-# .env
-ALLOW_WEB_MIGRATION=true  # Must be explicitly enabled
+ALLOW_WEB_MIGRATION=true
 ```
 
-### Layer 2: IP Whitelist
+### 2. Layer 2: IP Whitelisting (Dynamic)
+
+Hanya IP yang terdaftar yang bisa melihat dashboard WCC.
 
 ```bash
-# .env
-SYSTEM_ALLOWED_IPS=127.0.0.1,203.45.67.89
-# Comma-separated IP addresses
-# Use '*' to allow all (NOT RECOMMENDED)
+SYSTEM_ALLOWED_IPS=127.0.0.1,182.1.2.3
+# Gunakan '*' untuk mengizinkan semua (SANGAT TIDAK DISARANKAN di Production)
 ```
 
-### Layer 3: Basic Authentication (Required)
+> [!TIP]
+> Alamat IP saat ini dapat diperiksa melalui endpoint `/_system/my-ip`.
+
+### 3. Layer 3: Basic Authentication (Hashed)
+
+Sistem akan meminta username dan password sebelum dashboard ditampilkan.
 
 ```bash
-# .env
 SYSTEM_AUTH_USER=admin
-SYSTEM_AUTH_PASS=$2y$12$.... # Use php artisan setup to generate
+SYSTEM_AUTH_PASS=$2y$12$.... # Gunakan bcrypt hashed password
 ```
 
 ---
 
-## 🚀 Available Endpoints
+## 🚀 Dashboard & Endpoints
 
-### 1. Database Migration
+Akses dashboard utama melalui: `https://domain.com/_system`
 
-**URL:** `/_system/migrate`
+### 🗄️ Database Management
 
-**Function:** Menjalankan semua migration files yang belum dieksekusi
+| Endpoint                    | Perintah    | Deskripsi                                               |
+| --------------------------- | ----------- | ------------------------------------------------------- |
+| `/_system/migrate`          | `migrate`   | Jalankan migrasi database yang pending.                 |
+| `/_system/migrate/rollback` | `rollback`  | Batalkan batch migrasi terakhir.                        |
+| `/_system/migrate/fresh`    | `fresh`     | **DANGER**: Drop semua tabel dan migrasi ulang.         |
+| `/_system/seed`             | `db:seed`   | Isi database dengan data dummy dari seeder.             |
+| `/_system/schema`           | `db:schema` | **Premium Inspector**: Lihat daftar tabel & baris data. |
+| `/_system/test-connection`  | `db:test`   | Uji latensi dan status koneksi database.                |
 
-**Example:**
+### 🧹 Maintenance & Optimization
 
-```
-https://yoursite.com/_system/migrate
-```
+| Endpoint                 | Deskripsi                                                   |
+| ------------------------ | ----------------------------------------------------------- |
+| `/_system/optimize`      | Bersihkan kompilasi view Blade dan reset OpCache.           |
+| `/_system/clear-cache`   | Hapus file cache manual dan file log aplikasi.              |
+| `/_system/storage-link`  | Buat _symbolic link_ untuk folder storage di folder public. |
+| `/_system/asset-publish` | Salin ulang assets dari `resources` ke `public/assets`.     |
 
-**Response:**
+### 📊 Monitoring & Diagnostics
 
-```
-⚙️ SYSTEM MIGRATION TOOL
-==============================
-✔ Migrated: 2026_01_01_create_users_table
-✔ Migrated: 2026_01_02_create_posts_table
-
-✨ Migration Completed!
-```
-
----
-
-### 2. Database Seeding
-
-**URL:** `/_system/seed`
-
-**Function:** Menjalankan semua seeder files
-
-**Example:**
-
-```
-https://yoursite.com/_system/seed
-```
-
-**Response:**
-
-```
-🌱 SYSTEM DATABASE SEEDER
-==============================
-✔ Seeded: UserSeeder
-✔ Seeded: PostSeeder
-
-✨ Database Seeding Completed!
-```
+| Endpoint            | Deskripsi                                                         |
+| ------------------- | ----------------------------------------------------------------- |
+| `/_system/status`   | Cek versi PHP dan status ekstensi yang dibutuhkan.                |
+| `/_system/diagnose` | Diagnosa mendalam Session, CSRF, dan izin tulis folder.           |
+| `/_system/logs`     | Lihat 100 baris terakhir dari log aplikasi secara real-time.      |
+| `/_system/routes`   | Daftar seluruh rute yang terdaftar di aplikasi.                   |
+| `/_system/health`   | Status kesehatan sistem dalam format JSON (untuk uptime monitor). |
 
 ---
 
-### 3. Clear Cache
+## ⚡ Feature Spotlight: Web Tinker (REPL)
 
-**URL:** `/_system/clear-cache`
+**Web Tinker** adalah salah satu fitur paling powerful di WCC. Kode PHP dapat dijalankan secara interaktif langsung di server tanpa perlu melakukan deployment berulang kali.
 
-**Function:** Menghapus cache views dan framework cache
+**URL:** `/_system/tinker`
 
-**Use Case:**
+**Kemampuan:**
 
-- Setelah update view templates
-- Setelah update configuration
-- Aplikasi menampilkan data lama
-
----
-
-### 4. Database Schema Inspector (Paten Feature)
-
-**URL:** `/_system/schema`
-
-**Function:** Melihat daftar tabel dan jumlah baris data secara real-time.
-
-**Example:**
-
-```
-https://yoursite.com/_system/schema
-```
-
-**Response:**
-
-```
-🔍 DATABASE SCHEMA INSPECTOR
-==============================
-Found 2 tables:
-
-Table Name                     | Rows      
----------------------------------------------
-users                          | 150       
-jobs                           | 25        
----------------------------------------------
-✨ Schema scan completed!
-```
+- Test query database menggunakan Model (Auto-aliased).
+- Jalankan business logic secara on-the-fly.
+- Cek hasil kalkulasi fungsi helper.
+- Formatted output yang rapi menggunakan `print_r` logic.
 
 ---
 
-### 5. System Status
+## 🛠️ Panduan Implementasi Production
 
-**URL:** `/_system/status`
+Saat melakukan deployment ke Shared Hosting (seperti Hostinger, Niagahoster, atau InfinityFree):
 
-**Function:** Check PHP version, extensions, dan system info
-
-**Response:**
-
-```
-📊 SYSTEM STATUS
-==============================
-PHP Version: 8.3.0
-Server Software: LiteSpeed
-
-Extension Status:
-pdo_mysql      : OK
-mbstring       : OK
-openssl        : OK
-json           : OK
-ctype          : OK
-```
+1.  **Upload** aplikasi seperti biasa.
+2.  Akses `/_system/my-ip` (endpoint ini tidak memerlukan whitelist) untuk mendapatkan IP publik Anda.
+3.  Konfigurasi `.env` dengan IP tersebut dan aktifkan `ALLOW_WEB_MIGRATION`.
+4.  Buka `/_system/migrate` untuk inisialisasi database.
+5.  **Penting**: Setelah selesai, kembalikan `ALLOW_WEB_MIGRATION=false` untuk keamanan maksimal.
 
 ---
 
-## 📋 Setup Guide
+## ⚠️ Keamanan Lanjutan (Webserver Level)
 
-### For Development (Local)
-
-**Step 1:** Update `.env`
-
-```bash
-APP_ENV=local
-ALLOW_WEB_MIGRATION=true
-SYSTEM_ALLOWED_IPS=127.0.0.1,*
-SYSTEM_AUTH_USER=
-SYSTEM_AUTH_PASS=
-```
-
-**Step 2:** Test access
-
-```bash
-# Open browser
-http://localhost:8080/_system/status
-```
-
----
-
-### For Production (Shared Hosting)
-
-**Step 1:** Update `.env` di server
-
-```bash
-APP_ENV=production
-ALLOW_WEB_MIGRATION=true
-
-# IMPORTANT: Replace with your actual IP
-SYSTEM_ALLOWED_IPS=203.45.67.89
-
-# HIGHLY RECOMMENDED: Enable Basic Auth
-SYSTEM_AUTH_USER=admin
-SYSTEM_AUTH_PASS=super_secure_password_123
-```
-
-**Step 2:** Get your IP address
-
-```bash
-# Visit this URL to see your IP
-https://api.ipify.org
-```
-
-**Step 3:** Test with your IP whitelisted
-
-```
-https://yoursite.com/_system/status
-```
-
-**Step 4:** If successful, run migration
-
-```
-https://yoursite.com/_system/migrate
-```
-
----
-
-## ⚠️ Security Best Practices
-
-### DO's ✅
-
-1. **Always use HTTPS** in production
-2. **Whitelist only your IP** (never use `*` in production)
-3. **Enable Basic Auth** for extra security
-4. **Disable** after deployment complete:
-   ```bash
-   ALLOW_WEB_MIGRATION=false
-   ```
-
-### DON'Ts ❌
-
-1. ❌ Never commit `.env` to Git
-2. ✅ Use `php artisan setup` to generate hashed passwords
-3. ❌ Never use `SYSTEM_ALLOWED_IPS=*` in production
-4. ❌ Never leave `ALLOW_WEB_MIGRATION=true` always on
-
----
-
-## 🔧 Troubleshooting
-
-### Error: "ACCESS DENIED: Your IP is not whitelisted"
-
-**Solution:**
-
-1. Check your current IP: https://api.ipify.org
-2. Add it to `.env`:
-   ```bash
-   SYSTEM_ALLOWED_IPS=127.0.0.1,YOUR_NEW_IP
-   ```
-
-### Error: "AUTHENTICATION REQUIRED"
-
-**Solution:**
-Browser will ask for username/password. Enter:
-
-- Username: Value dari `SYSTEM_AUTH_USER`
-- Password: Value dari `SYSTEM_AUTH_PASS`
-
-### Error: "Invalid Security Key" (DEPRECATED in v5.0.1)
-
-**Note:** APP_KEY requirement was removed in v5.0.1 final release to simplify hosting setup. You only need Basic Auth and IP Whitelist now.
-
----
-
-## 🎯 Real-World Workflow
-
-### Scenario: Deploying to InfinityFree
-
-**Step 1:** Upload files via FTP
-
-```
-- Upload all files EXCEPT vendor/
-- Upload .env.example and rename to .env
-```
-
-**Step 2:** Install dependencies
-
-```
-# InfinityFree provides composer via SSH alternative
-# OR upload vendor/ folder from local
-```
-
-**Step 3:** Configure `.env`
-
-```bash
-DB_HOST=sqlxxx.infinityfreeapp.com
-DB_NAME=ifxxxx_database
-DB_USER=ifxxxx_user
-DB_PASS=your_password
-
-ALLOW_WEB_MIGRATION=true
-SYSTEM_ALLOWED_IPS=YOUR_HOME_IP
-```
-
-**Step 4:** Run migration via browser
-
-```
-https://yoursite.rf.gd/_system/migrate
-```
-
-**Step 5:** Run seeder
-
-```
-https://yoursite.rf.gd/_system/seed
-```
-
-**Step 6:** Disable Web Command Center
-
-```bash
-ALLOW_WEB_MIGRATION=false
-```
-
-**Done!** 🎉
-
----
-
-## 📊 Comparison
-
-| Feature               | Traditional Laravel | The Framework WCC      |
-| --------------------- | ------------------- | ---------------------- |
-| SSH Required          | ✅ Yes              | ❌ No                  |
-| Works on Free Hosting | ❌ No               | ✅ Yes                 |
-| Migration via Browser | ❌ No               | ✅ Yes                 |
-| Security Layers       | 1 (SSH key)         | 3 (Toggle + IP + Auth) |
-| Setup Time            | 30+ min             | 5 min                  |
-
----
-
-## 🎓 Advanced: Block via Webserver
-
-For extra security, block `/_system/*` via Apache/Nginx and only use SSH:
-
-### Apache (.htaccess)
+Untuk perlindungan ekstra, akses ke folder `/_system` dapat diblokir di level web server menggunakan file `.htaccess`:
 
 ```apache
 <LocationMatch "^/_system">
@@ -348,36 +112,17 @@ For extra security, block `/_system/*` via Apache/Nginx and only use SSH:
 </LocationMatch>
 ```
 
-### Nginx
-
-```nginx
-location ~ ^/_system/ {
-    deny all;
-    return 404;
-}
-```
-
-Then use SSH:
-
-```bash
-php artisan migrate
-php artisan db:seed
-```
-
 ---
 
-## 🔗 Related Documentation
+## 🔗 Dokumentasi Terkait
 
 - [Security Guide](security.md)
+- [Database Migrations](migrations.md)
 - [Deployment Guide](deployment.md)
-- [Environment Configuration](environment.md)
-- [Migrations](migrations.md)
 
 ---
 
 <div align="center">
-
-**Web Command Center adalah fitur yang membedakan The Framework!**
 
 [Back to Documentation](README.md) • [Main README](../README.md)
 

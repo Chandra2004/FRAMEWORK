@@ -1,5 +1,6 @@
 <?php
 
+use TheFramework\App\Cache\CacheManager;
 use TheFramework\BladeInit;
 use TheFramework\App\Core\Config;
 use TheFramework\App\Http\Router;
@@ -16,6 +17,7 @@ use TheFramework\Services\UserService;
 
 SessionManager::startSecureSession();
 Config::loadEnv();
+CacheManager::configure();
 
 // --- 📁 AUTO-INITIALIZE STORAGE STRUCTURE 📁 ---
 if (Config::get('APP_ENV') !== 'testing') {

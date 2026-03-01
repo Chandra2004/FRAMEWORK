@@ -1,504 +1,279 @@
-# 🔗 Model Relationships
+# 🔗 Model Relationships (v5.0.1) - Comprehensive Guide
 
-Understanding how to define and use relationships between models.
-
----
-
-## One-to-Many (hasMany)
-
-**A user has many posts**
-
-### Define Relationship
-
-```php
-// app/Models/User.php
-class User extends Model
-{
-    public function posts()
-    {
-        return $this->hasMany(Post::class, 'user_id', 'id');
-        // Parameters: Related Model, Foreign Key, Local Key
-    }
-}
-```
-
-### Usage
-
-```php
-$user = User::find(1);
-
-// Access posts
-$posts = $user->posts;  // Returns array of Post models
-
-// Loop posts
-foreach ($user->posts as $post) {
-    echo $post->title;
-}
-
-// Count posts
-$postCount = count($user->posts);
-```
-
-### Eager Loading
-
-```php
-// ❌ N+1 Problem (Bad)
-$users = User::all();
-foreach ($users as $user) {
-    echo $user->posts[0]->title;  // 1 query per user
-}
-
-// ✅ Solution (Good)
-$users = User::with('posts')->get();  // Only 2 queries total
-foreach ($users as $user) {
-    echo $user->posts[0]->title;
-}
-```
+Sistem ORM The Framework adalah "jembatan" yang sangat kuat untuk menghubungkan antar tabel. Dokumentasi ini merinci setiap aspek relasi, mulai dari definisi dasar hingga optimasi _High-Level_ untuk aplikasi skala enterprise.
 
 ---
 
-## Inverse: Belongs To (belongsTo)
+## 📋 Daftar Isi
 
-**A post belongs to a user**
-
-### Define Relationship
-
-```php
-// app/Models/Post.php
-class Post extends Model
-{
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-        // Parameters: Related Model, Foreign Key, Owner Key
-    }
-}
-```
-
-### Usage
-
-```php
-$post = Post::find(1);
-
-// Access user
-$author = $post->user;
-
-echo $post->user->name;  // Direct property access
-```
+- [1. Definisi Relasi Dasar](#1-definisi-relasi-dasar)
+- [2. Relasi Terhubung (Many-to-Many)](#2-relasi-terhubung-many-to-many)
+- [3. Relasi Melalui (Through)](#3-relasi-melalui-through)
+- [4. Relasi Polimordis (Polymorphic)](#4-relasi-polimorfis-polymorphic)
+- [5. Querying &amp; Performance (Eager Loading)](#5-querying--performance-eager-loading)
+- [6. Relationship Aggregates (Count, Sum, Avg)](#6-relationship-aggregates-count-sum-avg)
+- [7. Relationship Existence (has, whereHas)](#7-relationship-existence-has-wherehas)
+- [8. Operasi Database (Save, Create, Pivot)](#8-operasi-database-save-create-pivot)
+- [9. Fitur Eksklusif Framework](#9-fitur-eksklusif-framework)
 
 ---
 
-## One-to-One (hasOne)
+## 1. Definisi Relasi Dasar
 
-**A user has one profile**
+Relasi didefinisikan sebagai method di dalam Model. Framework secara otomatis akan mengonversi method ini menjadi properti dinamis saat diakses.
 
-### Define Relationship
+### One-to-One (hasOne)
+
+Hubungan 1-ke-1. Contoh: User memiliki 1 Profile.
 
 ```php
-// app/Models/User.php
-class User extends Model
-{
-    public function profile()
-    {
-        return $this->hasOne(Profile::class, 'user_id', 'id');
-    }
-}
-
-// app/Models/Profile.php
-class Profile extends Model
-{
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
+public function profile() {
+    return $this->hasOne(Profile::class, 'user_id', 'id');
 }
 ```
 
-### Usage
+### One-to-Many (hasMany)
+
+Hubungan 1-ke-banyak. Contoh: User memiliki banyak Post.
 
 ```php
-$user = User::find(1);
-
-// Access profile
-$profile = $user->profile;
-
-echo $user->profile->bio;
-echo $user->profile->avatar;
-```
-
----
-
-## Many-to-Many (belongsToMany)
-
-**Users have many roles, roles belong to many users**
-
-### Database Structure
-
-```sql
--- users table
-CREATE TABLE users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255)
-);
-
--- roles table
-CREATE TABLE roles (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(255)
-);
-
--- Pivot table
-CREATE TABLE user_roles (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
-    role_id INT,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (role_id) REFERENCES roles(id)
-);
-```
-
-### Define Relationship
-
-```php
-// app/Models/User.php
-class User extends Model
-{
-    public function roles()
-    {
-        return $this->belongsToMany(
-            Role::class,      // Related model
-            'user_roles',     // Pivot table
-            'user_id',        // Foreign key on pivot
-            'role_id'         // Related key on pivot
-        );
-    }
-}
-
-// app/Models/Role.php
-class Role extends Model
-{
-    public function users()
-    {
-        return $this->belongsToMany(
-            User::class,
-            'user_roles',
-            'role_id',
-            'user_id'
-        );
-    }
+public function posts() {
+    return $this->hasMany(Post::class, 'user_id');
 }
 ```
 
-### Usage
+### Inverse (belongsTo)
+
+Merujuk kembali ke orang tua (sisi yang memiliki Foreign Key).
 
 ```php
-$user = User::find(1);
-
-// Get all roles
-$roles = $user->roles;
-
-foreach ($user->roles as $role) {
-    echo $role->name;
-}
-
-// Check if user has role
-$hasAdmin = in_array('admin', array_column($user->roles, 'name'));
-```
-
----
-
-## Has-Many-Through
-
-**A country has many posts through users**
-
-```
-Country → User → Post
-```
-
-### Define Relationship
-
-```php
-// app/Models/Country.php
-class Country extends Model
-{
-    public function posts()
-    {
-        return $this->hasManyThrough(
-            Post::class,      // Final model
-            User::class,      // Intermediate model
-            'country_id',     // Foreign key on users table
-            'user_id',        // Foreign key on posts table
-            'id',            // Local key on countries table
-            'id'             // Local key on users table
-        );
-    }
-}
-```
-
-### Usage
-
-```php
-$country = Country::find(1);
-
-// Get all posts from users in this country
-$posts = $country->posts;
-```
-
----
-
-## Polymorphic Relations
-
-**Comments can belong to both Post and Video**
-
-### Database Structure
-
-```sql
-CREATE TABLE comments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    content TEXT,
-    commentable_id INT,      -- ID of post or video
-    commentable_type VARCHAR(255)  -- 'App\\Models\\Post' or 'App\\Models\\Video'
-);
-```
-
-### Define Relationship
-
-```php
-// app/Models/Comment.php
-class Comment extends Model
-{
-    public function commentable()
-    {
-        return $this->morphTo();
-    }
-}
-
-// app/Models/Post.php
-class Post extends Model
-{
-    public function comments()
-    {
-        return $this->morphMany(Comment::class, 'commentable');
-    }
-}
-
-// app/Models/Video.php
-class Video extends Model
-{
-    public function comments()
-    {
-        return $this->morphMany(Comment::class, 'commentable');
-    }
-}
-```
-
-### Usage
-
-```php
-// Get comments for a post
-$post = Post::find(1);
-$comments = $post->comments;
-
-// Get parent of a comment
-$comment = Comment::find(1);
-$parent = $comment->commentable;  // Could be Post or Video
-```
-
----
-
-## Nested Eager Loading
-
-### Load Multiple Levels
-
-```php
-// Load posts with their comments and comment authors
-$posts = Post::with(['comments', 'comments.user'])->get();
-
-// Dot notation (same as above)
-$posts = Post::with('comments.user')->get();
-
-// Multiple relations
-$posts = Post::with(['user', 'comments.user', 'tags'])->get();
-```
-
-### With Constraints
-
-```php
-$users = User::with([
-    'posts' => function($query) {
-        $query->where('published', true)
-              ->orderBy('created_at', 'DESC')
-              ->limit(5);
-    },
-    'posts.comments' => function($query) {
-        $query->where('approved', true);
-    }
-])->get();
-```
-
----
-
-## Lazy Eager Loading
-
-Load relationships after model is retrieved:
-
-```php
-$posts = Post::all();
-
-// Later, load relationships
-$posts = Post::loadRelations($posts, ['user', 'comments']);
-```
-
----
-
-## Relationship Methods vs Properties
-
-### As Method (Query Builder)
-
-```php
-$user->posts()  // Returns QueryBuilder, can chain methods
-    ->where('published', true)
-    ->orderBy('created_at', 'DESC')
-    ->get();
-```
-
-### As Property (Direct Access)
-
-```php
-$user->posts  // Returns collection of posts (executes query)
-
-foreach ($user->posts as $post) {
-    // ...
-}
-```
-
----
-
-## Counting Related Models
-
-```php
-// Count posts for each user
-$users = User::query()
-    ->select('users.*')
-    ->selectRaw('COUNT(posts.id) as posts_count')
-    ->leftJoin('posts', 'users.id', '=', 'posts.user_id')
-    ->groupBy('users.id')
-    ->get();
-
-foreach ($users as $user) {
-    echo "{$user->name} has {$user->posts_count} posts";
-}
-```
-
----
-
-## Best Practices
-
-### ✅ DO
-
-```php
-// Use eager loading to prevent N+1
-$posts = Post::with('user')->get();
-
-// Name relationships clearly
-public function author() { ... }  // Clear
-public function user() { ... }    // OK
-public function u() { ... }       // ❌ Bad
-
-// Use relationship methods for queries
-$user->posts()->where('published', true)->get();
-```
-
-### ❌ DON'T
-
-```php
-// Don't create N+1 queries
-$posts = Post::all();
-foreach ($posts as $post) {
-    echo $post->user->name;  // N queries
-}
-
-// Don't load unnecessary data
-Post::with('user', 'comments', 'tags', 'categories')->get();
-// Only load what you need!
-```
-
----
-
-## Real-World Example
-
-### Blog System
-
-```php
-// Models with relationships
-
-// User.php
-class User extends Model
-{
-    public function posts() {
-        return $this->hasMany(Post::class, 'user_id');
-    }
-
-    public function comments() {
-        return $this->hasMany(Comment::class, 'user_id');
-    }
-}
-
-// Post.php
-class Post extends Model
-{
-    public function author() {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function comments() {
-        return $this->hasMany(Comment::class, 'post_id');
-    }
-
-    public function tags() {
-        return $this->belongsToMany(Tag::class, 'post_tags', 'post_id', 'tag_id');
-    }
-}
-
-// Comment.php
-class Comment extends Model
-{
-    public function post() {
-        return $this->belongsTo(Post::class, 'post_id');
-    }
-
-    public function user() {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-}
-
-// Usage in controller
-public function showPost($id)
-{
-    $post = Post::with(['author', 'comments.user', 'tags'])->findOrFail($id);
-
-    return view('post.show', [
-        'post' => $post,
-        'author' => $post->author,
-        'comments' => $post->comments,
-        'tags' => $post->tags
+public function author() {
+    return $this->belongsTo(User::class, 'user_id')->withDefault([
+        'name' => 'Anonymous' // Objek default jika relasi NULL
     ]);
 }
 ```
 
 ---
 
-## Next Steps
+## 2. Relasi Terhubung (Many-to-Many)
 
-- 📖 [ORM Guide](orm.md)
-- 📖 [Database](database.md)
-- 📖 [Query Builder](query-builder.md)
-- 📖 [Migrations](migrations.md)
+Menggunakan tabel pivot (perantara).
+
+### Definisi Dasar
+
+```php
+public function roles() {
+    return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
+}
+```
+
+### Kustomisasi Pivot
+
+Anda dapat mengambil kolom tambahan dari tabel pivot atau mengganti nama "pivot" menjadi yang lain.
+
+```php
+return $this->belongsToMany(Role::class, 'user_roles')
+            ->withPivot('expired_at', 'status')
+            ->withTimestamps()
+            ->as('membership'); // Akses: $user->roles[0]->membership->status
+```
+
+---
+
+## 3. Relasi Melalui (Through)
+
+### Has-Many-Through
+
+Mengakses data di tabel ketiga melalui tabel kedua.
+**Country → User → Post** (Cari posts untuk suatu Negara).
+
+```php
+public function posts() {
+    return $this->hasManyThrough(Post::class, User::class, 'country_id', 'user_id');
+}
+```
+
+---
+
+## 4. Relasi Polimorfis (Polymorphic)
+
+Memungkinkan satu tabel terkait dengan banyak Model berbeda hanya dengan satu set kolom.
+
+### Morph One-to-Many
+
+Contoh: **Comment** bisa milik **Post** atau **Video**.
+
+```php
+// Model Comment
+public function commentable() {
+    return $this->morphTo(); // Otomatis baca commentable_id & commentable_type
+}
+
+// Model Post
+public function comments() {
+    return $this->morphMany(Comment::class, 'commentable');
+}
+```
+
+### Morph Many-to-Many
+
+Contoh: **Tag** yang bisa dipasang di **Post** dan **Product**.
+
+```php
+// Model Post
+public function tags() {
+    return $this->morphToMany(Tag::class, 'taggable');
+}
+```
+
+---
+
+## 5. Querying & Performance (Eager Loading)
+
+Gunakan `with()` untuk mencegah masalah **N+1 Query** yang sering merusak performa database.
+
+### Eager Loading Dasar
+
+```php
+$posts = Post::with(['author', 'comments.user'])->get();
+```
+
+### Constrained Eager Loading
+
+Membatasi data relasi yang ditarik.
+
+```php
+$users = User::with(['posts' => function($query) {
+    $query->where('is_published', true)->orderBy('views', 'DESC');
+}])->get();
+```
+
+### Lazy Eager Loading
+
+Tarik data relasi SETELAH model berhasil didapatkan.
+
+```php
+$users = User::all();
+$users->loadRelations($users, ['profile', 'posts']); // Eksklusif The Framework
+```
+
+---
+
+## 6. Relationship Aggregates (Count, Sum, Avg)
+
+Tarik statistik relasi tanpa harus menarik seluruh datanya secara manual.
+
+```php
+$users = User::withCount('posts')
+             ->withSum('orders', 'total_amount')
+             ->withMax('posts', 'created_at')
+             ->get();
+
+echo $users[0]->posts_count;
+echo $users[0]->orders_sum_total_amount;
+```
+
+---
+
+## 7. Relationship Existence (has, whereHas)
+
+Memfilter hasil berdasarkan keberadaan atau kondisi di tabel relasinya.
+
+```php
+// Cari user yang punya minimal 3 post
+$users = User::has('posts', '>=', 3)->get();
+
+// Cari user yang punya post mengandung kata 'AI'
+$users = User::whereHas('posts', function($q) {
+    $q->where('title', 'LIKE', '%AI%');
+})->get();
+
+// Kebalikannya: User yang TIDAK punya post
+$users = User::doesntHave('posts')->get();
+```
+
+---
+
+## 8. Operasi Database (Save, Create, Pivot)
+
+### Memasukkan Data Relasi
+
+```php
+$user = User::find(1);
+
+// Create (Langsung simpan ke DB)
+$user->posts()->create(['title' => 'Halo World']);
+
+// Save (Simpan instance model)
+$post = new Post(['title' => 'Post Baru']);
+$user->posts()->save($post);
+```
+
+### Pivot Management (attach, sync, toggle)
+
+Hanya untuk relasi `belongsToMany`.
+
+```php
+// Tambah ID (Tanpa menghapus yang ada)
+$user->roles()->attach(1, ['status' => 'active']);
+
+// Sinkronisasi (Hanya ID ini yang tersisa di DB)
+$user->roles()->sync([1, 2, 5]);
+
+// Toggle (Jika ada hapus, jika tidak ada tambah)
+$user->roles()->toggle([1, 3]);
+```
+
+---
+
+## 9. Fitur Eksklusif Framework
+
+### Touching Parent Timestamps
+
+Otomatis mengupdate `updated_at` tabel orang tua saat tabel anak berubah.
+
+```php
+// Di Model Comment
+protected $touches = ['post']; // Saat comment diedit, updated_at milik Post ikut berubah
+
+public function post() {
+    return $this->belongsTo(Post::class);
+}
+```
+
+### ofEach() — Smart Partitioning (Premium)
+
+Fitur unik untuk membatasi jumlah item per grup. Sangat berguna untuk landing page.
+
+```php
+// Ambil setiap User, dan UNTUK SETIAP USER, hanya ambil 3 post terbarunya.
+$users = User::with(['posts' => fn($q) => $q->latest()->ofEach(3)])->get();
+```
+
+### Specialized hasOne of Many
+
+```php
+// Di Model User - Relasi hasOne yang mengambil data terbaru dari hasMany
+public function latest_post() {
+    return $this->latestOfMany('id');
+}
+```
+
+---
+
+## 💡 Best Practices
+
+1. **Gunakan Eager Loading** (`with`) hampir selalu jika Anda akan melakukan looping hasil relasi di View.
+2. **Gunakan `whereHas`** alih-alih menarik ribuan data lalu memfilternya via PHP (biarkan database yang bekerja).
+3. **Hati-hati dengan `touches`** pada relasi yang sangat besar karena bisa memicu beban update berantai.
 
 ---
 
 <div align="center">
 
-[Back to Documentation](README.md) • [Main README](../README.md)
+**Mastering Relationships means Mastering Data Flow.**
+
+[Kembali ke Dokumentasi Utama](README.md)
 
 </div>

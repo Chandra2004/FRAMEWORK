@@ -1,95 +1,121 @@
-# 🚀 REST API Development Tutorial
+# 🚀 REST API Development — v5.0.1 Premium
 
-**Coming Soon!**
-
-This tutorial will cover:
-
-1. RESTful API Principles
-2. JSON Response Formatting
-3. API Authentication (JWT/Bearer Token)
-4. Rate Limiting
-5. API Versioning
-6. Error Handling
-7. API Documentation (Swagger)
+Panduan ini menjelaskan cara membangun antarmuka pemrograman aplikasi (API) yang aman, cepat, dan terstandarisasi menggunakan **The Framework v5.0.1**.
 
 ---
 
-### 3. API Authentication (Bearer Token)
+## 🏗️ Struktur Dasar API
 
-Framework mendukung autentikasi API menggunakan Token. Berikut cara proteksi rute API:
+Respon API di The Framework selalu menggunakan format JSON yang konsisten.
 
-**Rute API dengan Middleware:**
+### 1. Controller API
 
-```php
-Router::group(['prefix' => '/api/v1', 'middleware' => [ApiAuthMiddleware::class]], function() {
-    Router::get('/profile', [ProfileController::class, 'index']);
-});
-```
-
-**Controller Login (Generate Token):**
+Gunakan helper `Helper::json()` atau method `$this->json()` (jika tersedia di base controller) untuk memberikan respon.
 
 ```php
-public function login() {
-    $user = User::where('email', $_POST['email'])->first();
+namespace TheFramework\Http\Controllers\Api;
 
-    if ($user && Helper::verify_password($_POST['password'], $user->password)) {
-        $token = Helper::authToken(['id' => $user->id]); // Buat token JWT-like
-        return $this->json(['token' => $token]);
+use TheFramework\Helpers\Helper;
+use TheFramework\Models\Product;
+
+class ProductApiController
+{
+    public function index()
+    {
+        $products = Product::latest()->get();
+
+        return Helper::json([
+            'status'  => 'success',
+            'data'    => $products,
+            'message' => 'Data produk berhasil dimuat.'
+        ]);
     }
-
-    return $this->json(['error' => 'Unauthorized'], 401);
 }
 ```
 
 ---
 
-## 🛡️ Rate Limiting
+## 🛡️ Keamanan & Autentikasi (Bearer Token)
 
-Lindungi API Anda dari serangan brute force atau spamming.
+The Framework menyediakan `ApiAuthMiddleware` untuk melindungi endpoint Anda.
+
+### 1. Mendaftarkan Rute Terproteksi
+
+Tambahkan middleware pada grup rute API di `routes/web.php` atau `routes/api.php`:
 
 ```php
-use TheFramework\App\RateLimiter;
+use TheFramework\App\Http\Router;
+use TheFramework\Middleware\ApiAuthMiddleware;
 
-public function createUser() {
-    if (RateLimiter::tooManyAttempts('api-create-' . Helper::get_client_ip(), 5, 60)) {
-        return $this->json(['error' => 'Too many requests'], 429);
+Router::group(
+    [
+        'prefix' => '/api/v1',
+        'middleware' => [ApiAuthMiddleware::class]
+    ],
+    function() {
+        Router::get('/profile', ProfileApiController::class, 'me');
+        Router::post('/products', ProductApiController::class, 'store');
     }
+);
+```
 
-    // ... proses simpan ...
+### 2. Cara Kerja Authentikasi
+
+Middleware akan mengecek header `Authorization: Bearer <token>`. Token ini kemudian divalidasi ke kolom `api_token` di tabel `users`.
+
+---
+
+## ⏱️ Rate Limiting
+
+Lindungi resource Anda dari serangan brute-force menggunakan `RateLimiter`.
+
+```php
+use TheFramework\App\Http\RateLimiter;
+use TheFramework\Helpers\Helper;
+
+public function login()
+{
+    $key = 'login-attempt-' . Helper::get_client_ip();
+
+    // Batasi 5 kali percobaan per 60 detik
+    RateLimiter::check($key, 5, 60);
+
+    // Logika login...
 }
 ```
 
 ---
 
-## 📝 Dokumentasi API (OpenAPI)
+## 🔍 Standar HTTP Status Codes
 
-Sangat disarankan untuk mendokumentasikan API Anda menggunakan standar OpenAPI/Swagger.
+Gunakan status code yang tepat untuk setiap respon:
 
-1. Simpan spesifikasi API Anda di `public/api-docs.json`.
-2. Gunakan **Swagger UI** (tersedia sebagai paket composer atau via CDN) untuk menampilkan dokumentasi yang interaktif.
-
-```html
-<!-- Contoh di view docs-api.blade.php -->
-<div id="swagger-ui"></div>
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-<script>
-  SwaggerUIBundle({
-    url: "/api-docs.json",
-    dom_id: "#swagger-ui",
-  });
-</script>
-```
+| Code  | Status            | Deskripsi                                |
+| :---- | :---------------- | :--------------------------------------- |
+| `200` | OK                | Request berhasil.                        |
+| `201` | Created           | Resource baru berhasil dibuat.           |
+| `400` | Bad Request       | Validasi gagal atau input salah.         |
+| `401` | Unauthorized      | Token tidak valid atau tidak disertakan. |
+| `403` | Forbidden         | Akses ditolak (izin tidak cukup).        |
+| `404` | Not Found         | Resource tidak ditemukan.                |
+| `429` | Too Many Requests | Terkena batas Rate Limit.                |
+| `500` | Server Error      | Kesalahan internal pada server.          |
 
 ---
 
-## 🔍 Tips API Development
+## 📝 Best Practices
 
-1. **Versioning:** Gunakan prefix `/v1/`, `/v2/` agar perubahan di masa depan tidak merusak aplikasi user yang sudah ada.
-2. **Standard Status Codes:**
-   - `200 OK`: Berhasil.
-   - `201 Created`: Berhasil membuat data baru.
-   - `400 Bad Request`: Input salah.
-   - `401 Unauthorized`: Belum login/token salah.
-   - `403 Forbidden`: Login berhasil tapi tidak punya akses.
-   - `429 Too Many Requests`: Kena batasan rate limit.
-3. **JSON Only:** Pastikan header `Content-Type: application/json` selalu dikirim.
+1. **Versioning**: Selalu gunakan prefix versi (misal `/v1/`) agar integrasi aplikasi client tidak rusak saat ada perubahan besar di masa depan.
+2. **HTTPS**: Selalu jalankan API di atas protokol HTTPS untuk mengamankan Bearer Token selama transmisi.
+3. **Filtering & Pagination**: Jangan mengembalikan seluruh data ribuan baris sekaligus. Gunakan method `->paginate()` dari Model.
+4. **Validation**: Gunakan `FormRequest` untuk memvalidasi input API agar pesan error tetap konsisten.
+
+---
+
+<div align="center">
+
+**The Framework API Engine — Fast & Secure** ⚡
+
+[Back to Documentation](README.md) • [Main README](../README.md)
+
+</div>

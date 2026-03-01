@@ -4,12 +4,22 @@ namespace TheFramework\App\Http;
 
 use TheFramework\BladeInit;
 use Exception;
+use Throwable;
 
 class View
 {
+    /**
+     * Data yang dibagikan ke seluruh view (Global Data).
+     */
     protected static array $shared = [];
 
-    public static function share(string $key, $value = null)
+    /**
+     * Bagikan data ke seluruh view (Shared Data).
+     * 
+     * @param string|array $key
+     * @param mixed $value
+     */
+    public static function share($key, $value = null)
     {
         if (is_array($key)) {
             self::$shared = array_merge(self::$shared, $key);
@@ -18,34 +28,78 @@ class View
         }
     }
 
-    public static function render(string $view, $model = [])
+    /**
+     * Render view dengan urutan prioritas:
+     * 1. Blade Engine (.blade.php)
+     * 2. Native PHP Fallback (.php)
+     * 
+     * @param string $view Nama view (dot notation atau slash)
+     * @param array $model Data lokal untuk view
+     */
+    public static function render(string $view, array $model = [])
     {
-        $bladeView = str_replace(['/', '\\'], '.', $view);
-        $model = array_merge(self::$shared, $model);
+        // Standarisasi nama view (dot notation)
+        $view = str_replace(['/', '\\'], '.', $view);
+        $data = array_merge(self::$shared, $model);
 
+        // 1. Coba menggunakan Blade Engine (Prioritas Utama)
         try {
-            $rendered = BladeInit::getInstance()->make($bladeView, $model)->render();
-            echo $rendered;
-            return;
-        } catch (\Throwable $e) {
-            // Re-throw to global handler for premium display
+            $factory = BladeInit::getInstance();
+            if ($factory && $factory->exists($view)) {
+                echo $factory->make($view, $data)->render();
+                return;
+            }
+        } catch (Throwable $e) {
+            // Jika ada error di dalam file Blade, teruskan agar tertangkap global handler
             throw $e;
         }
 
-        // Fallback for native PHP views (ONLY if it's a plain .php file, NOT .blade.php)
+        // 2. Fallback ke Native PHP views
         $viewPath = str_replace('.', '/', $view);
-        $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
-
-        $fallbackPath = $root . '/resources/views/' . $viewPath . '.php';
+        $fallbackPath = base_path('resources/views/' . $viewPath . '.php');
 
         if (file_exists($fallbackPath)) {
-            extract(array_merge(self::$shared, $model));
+            extract($data);
             require $fallbackPath;
             return;
         }
 
-        $errorDetail = "View [{$view}] could not be rendered with Blade and fallback was not found. \n" .
-            "Tried fallback path: $fallbackPath";
+        // 3. Error jika tidak ditemukan sama sekali
+        $checkedPaths = [
+            "Blade: resources/views/" . $viewPath . ".blade.php",
+            "Native: resources/views/" . $viewPath . ".php"
+        ];
+
+        $errorDetail = "View [{$view}] not found.\n" . implode("\n", $checkedPaths);
         throw new Exception($errorDetail);
+    }
+
+    /**
+     * Alias untuk render - Memudahkan pemanggilan sub-view (Include).
+     */
+    public static function partial(string $view, array $data = [])
+    {
+        self::render($view, $data);
+    }
+
+    /**
+     * Memeriksa apakah sebuah view tersedia di filesystem.
+     */
+    public static function exists(string $view): bool
+    {
+        $view = str_replace(['/', '\\'], '.', $view);
+
+        // Cek Blade
+        try {
+            $factory = BladeInit::getInstance();
+            if ($factory && $factory->exists($view)) {
+                return true;
+            }
+        } catch (Throwable $e) {
+        }
+
+        // Cek Native
+        $viewPath = str_replace('.', '/', $view);
+        return file_exists(base_path('resources/views/' . $viewPath . '.php'));
     }
 }

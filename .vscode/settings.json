@@ -26,7 +26,7 @@
         "*.pdf": "cweijan.officeViewer",
         "*.zip": "cweijan.officeViewer",
         "*.rar": "cweijan.officeViewer",
-        "*.md": "markdown-preview-enhanced",
+        "*.md": "cweijan.markdownViewer",
         "*.markdown": "cweijan.markdownViewer"
     },
     "markdown-preview-enhanced.codeBlockTheme": "github-dark.css",

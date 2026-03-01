@@ -61,21 +61,43 @@ class SetupCommand extends BaseCommand
             } else {
                 $hashed = password_hash($password, PASSWORD_BCRYPT);
                 $safeHash = str_replace('$', '\\$', $hashed);
-                
+
                 $env = preg_replace('/^SYSTEM_AUTH_USER=.*/m', "SYSTEM_AUTH_USER={$username}", $env);
-                if (!preg_match('/^SYSTEM_AUTH_USER=/m', $env)) $env .= "\nSYSTEM_AUTH_USER={$username}";
-                
+                if (!preg_match('/^SYSTEM_AUTH_USER=/m', $env))
+                    $env .= "\nSYSTEM_AUTH_USER={$username}";
+
                 $env = preg_replace('/^SYSTEM_AUTH_PASS=.*/m', "SYSTEM_AUTH_PASS={$safeHash}", $env);
-                if (!preg_match('/^SYSTEM_AUTH_PASS=/m', $env)) $env .= "\nSYSTEM_AUTH_PASS={$hashed}";
+                if (!preg_match('/^SYSTEM_AUTH_PASS=/m', $env))
+                    $env .= "\nSYSTEM_AUTH_PASS={$hashed}";
 
                 file_put_contents('.env', $env);
                 $this->success("Security configured: User [$username] Hashed Password Set.");
             }
         }
 
+        // 4. Database Configuration
+        $this->line("\n──────────────────────────────────────────────────", self::COLOR_MAGENTA);
+        $this->line("  DATABASE CONFIGURATION", self::STYLE_BOLD . self::COLOR_CYAN);
+        $this->line("──────────────────────────────────────────────────", self::COLOR_MAGENTA);
+
+        if ($this->confirm("Konfigurasi database sekarang?", true)) {
+            $dbHost = $this->ask("DB Host", "127.0.0.1");
+            $dbName = $this->ask("DB Name", "the_framework");
+            $dbUser = $this->ask("DB User", "root");
+            $dbPass = $this->ask("DB Password", "");
+
+            $env = preg_replace('/^DB_HOST=.*/m', "DB_HOST={$dbHost}", $env);
+            $env = preg_replace('/^DB_DATABASE=.*/m', "DB_DATABASE={$dbName}", $env);
+            $env = preg_replace('/^DB_USERNAME=.*/m', "DB_USERNAME={$dbUser}", $env);
+            $env = preg_replace('/^DB_PASSWORD=.*/m', "DB_PASSWORD={$dbPass}", $env);
+
+            file_put_contents('.env', $env);
+            $this->success("Database configuration saved to .env");
+        }
+
         $this->info("Memperbarui composer autoload...");
         passthru('composer dump-autoload');
-        
+
         $this->success("Penyetelan Framework selesai! Selamat berkarya.");
     }
 }

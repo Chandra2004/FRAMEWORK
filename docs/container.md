@@ -172,7 +172,11 @@ $service = $container->make(OrderService::class);
 3. Cek apakah parameter sudah diberikan manual?
 4. Cek apakah type-hint adalah class/interface? → Auto-resolve
 5. Cek apakah ada default value? → Gunakan default
-6. Throw CannotResolveException
+6. Cek apakah nullable? → Gunakan null
+7. Throw RuntimeException
+
+> [!IMPORTANT]
+> **Exception Bubbling:** Jika saat resolving dependency terjadi `ValidationException` atau `AuthorizationException`, Container sengaja tidak menangkapnya agar bisa di-handle oleh Exception Handler Global untuk diteruskan ke user.
 ```
 
 ### Circular Dependency Detection
@@ -383,20 +387,20 @@ $container->afterResolving(UserService::class, function ($service, $container) {
 ### Dependency Tree
 
 ```php
-// Visualisasikan dependency tree sebuah class
+// Visualisasikan dependency tree (array structure)
 $tree = $container->getDependencyTree(OrderController::class);
-echo $tree;
+print_r($tree);
 
-// Output:
-// OrderController
-//   ├── OrderService
-//   │   ├── OrderRepository
-//   │   │   └── Database
-//   │   └── PaymentGateway
-//   ├── UserService
-//   │   └── UserRepository
-//   │       └── Database
-//   └── CacheManager
+/**
+ * Output Array:
+ * [
+ *   "OrderService" => [
+ *      "OrderRepository" => ["Database" => []],
+ *      "PaymentGateway" => []
+ *   ],
+ *   "$currency" => "string"
+ * ]
+ */
 ```
 
 ### Summary
@@ -404,16 +408,16 @@ echo $tree;
 ```php
 echo $container->summary();
 
-// Output:
-// ========================================
-// CONTAINER SUMMARY
-// ========================================
-// Bindings    : 15
-// Singletons  : 8
-// Aliases     : 5
-// Tags        : 3
-// Contextual  : 2
-// ========================================
+/**
+ * Output:
+ * 📊 Container Summary
+ * ─────────────────────────────────────────────
+ *    Bindings:    15
+ *    Singletons:  8
+ *    Aliases:     5
+ *    Tags:        3
+ *    Contextual:  2
+ */
 ```
 
 ### List All Bindings
