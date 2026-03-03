@@ -10,8 +10,8 @@ use TheFramework\Middleware\CsrfMiddleware;
 use TheFramework\App\Core\Container;
 use TheFramework\App\Database\Database;
 use TheFramework\App\Http\Request;
-use TheFramework\App\Http\RateLimiter;
 use TheFramework\App\Exceptions\Handler;
+use TheFramework\App\RateLimiter;
 use TheFramework\Helpers\Helper;
 use TheFramework\Services\UserService;
 
