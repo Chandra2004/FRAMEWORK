@@ -87,9 +87,9 @@ class SetupCommand extends BaseCommand
             $dbPass = $this->ask("DB Password", "");
 
             $env = preg_replace('/^DB_HOST=.*/m', "DB_HOST={$dbHost}", $env);
-            $env = preg_replace('/^DB_DATABASE=.*/m', "DB_DATABASE={$dbName}", $env);
-            $env = preg_replace('/^DB_USERNAME=.*/m', "DB_USERNAME={$dbUser}", $env);
-            $env = preg_replace('/^DB_PASSWORD=.*/m', "DB_PASSWORD={$dbPass}", $env);
+            $env = preg_replace('/^DB_NAME=.*/m', "DB_NAME={$dbName}", $env);
+            $env = preg_replace('/^DB_USER=.*/m', "DB_USER={$dbUser}", $env);
+            $env = preg_replace('/^DB_PASS=.*/m', "DB_PASS={$dbPass}", $env);
 
             file_put_contents('.env', $env);
             $this->success("Database configuration saved to .env");
