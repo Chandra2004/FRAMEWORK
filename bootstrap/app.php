@@ -11,7 +11,7 @@ use TheFramework\App\Core\Container;
 use TheFramework\App\Database\Database;
 use TheFramework\App\Http\Request;
 use TheFramework\App\Exceptions\Handler;
-use TheFramework\App\RateLimiter;
+use TheFramework\App\Http\RateLimiter;
 use TheFramework\Helpers\Helper;
 use TheFramework\Services\UserService;
 

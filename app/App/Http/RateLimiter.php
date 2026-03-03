@@ -1,6 +1,6 @@
 <?php
 
-namespace TheFramework\App;
+namespace TheFramework\App\Http;
 
 use TheFramework\App\Core\Logging;
 use TheFramework\App\Core\Config;
