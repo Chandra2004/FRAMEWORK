@@ -395,11 +395,12 @@ class Logging
     public static function benchmark(string $label, \Closure $callback, string $level = 'debug'): mixed
     {
         $start = microtime(true);
-        $result = $callback();
-        $elapsed = round((microtime(true) - $start) * 1000, 2);
-
-        static::log($level, "{$label} — {$elapsed}ms");
-        return $result;
+        try {
+            return $callback();
+        } finally {
+            $elapsed = round((microtime(true) - $start) * 1000, 2);
+            static::log($level, "{$label} — {$elapsed}ms");
+        }
     }
 
     /**

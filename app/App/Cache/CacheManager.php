@@ -132,15 +132,13 @@ class CacheManager
      */
     public static function get(string $key, mixed $default = null): mixed
     {
-        $result = static::retrieve($key);
-
-        if ($result === null) {
-            static::$misses++;
-            return $default instanceof \Closure ? $default() : $default;
+        if (static::has($key)) {
+            static::$hits++;
+            return static::retrieve($key);
         }
 
-        static::$hits++;
-        return $result;
+        static::$misses++;
+        return $default instanceof \Closure ? $default() : $default;
     }
 
     /**
@@ -188,7 +186,7 @@ class CacheManager
      */
     public static function has(string $key): bool
     {
-        return static::retrieve($key) !== null;
+        return static::retrieveRaw($key) !== null;
     }
 
     /**
@@ -261,10 +259,8 @@ class CacheManager
             $ttl = static::$defaultTtl;
         }
 
-        $value = static::get($key);
-
-        if ($value !== null) {
-            return $value;
+        if (static::has($key)) {
+            return static::retrieve($key);
         }
 
         $value = $callback();
@@ -277,10 +273,8 @@ class CacheManager
      */
     public static function rememberForever(string $key, \Closure $callback): mixed
     {
-        $value = static::get($key);
-
-        if ($value !== null) {
-            return $value;
+        if (static::has($key)) {
+            return static::retrieve($key);
         }
 
         $value = $callback();
@@ -562,19 +556,19 @@ class CacheManager
     public static function rateLimit(string $key, int $maxAttempts, int $decaySeconds = 60): bool
     {
         $cacheKey = 'rate_limit:' . $key;
-        $current = static::get($cacheKey, 0);
 
-        if ($current >= $maxAttempts) {
-            return false;
-        }
-
-        if ($current === 0) {
-            static::put($cacheKey, 1, $decaySeconds);
-        } else {
-            static::increment($cacheKey);
-        }
-
-        return true;
+        return static::lock('rl_' . $key, 2)->get(function () use ($cacheKey, $maxAttempts, $decaySeconds) {
+            $current = (int) static::get($cacheKey, 0);
+            if ($current >= $maxAttempts) {
+                return false;
+            }
+            if ($current === 0) {
+                static::put($cacheKey, 1, $decaySeconds);
+            } else {
+                static::put($cacheKey, $current + 1, null);
+            }
+            return true;
+        });
     }
 
     /**

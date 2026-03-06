@@ -12,7 +12,7 @@ return [
     'webp_quality' => (int) ($_ENV['UPLOAD_WEBP_QUALITY'] ?? 80),
 
     'allowed_categories' => [
-        'images'    => ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'],
+        'images'    => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
         'documents' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv'],
         'archives'  => ['zip', 'rar', '7z', 'tar', 'gz'],
         'videos'    => ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'],

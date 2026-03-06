@@ -66,7 +66,7 @@ class Config
      */
     public static function loadEnv(): void
     {
-        if (self::$isLoaded) {
+        if (static::$isLoaded) {
             return;
         }
 
@@ -96,7 +96,7 @@ class Config
         // 3. Load config files PHP
         static::loadConfigFiles();
 
-        self::$isLoaded = true;
+        static::$isLoaded = true;
     }
 
     /**

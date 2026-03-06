@@ -30,6 +30,8 @@ return [
     'create_user_desc' => 'Masukkan detail untuk menambahkan anggota baru.',
     'full_name' => 'Nama Lengkap',
     'email_address' => 'Alamat Email',
+    'password' => 'Password',
+    'password_desc' => 'Min. 8 karakter dengan minimal satu angka',
     'profile_picture' => 'Foto Profil',
     'upload_file' => 'Unggah file',
     'drag_drop' => 'atau drag and drop',

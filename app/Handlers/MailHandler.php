@@ -59,7 +59,7 @@ class MailHandler
 
             return $mail->send();
         } catch (Exception $e) {
-            throw new Exception("Mail Error: " . $mail->ErrorInfo);
+            throw new Exception("Mail Error: " . $mail->ErrorInfo, 0, $e);
         }
     }
 
@@ -78,10 +78,10 @@ class MailHandler
      */
     public function queue(string $subject, string $body, array $options = []): void
     {
-        if (class_exists('TheFramework\App\Core\Queue')) {
-            \TheFramework\App\Core\Queue::push(function() use ($subject, $body, $options) {
-                $this->send($this->recipient, $subject, $body, $options);
-            });
+        if (class_exists('TheFramework\App\Queue\Queue')) {
+            \TheFramework\App\Queue\Queue::push(
+                new \TheFramework\Jobs\SendMailJob($this->recipient, $subject, $body, $options)
+            );
         } else {
             $this->send($this->recipient, $subject, $body, $options);
         }

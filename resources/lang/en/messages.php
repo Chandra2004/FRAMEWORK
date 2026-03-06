@@ -30,6 +30,8 @@ return [
     'create_user_desc' => 'Enter details to onboard a new member.',
     'full_name' => 'Full Name',
     'email_address' => 'Email Address',
+    'password' => 'Password',
+    'password_desc' => 'Min. 8 characters with at least one number',
     'profile_picture' => 'Profile Picture',
     'upload_file' => 'Upload a file',
     'drag_drop' => 'or drag and drop',

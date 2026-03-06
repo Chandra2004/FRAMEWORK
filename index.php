@@ -1,5 +1,12 @@
 <?php
 ob_start();
+
+// ✅ SARAN-B4-001: Pastikan buffer selalu di-flush saat skrip berakhir
+register_shutdown_function(function () {
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+});
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/app/Helpers/helpers.php';
 
@@ -18,7 +25,8 @@ $maintenanceFile = __DIR__ . '/storage/framework/down';
 if ($isDown || file_exists($maintenanceFile)) {
     // Check if current IP is allowed to bypass (for developers)
     $allowedIps = array_map('trim', explode(',', \TheFramework\App\Core\Config::get('MAINTENANCE_IPS', '')));
-    $clientIp = \TheFramework\Helpers\Helper::get_client_ip();
+    // ✅ SECURITY FIX: Gunakan REMOTE_ADDR langsung agar tidak bisa di-spoof via header HTTP_CLIENT_IP
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
     if (!in_array($clientIp, $allowedIps)) {
         header('HTTP/1.1 503 Service Unavailable');

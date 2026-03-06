@@ -33,12 +33,12 @@ class Collection implements ArrayAccess, IteratorAggregate, JsonSerializable, Co
 
     public function first()
     {
-        return reset($this->items);
+        return empty($this->items) ? null : $this->items[array_key_first($this->items)];
     }
 
     public function last()
     {
-        return end($this->items);
+        return empty($this->items) ? null : $this->items[array_key_last($this->items)];
     }
 
     public function count(): int

@@ -315,12 +315,13 @@ class Database
         $this->ensureConnection(true);
         $columns = array_keys($data);
         $columnList = "`" . implode("`, `", array_map([$this, 'escapeIdentifierSimple'], $columns)) . "`";
-        $placeholders = ":" . implode(", :", $columns);
+        $placeholders = implode(", ", array_map(fn($col) => ':' . preg_replace('/[^a-zA-Z0-9_]/', '_', $col), $columns));
 
         $sql = "INSERT INTO `{$this->escapeIdentifierSimple($table)}` ($columnList) VALUES ($placeholders)";
         $this->query($sql);
         foreach ($data as $key => $value) {
-            $this->bind(":$key", $value);
+            $safeKey = preg_replace('/[^a-zA-Z0-9_]/', '_', $key);
+            $this->bind(":$safeKey", $value);
         }
         $result = $this->execute();
         return $result === true;
@@ -488,15 +489,21 @@ class Database
     }
 
     /**
-     * Bind value ke statement
+     * Bind value ke statement.
+     * PERHATIAN: Panggil query() terlebih dahulu sebelum memanggil bind()!
+     * Lakukan sesuai urutan: query() -> bind() -> execute()
      *
      * @param string $param
      * @param mixed $value
      * @param int|null $type
      * @return void
+     * @throws \LogicException Jika dipanggil sebelum query()
      */
     public function bind(string $param, $value, ?int $type = null): void
     {
+        if ($this->stmt === null) {
+            throw new \LogicException("Harus memanggil query() terlebih dahulu sebelum bind(). Urutan yang benar: query() -> bind() -> execute()");
+        }
         $debug = (class_exists('\\TheFramework\\App\\Core\\Config') ? \TheFramework\App\Core\Config::get('DEBUG_MODE', false) : false);
         if ($debug) {
             error_log("[BIND] $param = " . (is_scalar($value) ? (string) $value : gettype($value)));

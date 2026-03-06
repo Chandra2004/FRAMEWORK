@@ -14,7 +14,9 @@ class Str
     public static function slug(string $title, string $separator = '-'): string
     {
         $title = preg_replace('~[^\pL\d]+~u', $separator, $title);
-        $title = iconv('utf-8', 'us-ascii//TRANSLIT', $title);
+        // Fallback jika iconv gagal/tidak support locale us-ascii di environment tertentu (misal Docker)
+        $converted = @iconv('utf-8', 'us-ascii//TRANSLIT//IGNORE', $title);
+        $title = ($converted !== false) ? $converted : $title;
         $title = preg_replace('~[^-\w]+~', '', $title);
         $title = trim($title, $separator);
         $title = preg_replace('~-+~', $separator, $title);

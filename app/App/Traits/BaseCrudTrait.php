@@ -34,6 +34,11 @@ trait BaseCrudTrait
     abstract protected function getViewPath(): string;
 
     /**
+     * Get validation rules
+     */
+    abstract protected function getValidationRules(): array;
+
+    /**
      * Get primary key field name (default: 'id')
      */
     protected function getPrimaryKey(): string
@@ -78,7 +83,7 @@ trait BaseCrudTrait
     {
         try {
             $request = $this->getRequest();
-            $data = $request->validated();
+            $data = $request->validate($this->getValidationRules());
 
             // Tambahkan primary key jika perlu (mis. UUID)
             if ($this->getPrimaryKey() === 'uid' && !isset($data['uid'])) {
@@ -103,7 +108,6 @@ trait BaseCrudTrait
      */
     public function show($id)
     {
-        $notification = Helper::get_flash('notification');
         $model = $this->getModel();
         $item = $model->find($id);
 
@@ -123,7 +127,6 @@ trait BaseCrudTrait
      */
     public function edit($id)
     {
-        $notification = Helper::get_flash('notification');
         $model = $this->getModel();
         $item = $model->find($id);
 
@@ -147,7 +150,7 @@ trait BaseCrudTrait
     {
         try {
             $request = $this->getRequest();
-            $data = $request->validated();
+            $data = $request->validate($this->getValidationRules());
 
             $model = $this->getModel();
             $result = $model->update($data, $id);

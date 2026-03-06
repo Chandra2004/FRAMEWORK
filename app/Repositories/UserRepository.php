@@ -11,7 +11,6 @@ class UserRepository
     protected User $model;
     protected Database $db;
 
-
     public function __construct()
     {
         $this->model = new User();
@@ -51,40 +50,32 @@ class UserRepository
 
     public function createRepo(array $data)
     {
-        try {
-            $this->db->beginTransaction();
-            $createUser = $this->model->create($data);
-            $this->db->commit();
-            return $createUser;
-        } catch (Exception $e) {
-            $this->db->rollback();
-            throw $e;
-        }
+        return $this->db->transaction(function () use ($data) {
+            return clone $this->model->create($data);
+        });
     }
-    
+
     public function updateRepo(array $data, string $uid)
     {
-        try {
-            $this->db->beginTransaction();
-            $updateUser = $this->model->where('uid', '=', $uid)->update($data);
-            $this->db->commit();
-            return $updateUser;
-        } catch (Exception $e) {
-            $this->db->rollback();
-            throw $e;
-        }
+        return $this->db->transaction(function () use ($data, $uid) {
+            $user = $this->getInformation($uid);
+            if (!$user) {
+                throw new Exception('User not found');
+            }
+            $user->fill($data);
+            $user->save();
+            return clone $user;
+        });
     }
 
     public function deleteRepo(string $uid)
     {
-        try {
-            $this->db->beginTransaction();
-            $deleteUser = $this->model->where('uid', '=', $uid)->delete();
-            $this->db->commit();
-            return $deleteUser;
-        } catch (Exception $e) {
-            $this->db->rollback();
-            throw $e;
-        }
+        return $this->db->transaction(function () use ($uid) {
+            $user = $this->getInformation($uid);
+            if (!$user) {
+                throw new Exception('User not found');
+            }
+            return $user->delete();
+        });
     }
 }

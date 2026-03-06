@@ -117,7 +117,7 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         if ($this->fireModelEvent('saving') === false)
             return false;
 
-        if ($this->timestamps && !($options['timestamps'] ?? true) === false) {
+        if ($this->timestamps && ($options['timestamps'] ?? true) !== false) {
             $this->updateTimestamps();
         }
 
@@ -149,15 +149,33 @@ abstract class Model implements \JsonSerializable, ArrayAccess
                 $attributes[$this->getKeyName()] = $this->generateKey();
                 $this->setAttribute($this->getKeyName(), $attributes[$this->getKeyName()]);
             }
-            $id = $query->insertGetId($attributes);
-            if ($id) {
-                if ($this->incrementing) {
+
+            // Get fresh attributes after UUID generation
+            $attributes = $this->getAttributes();
+
+            if (empty($attributes)) {
+                error_log("[MODEL SAVE] No attributes to save for model [" . static::class . "].");
+                return false;
+            }
+
+            // Refactor: Use insert() instead of insertGetId() for non-incrementing models
+            // to avoid false-negatives when lastInsertId() returns "0"
+            if (!$this->incrementing) {
+                $saved = $query->insert($attributes) > 0;
+            } else {
+                $id = $query->insertGetId($attributes);
+                if ($id) {
                     $this->setAttribute($this->getKeyName(), $id);
+                    $saved = true;
+                } else {
+                    $saved = false;
                 }
+            }
+
+            if ($saved) {
                 $this->exists = true;
                 $this->syncOriginal();
                 $this->fireModelEvent('created');
-                $saved = true;
             } else {
                 return false;
             }
@@ -207,9 +225,7 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         if (!$this->exists && !isset($this->attributes['created_at'])) {
             $this->setAttribute('created_at', $time);
         }
-        if (!isset($this->attributes['updated_at'])) {
-            $this->setAttribute('updated_at', $time);
-        }
+        $this->setAttribute('updated_at', $time);
     }
 
     protected function bootGlobalScopes()
@@ -699,8 +715,8 @@ abstract class Model implements \JsonSerializable, ArrayAccess
     public function newInstance(array $attributes = [], bool $exists = false)
     {
         $model = new static;
-        $model->exists = $exists;
         $model->setRawAttributes((array) $attributes, true);
+        $model->exists = $exists; // Set AFTER setRawAttributes to prevent override
         return $model;
     }
 
@@ -793,7 +809,7 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         return $this->getTable() . '.' . $this->getKeyName();
     }
 
-    public function getAttributes()
+    public function getAttributes(): array
     {
         return $this->attributes;
     }
@@ -1033,8 +1049,10 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         $handlers = static::$eventHandlers[static::class][$event] ?? [];
         foreach ($handlers as $handler) {
             $result = $handler($this);
-            if ($result === false)
+            if ($result === false) {
+                error_log("[MODEL EVENT] Event '{$event}' on model [" . static::class . "] returned false.");
                 return false;
+            }
         }
         return true;
     }

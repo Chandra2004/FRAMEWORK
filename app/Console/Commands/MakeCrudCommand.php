@@ -33,7 +33,7 @@ class MakeCrudCommand implements CommandInterface
 
         $base = $this->studly($name);
         $controllerClass = $base . 'Controller';
-        $modelClass = $base . 'Model';
+        $modelClass = $base;
         $requestClass = $base . 'Request';
         $slug = $this->slug($base);
         $routePath = '/' . $slug;

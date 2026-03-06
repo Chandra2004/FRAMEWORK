@@ -122,10 +122,7 @@ abstract class BaseCommand implements CommandInterface
     protected function ask(string $question, ?string $default = null): string
     {
         echo self::COLOR_CYAN . "? " . self::COLOR_RESET . $question . ($default ? " [$default]" : "") . ": ";
-        $handle = fopen("php://stdin", "r");
-        $line = fgets($handle);
-        fclose($handle);
-        $input = trim($line);
+        $input = trim(fgets(STDIN));
 
         return $input === '' ? (string) $default : $input;
     }
@@ -138,10 +135,7 @@ abstract class BaseCommand implements CommandInterface
         $displayDefault = $default ? "[Y/n]" : "[y/N]";
         echo self::COLOR_CYAN . "? " . self::COLOR_RESET . $question . " $displayDefault: ";
 
-        $handle = fopen("php://stdin", "r");
-        $line = fgets($handle);
-        fclose($handle);
-        $input = strtolower(trim($line));
+        $input = strtolower(trim(fgets(STDIN)));
 
         if ($input === '')
             return $default;

@@ -14,6 +14,7 @@ use TheFramework\App\Exceptions\Handler;
 use TheFramework\App\Http\RateLimiter;
 use TheFramework\Helpers\Helper;
 use TheFramework\Services\UserService;
+use TheFramework\Repositories\UserRepository;
 
 SessionManager::startSecureSession();
 Config::loadEnv();
@@ -34,7 +35,7 @@ if (Config::get('APP_ENV') !== 'testing') {
 
     foreach ($requiredDirs as $dir) {
         if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
+            mkdir($dir, 0755, true);
             // ✅ SECURITY FIX: Auto-create .gitignore to prevent sensitive files from being committed
             file_put_contents($dir . '/.gitignore', "*\n!.gitignore");
         }
@@ -56,7 +57,11 @@ error_reporting(E_ALL);
 // Hanya jalankan logic HTTP spesifik jika bukan CLI
 if (php_sapi_name() !== 'cli') {
     // ✅ SECURITY FIX: Enabled security headers (were commented out!)
-    header('X-Powered-By: TheFramework-v5.0.1');
+    if (Config::get('APP_DEBUG') === 'true') {
+        header('X-Powered-By: TheFramework-v5.0.1');
+    } else {
+        header_remove('X-Powered-By');
+    }
     header('X-Frame-Options: DENY');
     header('X-Content-Type-Options: nosniff');
     header('X-XSS-Protection: 1; mode=block');
@@ -69,8 +74,8 @@ if (php_sapi_name() !== 'cli') {
     }
 
     // Rate Limiting Global
-    // Menggunakan Helper::get_client_ip() untuk akurasi lebih baik (Proxy support)
-    $ip = class_exists(Helper::class) ? Helper::get_client_ip() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+    // ✅ SECURITY FIX: Gunakan REMOTE_ADDR langsung agar tidak bisa di-spoof via header HTTP_CLIENT_IP
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
     RateLimiter::check($ip, 100, 120);
 
     CsrfMiddleware::generateToken();
@@ -91,8 +96,8 @@ $container->singleton(Request::class, function () {
 });
 
 // 3. Helper Service (Singleton if stateless)
-$container->singleton(UserService::class, function () {
-    return new UserService();
+$container->singleton(UserService::class, function ($c) {
+    return new UserService($c->make(UserRepository::class));
 });
 
 // --- 🛠️ SERVICE PROVIDERS 🛠️ ---

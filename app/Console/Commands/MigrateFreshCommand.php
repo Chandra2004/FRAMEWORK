@@ -3,6 +3,7 @@
 namespace TheFramework\Console\Commands;
 
 use TheFramework\Console\BaseCommand;
+use TheFramework\App\Core\Config;
 use Throwable;
 
 class MigrateFreshCommand extends BaseCommand
@@ -19,6 +20,12 @@ class MigrateFreshCommand extends BaseCommand
 
     public function handle(array $args): void
     {
+        Config::loadEnv();
+        if (Config::get('APP_ENV') === 'production' && !in_array('--force', $args)) {
+            $this->error("migrate:fresh DIBLOKIR di production! Gunakan --force untuk override.");
+            return;
+        }
+
         $this->warn("Ini akan MENGHAPUS semua tabel dan menjalankan ulang semua migrasi.");
         $this->warn("Semua data akan HILANG!");
 

@@ -156,7 +156,14 @@ class UploadHandler
 
         // 3. Validasi ekstensi (keamanan)
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $blocked = ['php', 'phtml', 'phar', 'exe', 'sh', 'bat', 'cmd', 'com', 'vbs', 'js', 'htaccess'];
+        $blocked = [
+            'php', 'php3', 'php4', 'php5', 'php7', 'php8', 'phtml', 'phar', 'phps',
+            'exe', 'sh', 'bat', 'cmd', 'com', 'vbs', 'js', 'mjs', 'cjs',
+            'htaccess', 'htpasswd', 'ini', 'log', 'sql',
+            'svg',  // SVG bisa mengandung XSS (JavaScript)
+            'swf',  // Flash (legera vector)
+            'jar', 'war'  // Java executables
+        ];
         if (in_array($ext, $blocked)) {
             throw new Exception("Tipe file '{$ext}' diblokir karena alasan keamanan.");
         }
@@ -171,7 +178,7 @@ class UploadHandler
         $prefix = $options['prefix'] ?? 'up_';
         $convertTo = $options['convert_to'] ?? null;
         $finalExt = $convertTo ?: $ext;
-        $filename = $prefix . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $finalExt;
+        $filename = $prefix . date('Ymd_His') . '_' . bin2hex(random_bytes(8)) . '.' . $finalExt;
         $fullPath = $targetDir . '/' . $filename;
 
         // 6. Proses gambar (jika format gambar)
@@ -219,14 +226,15 @@ class UploadHandler
             default => throw new Exception("Format gambar tidak didukung: {$mime}"),
         };
 
-        // Resize jika diminta
         if (isset($options['width']) || isset($options['height'])) {
-            $img = $this->resize($img, $options['width'] ?? null, $options['height'] ?? null);
+            $resized = $this->resize($img, $options['width'] ?? null, $options['height'] ?? null);
+            $img = $resized;
         }
 
         // Simpan sebagai WebP
         $quality = $options['quality'] ?? ($this->config['webp_quality'] ?? 80);
         imagewebp($img, $targetPath, $quality);
+        // imagedestroy($img); // DEPRECATED in PHP 8.5 (Auto-GC since 8.0)
 
         return [
             'name' => basename($targetPath),

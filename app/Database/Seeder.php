@@ -58,7 +58,7 @@ abstract class Seeder
     public function insert(array $data): void
     {
         if (!$this->table) {
-            throw new Exception("Target tabel belum ditentukan. Gunasi \$this->table('nama')->insert([...])");
+            throw new Exception("Target tabel belum ditentukan. Gunakan \$this->table('nama')->insert([...])");
         }
 
         // Jika data tunggal (assoc array), bungkus jadi multi-array
@@ -85,8 +85,10 @@ abstract class Seeder
     /**
      * Shortcut statis untuk penggunaan cepat (Legacy Support)
      */
-    public static function setTable(string $table): void
+    public static function setTable(string $table): static
     {
-        (new static())->table($table);
+        $instance = new static();
+        $instance->table($table);
+        return $instance;
     }
 }

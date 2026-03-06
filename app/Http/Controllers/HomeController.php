@@ -10,26 +10,26 @@ class HomeController extends Controller
 {
     private UserService $userService;
 
-    public function __construct()
+    public function __construct(UserService $userService)
     {
-        $this->userService = new UserService();
+        $this->userService = $userService;
     }
 
     public function welcome()
     {
         return view('interface.welcome', [
-            'title'        => 'THE FRAMEWORK - Modern PHP Framework with Database Migrations & REST API',
+            'title' => 'THE FRAMEWORK - Modern PHP Framework with Database Migrations & REST API',
             'notification' => flash('notification'),
-            'status'       => $this->userService->status(),
+            'status' => $this->userService->status(),
         ]);
     }
 
     public function users()
     {
         return view('interface.users', [
-            'title'        => 'THE FRAMEWORK - User Management',
+            'title' => 'THE FRAMEWORK - User Management',
             'notification' => flash('notification'),
-            'users'        => $this->userService->getAll(),
+            'users' => $this->userService->getAll(),
         ]);
     }
 
@@ -38,22 +38,24 @@ class HomeController extends Controller
         $user = $this->userService->getInformation($uid);
 
         return view('interface.detail', [
-            'title'        => 'THE FRAMEWORK - ' . $user['name'] . ' - User Detail',
+            'title' => 'THE FRAMEWORK - ' . ($user->name ?? 'Unknown') . ' - User Detail',
             'notification' => flash('notification'),
-            'user'         => $user,
+            'user' => $user,
         ]);
     }
 
-    public function createUser(UserRequest $request) {
+    public function createUser(UserRequest $request)
+    {
         try {
             $this->userService->createUserService($request);
-            return redirect('/users', 'success', 'User success created');
+            return redirect('/users', 'success', 'User successfully created');
         } catch (Exception $e) {
             return redirect('/users', 'error', 'Something went wrong: ' . $e->getMessage());
         }
     }
 
-    public function updateUser($uid, UserRequest $request) {
+    public function updateUser($uid, UserRequest $request)
+    {
         try {
             $this->userService->updateUserService($uid, $request);
             return redirect("/users/information/{$uid}", 'success', 'User updated successfully');
@@ -61,8 +63,9 @@ class HomeController extends Controller
             return redirect("/users/information/{$uid}", 'error', 'Something went wrong: ' . $e->getMessage());
         }
     }
-    
-    public function deleteUser($uid) {
+
+    public function deleteUser($uid)
+    {
         try {
             $this->userService->deleteUserService($uid);
             return redirect("/users", 'success', 'User deleted successfully');

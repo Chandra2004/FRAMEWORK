@@ -13,9 +13,9 @@ class UserService
 {
     protected UserRepository $repo;
 
-    public function __construct()
+    public function __construct(UserRepository $repo)
     {
-        $this->repo = new UserRepository();
+        $this->repo = $repo;
     }
 
     public function status(): string
@@ -35,36 +35,39 @@ class UserService
 
     public function createUserService(UserRequest $request)
     {
-        if ($this->repo->findByName($request->input('name')) != null) {
-            throw new Exception('Name is taken');
-        }
-
-        if ($this->repo->findByEmail($request->input('email')) != null) {
-            throw new Exception('Email is taken');
-        }
-
         $photoName = null;
-        if ($request->hasFile('profile_picture')) {
-            $photoName = UploadHandler::handleUploadToWebP($request->file('profile_picture'), '/user-pictures', 'foto_');
-            if (UploadHandler::isError($photoName)) {
-                throw new Exception(UploadHandler::getErrorMessage($photoName));
-            }
-        }
-
-        $data = $request->validated();
-        if (array_key_exists('delete_profile_picture', $data)) {
-            unset($data['delete_profile_picture']);
-        }
-        $data['profile_picture'] = $photoName;
-        $data['uid'] = Helper::uuid();
 
         try {
+            if ($this->repo->findByName($request->input('name')) !== null) {
+                throw new Exception('Name is taken');
+            }
+    
+            if ($this->repo->findByEmail($request->input('email')) !== null) {
+                throw new Exception('Email is taken');
+            }
+    
+            if ($request->hasFile('profile_picture')) {
+                $photoName = UploadHandler::handleUploadToWebP($request->file('profile_picture'), '/user-pictures', 'foto_');
+                if (UploadHandler::isError($photoName)) {
+                    throw new Exception(UploadHandler::getErrorMessage($photoName));
+                }
+            }
+    
+            $data = $request->validated();
+            if (array_key_exists('delete_profile_picture', $data)) {
+                unset($data['delete_profile_picture']);
+            }
+    
+            $data['profile_picture'] = $photoName;
+            $data['uid'] = Helper::uuid();
+            $data['password'] = password_hash($request->input('password'), PASSWORD_BCRYPT);
+
             return $this->repo->createRepo($data);
         } catch (Exception $e) {
             if ($photoName) {
                 UploadHandler::delete($photoName, '/user-pictures');
             }
-            throw new Exception('Failed to save data:' . $e->getMessage());
+            throw new Exception('Failed to save data: ' . $e->getMessage());
         }
     }
 
@@ -75,17 +78,17 @@ class UserService
             throw new Exception('User is not found');
         }
 
-        if ($this->repo->findByName($request->input('name'), $uid) != null) {
+        if ($this->repo->findByName($request->input('name'), $uid) !== null) {
             throw new Exception('Name is taken');
         }
 
-        if ($this->repo->findByEmail($request->input('email'), $uid) != null) {
+        if ($this->repo->findByEmail($request->input('email'), $uid) !== null) {
             throw new Exception('Email is taken');
         }
 
         $data = $request->validated();
+        $oldPhoto = $existingUser->profile_picture;
 
-        $oldPhoto = $existingUser['profile_picture'] ?? null;
         if (!empty($data['delete_profile_picture']) && $oldPhoto) {
             UploadHandler::delete($oldPhoto, '/user-pictures');
             $oldPhoto = null;
@@ -118,7 +121,7 @@ class UserService
             if ($newPhoto) {
                 UploadHandler::delete($newPhoto, '/user-pictures');
             }
-            throw new Exception('Failed to update data:' . $e->getMessage());
+            throw new Exception('Failed to update data: ' . $e->getMessage());
         }
     }
 
@@ -132,7 +135,7 @@ class UserService
         try {
             $result = $this->repo->deleteRepo($uid);
 
-            $photo = $existingUser['profile_picture'] ?? null;
+            $photo = $existingUser->profile_picture;
             if ($photo) {
                 UploadHandler::delete($photo, '/user-pictures');
             }

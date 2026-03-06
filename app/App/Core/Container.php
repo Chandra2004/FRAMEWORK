@@ -242,28 +242,26 @@ class Container
 
         try {
             $reflector = new ReflectionClass($concrete);
+
+            if (!$reflector->isInstantiable()) {
+                throw new \RuntimeException("Target [{$concrete}] is not instantiable. Did you forget to bind it?");
+            }
+
+            $constructor = $reflector->getConstructor();
+
+            if ($constructor === null) {
+                return new $concrete;
+            }
+
+            $dependencies = $constructor->getParameters();
+            $instances = $this->resolveDependencies($dependencies, $parameters, $concrete);
+
+            return $reflector->newInstanceArgs($instances);
         } catch (ReflectionException $e) {
-            array_pop($this->buildStack);
             throw new \RuntimeException("Target class [{$concrete}] does not exist.", 0, $e);
-        }
-
-        if (!$reflector->isInstantiable()) {
+        } finally {
             array_pop($this->buildStack);
-            throw new \RuntimeException("Target [{$concrete}] is not instantiable. Did you forget to bind it?");
         }
-
-        $constructor = $reflector->getConstructor();
-
-        if ($constructor === null) {
-            array_pop($this->buildStack);
-            return new $concrete;
-        }
-
-        $dependencies = $constructor->getParameters();
-        $instances = $this->resolveDependencies($dependencies, $parameters, $concrete);
-
-        array_pop($this->buildStack);
-        return $reflector->newInstanceArgs($instances);
     }
 
     /**

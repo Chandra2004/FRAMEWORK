@@ -424,13 +424,15 @@ class Relation
     //  BELONGS TO: ASSOCIATE / DISSOCIATE
     // ========================================================
 
-    public function associate(Model $model): Model
+    public function associate(Model $model, string $relationName = ''): Model
     {
         if ($this->type !== 'belongsTo') {
             throw new Exception('associate() only available on belongsTo relations.');
         }
         $this->parent->setAttribute($this->foreignKey, $model->getKey());
-        $this->parent->setRelation(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'] ?? '', $model);
+        if ($relationName) {
+            $this->parent->setRelation($relationName, $model);
+        }
         return $this->parent;
     }
 
@@ -654,15 +656,23 @@ class Relation
 
     public function sync($ids, $detaching = true)
     {
-        if ($detaching) {
-            $existing = $this->query->pluck($this->relatedKey);
-            $toRemove = array_diff($existing, (array) $ids);
-            if (!empty($toRemove)) {
-                $this->detach($toRemove);
+        $db = Database::getInstance();
+        $db->beginTransaction();
+        try {
+            if ($detaching) {
+                $existing = $this->query->pluck($this->relatedKey);
+                $toRemove = array_diff($existing, (array) $ids);
+                if (!empty($toRemove)) {
+                    $this->detach($toRemove);
+                }
             }
+            $this->attach($ids);
+            $db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $db->rollBack();
+            throw $e;
         }
-        $this->attach($ids);
-        return true;
     }
 
     public function syncWithoutDetaching($ids)

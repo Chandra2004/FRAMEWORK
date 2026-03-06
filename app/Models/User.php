@@ -6,13 +6,16 @@ use TheFramework\App\Database\Model;
 
 class User extends Model
 {
-    protected $table = 'users'; // Explicitly define table, though Model might auto-detect 'users' from 'User'
-    protected $primaryKey = 'uid'; // Explicitly define primary key
+    protected $table = 'users';
+    protected $primaryKey = 'uid';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'uid',
         'name',
         'email',
+        'password',
         'profile_picture',
         'created_at',
         'updated_at'

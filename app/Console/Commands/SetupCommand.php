@@ -60,15 +60,14 @@ class SetupCommand extends BaseCommand
                 $this->warn("Password terlalu pendek! Setup dibatalkan.");
             } else {
                 $hashed = password_hash($password, PASSWORD_BCRYPT);
-                $safeHash = str_replace('$', '\\$', $hashed);
 
                 $env = preg_replace('/^SYSTEM_AUTH_USER=.*/m', "SYSTEM_AUTH_USER={$username}", $env);
                 if (!preg_match('/^SYSTEM_AUTH_USER=/m', $env))
                     $env .= "\nSYSTEM_AUTH_USER={$username}";
 
-                $env = preg_replace('/^SYSTEM_AUTH_PASS=.*/m', "SYSTEM_AUTH_PASS={$safeHash}", $env);
+                $env = preg_replace('/^SYSTEM_AUTH_PASS=.*/m', "SYSTEM_AUTH_PASS=\"{$hashed}\"", $env);
                 if (!preg_match('/^SYSTEM_AUTH_PASS=/m', $env))
-                    $env .= "\nSYSTEM_AUTH_PASS={$hashed}";
+                    $env .= "\nSYSTEM_AUTH_PASS=\"{$hashed}\"";
 
                 file_put_contents('.env', $env);
                 $this->success("Security configured: User [$username] Hashed Password Set.");

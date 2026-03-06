@@ -1,7 +1,4 @@
 <?php
-use TheFramework\Http\Controllers\CategoryController;
-use TheFramework\Http\Controllers\GalleryController;
-use TheFramework\Http\Controllers\ProductController;
 // ROUTER
 use TheFramework\App\Http\Router;
 

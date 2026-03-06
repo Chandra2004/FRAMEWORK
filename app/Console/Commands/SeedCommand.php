@@ -2,9 +2,9 @@
 
 namespace TheFramework\Console\Commands;
 
-use TheFramework\Console\CommandInterface;
+use TheFramework\Console\BaseCommand;
 
-class SeedCommand implements CommandInterface
+class SeedCommand extends BaseCommand
 {
     public function getName(): string
     {
@@ -16,14 +16,9 @@ class SeedCommand implements CommandInterface
         return 'Menjalankan seeder database (semua atau seeder tertentu menggunakan --NamaSeeder)';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
-        echo "\n  \033[1;44;97m INFO \033[0m Menjalankan seeder";
-        for ($i = 0; $i < 3; $i++) {
-            echo ".";
-            usleep(200000);
-        }
-        echo "\033[0m\n";
+        $this->info("Menjalankan seeder...");
 
         $seedersPath = BASE_PATH . '/database/seeders';
 
@@ -37,8 +32,6 @@ class SeedCommand implements CommandInterface
         }
 
         if ($specificSeeder) {
-            // Cari file yang berakhiran dengan string yang diminta
-            // Misal: user ketik --UsersSeeder, kita cari *UsersSeeder.php
             $foundFile = null;
             $files = glob($seedersPath . '/*.php');
 
@@ -51,21 +44,27 @@ class SeedCommand implements CommandInterface
 
             if ($foundFile) {
                 $fileName = basename($foundFile, '.php');
-                $className = 'Database\\Seeders\\Seeder_' . $fileName;
-
+                
                 require_once $foundFile;
+                $content = file_get_contents($foundFile);
+                if (preg_match('/class\s+(\w+)/', $content, $matches)) {
+                    $className = 'Database\\Seeders\\' . $matches[1];
+                } else {
+                    $className = 'Database\\Seeders\\' . $fileName;
+                }
+
                 if (class_exists($className)) {
                     $seeder = new $className();
                     if (method_exists($seeder, 'run')) {
-                        echo "\n  \033[1;44;97m INFO \033[0m Menjalankan seeder: {$fileName}\n";
+                        $this->info("Menjalankan seeder: {$fileName}");
                         $seeder->run();
-                        echo "\n  \033[1;42;30m SUCCESS \033[0m Seeder {$fileName} selesai\n";
+                        $this->success("Seeder {$fileName} selesai");
                         return;
                     }
                 }
             }
 
-            echo "\n  \033[1;41;97m ERROR \033[0m Seeder {$specificSeeder} tidak ditemukan atau tidak valid\n";
+            $this->error("Seeder {$specificSeeder} tidak ditemukan atau tidak valid");
             return;
         }
 
@@ -79,16 +78,14 @@ class SeedCommand implements CommandInterface
         foreach ($seederFiles as $file) {
             $fileName = basename($file, '.php');
 
-            // Baca isi file untuk cari nama class
             $content = file_get_contents($file);
             if (preg_match('/class\s+(\w+)/', $content, $matches)) {
                 $className = 'Database\\Seeders\\' . $matches[1];
             } else {
-                // Fallback jika regex gagal
                 $className = 'Database\\Seeders\\' . $fileName;
             }
 
-            echo "\n  \033[1;44;97m INFO \033[0m Menjalankan seeder: {$fileName}\n";
+            $this->info("Menjalankan seeder: {$fileName}");
 
             require_once $file;
 
@@ -97,19 +94,18 @@ class SeedCommand implements CommandInterface
                 if (method_exists($seeder, 'run')) {
                     try {
                         $seeder->run();
-                        echo "\n  \033[1;42;30m SUCCESS \033[0m Seeder {$fileName} selesai\n";
+                        $this->success("Seeder {$fileName} selesai");
                     } catch (\Throwable $e) {
-                        echo "\n  \033[1;41;97m ERROR \033[0m Seeder {$fileName} gagal: {$e->getMessage()}\n";
+                        $this->error("Seeder {$fileName} gagal: {$e->getMessage()}");
                     }
                 } else {
-                    echo "\n  \033[1;43;30m WARN \033[0m Seeder {$fileName} tidak memiliki method 'run'\n";
+                    $this->warn("Seeder {$fileName} tidak memiliki method 'run'");
                 }
             } else {
-                echo "\n  \033[1;41;97m ERROR \033[0m Class {$className} tidak ditemukan\n";
+                $this->error("Class {$className} tidak ditemukan");
             }
         }
 
-        echo "\n  \033[1;42;30m SUCCESS \033[0m Semua seeder selesai\n";
+        $this->success("Semua seeder selesai");
     }
 }
-

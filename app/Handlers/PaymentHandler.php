@@ -14,7 +14,17 @@ class PaymentHandler
 
     public function __construct()
     {
-        $this->config = (require ROOT_DIR . '/config/payment.php')['midtrans'];
+        $configFile = ROOT_DIR . '/config/payment.php';
+        if (!file_exists($configFile)) {
+            throw new \RuntimeException(
+                "File konfigurasi payment tidak ditemukan: config/payment.php. " .
+                "Salin dari config/payment.example.php atau buat manual."
+            );
+        }
+        $config = require $configFile;
+        $this->config = $config['midtrans'] ?? throw new \RuntimeException(
+            "Key 'midtrans' tidak ditemukan di config/payment.php"
+        );
         $this->init();
     }
 

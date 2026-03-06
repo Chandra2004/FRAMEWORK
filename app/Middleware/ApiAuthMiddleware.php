@@ -48,8 +48,8 @@ class ApiAuthMiddleware implements Middleware
             $user = $db->single();
 
             if ($user) {
-                // Injek user ke request array agar bisa diakses di controller
-                $_REQUEST['user_api'] = $user;
+                // Injek user ke container agar bisa diakses di controller secara aman (bukan via $_REQUEST)
+                \TheFramework\App\Core\Container::getInstance()->instance('auth.api_user', (object)$user);
                 return; // OK
             }
         } catch (\Exception $e) {

@@ -591,6 +591,9 @@ class QueryBuilder
 
     public function orderBy(string $column, string $direction = 'ASC')
     {
+        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $column)) {
+            throw new \InvalidArgumentException("Invalid column name for orderBy: [{$column}]");
+        }
         $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
         $this->orders[] = ['column' => $column, 'direction' => $dir];
         return $this;
@@ -790,8 +793,9 @@ class QueryBuilder
             $sqlParts[] = "{$boolean} {$part}";
         }
         $sql = implode(' ', $sqlParts);
-        if (!empty($sql))
-            $sql = 'WHERE ' . ltrim(ltrim($sql), 'AND ');
+        if (!empty($sql)) {
+            $sql = 'WHERE ' . preg_replace('/^(AND|OR)\s+/i', '', trim($sql));
+        }
         return [$sql, $bindings];
     }
 
@@ -838,8 +842,9 @@ class QueryBuilder
             $sqlParts[] = "{$boolean} {$part}";
         }
         $sql = implode(' ', $sqlParts);
-        if (!empty($sql))
-            $sql = 'HAVING ' . ltrim(ltrim($sql), 'AND ');
+        if (!empty($sql)) {
+            $sql = 'HAVING ' . preg_replace('/^(AND|OR)\s+/i', '', trim($sql));
+        }
         return [$sql, $bindings];
     }
 
@@ -1164,7 +1169,9 @@ class QueryBuilder
     public function create(array $data)
     {
         $model = $this->model->newInstance($data);
-        $model->save();
+        if (!$model->save()) {
+            throw new \RuntimeException("Failed to create model [" . get_class($this->model) . "]. This usually happens when a database error occurred or a model event (saving/creating) returned false. Check logs for details.");
+        }
         return $model;
     }
 
@@ -1181,8 +1188,10 @@ class QueryBuilder
 
     public function insert(array $data): int
     {
-        if ($this->db->insert($this->table, $data)) {
-            return $this->db->rowCount();
+        $result = $this->db->insert($this->table, $data);
+        if ($result) {
+            $count = $this->db->rowCount();
+            return $count > 0 ? $count : 1;
         }
         return 0;
     }

@@ -59,11 +59,11 @@ class Crypter
     {
         $key = self::getKey();
 
-        if (!str_contains($payloadWithHmac, '.')) {
+        $parts = explode('.', $payloadWithHmac, 2);
+        if (count($parts) !== 2) {
             throw new Exception('Invalid encrypted payload format.');
         }
-
-        [$payload, $hmac] = explode('.', $payloadWithHmac);
+        [$payload, $hmac] = $parts;
 
         // Verifikasi HMAC (timing-attack safe comparison)
         $calculatedHmac = hash_hmac('sha256', $payload, $key);

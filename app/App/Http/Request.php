@@ -8,6 +8,7 @@ class Request
 {
     protected array $input = [];
     protected array $files = [];
+    protected static array $routeParams = [];
     protected bool $forceJson = false;
     protected ?string $content = null;
 
@@ -77,6 +78,25 @@ class Request
             return $_POST;
         }
         return $_POST[$key] ?? $default;
+    }
+
+    /**
+     * Get route parameter
+     */
+    public function route(string $key = null, $default = null)
+    {
+        if (is_null($key)) {
+            return self::$routeParams;
+        }
+        return self::$routeParams[$key] ?? $default;
+    }
+
+    /**
+     * Internal: Set route parameters from Router
+     */
+    public static function setRouteParams(array $params): void
+    {
+        self::$routeParams = $params;
     }
 
     public function only($keys): array
@@ -260,10 +280,15 @@ class Request
 
     public function ip(): string
     {
-        return $_SERVER['HTTP_X_FORWARDED_FOR']
-            ?? $_SERVER['HTTP_X_REAL_IP']
-            ?? $_SERVER['REMOTE_ADDR']
-            ?? '127.0.0.1';
+        $trustedProxy = \TheFramework\App\Core\Config::get('TRUSTED_PROXY', false);
+        if ($trustedProxy) {
+            if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                return trim($ips[0]);
+            }
+            return $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        }
+        return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
     }
 
     public function userAgent(): ?string

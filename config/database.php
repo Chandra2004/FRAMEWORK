@@ -26,7 +26,7 @@ return [
 
     'redis' => [
         'host'     => $_ENV['REDIS_HOST'] ?? '127.0.0.1',
-        'password' => $_ENV['REDIS_PASSWORD'] ?? null,
+        'password' => ($_ENV['REDIS_PASSWORD'] ?? null) === 'null' ? null : ($_ENV['REDIS_PASSWORD'] ?? null),
         'port'     => (int) ($_ENV['REDIS_PORT'] ?? 6379),
         'database' => (int) ($_ENV['REDIS_DB'] ?? 0),
     ],

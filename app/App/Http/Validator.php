@@ -6,6 +6,10 @@ use PDO;
 use Exception;
 use TheFramework\App\Database\Database;
 
+class SkipValidationException extends Exception
+{
+}
+
 class Validator
 {
     protected array $errors = [];
@@ -79,10 +83,8 @@ class Validator
                 }
                 try {
                     $this->$method($field, $label, $value, $params);
-                } catch (Exception $e) {
-                    if ($e->getMessage() === "__SKIP_VALIDATION__") {
-                        $skipFurther = true;
-                    }
+                } catch (SkipValidationException $e) {
+                    $skipFurther = true;
                 }
             }
         }
@@ -163,7 +165,7 @@ class Validator
 
         if (!$isValid) {
             $this->addError($field, 'required', "{$label} is required.");
-            throw new Exception("__SKIP_VALIDATION__");
+            throw new SkipValidationException();
         }
     }
 
@@ -559,6 +561,10 @@ class Validator
         if (!$table)
             throw new Exception("Rule unique must specify a table.");
 
+        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $table) || !preg_match('/^[a-zA-Z0-9_.]+$/', $column) || !preg_match('/^[a-zA-Z0-9_.]+$/', $idColumn)) {
+            throw new Exception("Invalid table or column name in unique rule.");
+        }
+
         $db = Database::getInstance();
         $sql = "SELECT COUNT(*) as count FROM `$table` WHERE `$column` = :val";
 
@@ -585,6 +591,10 @@ class Validator
 
         if (!$table)
             throw new Exception("Rule exists must specify a table.");
+
+        if (!preg_match('/^[a-zA-Z0-9_.]+$/', $table) || !preg_match('/^[a-zA-Z0-9_.]+$/', $column)) {
+            throw new Exception("Invalid table or column name in exists rule.");
+        }
 
         $db = Database::getInstance();
         $db->query("SELECT COUNT(*) as count FROM `$table` WHERE `$column` = :val");

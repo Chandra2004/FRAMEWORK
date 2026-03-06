@@ -6,11 +6,9 @@ use TheFramework\App\Queue\Job;
 
 class ExampleJob extends Job
 {
-    protected $data;
-
     public function __construct(array $data = [])
     {
-        $this->data = $data;
+        parent::__construct($data);
     }
 
     /**

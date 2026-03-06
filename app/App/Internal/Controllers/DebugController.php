@@ -127,7 +127,7 @@ class DebugController
         $file = $e->getFile();
         $line = $e->getLine();
 
-        View::render('debug.exception', [
+        View::render('Internal::errors.exception', [
             'error_code' => $errorCode,
             'error_code_text' => self::getHttpStatusText($errorCode),
             'class' => get_class($e),
@@ -139,6 +139,8 @@ class DebugController
             'code_snippet' => self::getCodeSnippet($file, $line),
             'request_info' => self::getRequestInfo(),
             'environment' => self::getEnvironmentInfo(),
+            'previous_chain' => [],
+            'exception_context' => [],
         ]);
         exit;
     }
@@ -146,8 +148,12 @@ class DebugController
     private static function getHttpStatusText(int $code): string
     {
         $statusTexts = [
-            200 => 'OK', 400 => 'Bad Request', 401 => 'Unauthorized',
-            403 => 'Forbidden', 404 => 'Not Found', 500 => 'Internal Server Error',
+            200 => 'OK',
+            400 => 'Bad Request',
+            401 => 'Unauthorized',
+            403 => 'Forbidden',
+            404 => 'Not Found',
+            500 => 'Internal Server Error',
         ];
 
         return $statusTexts[$code] ?? 'Unknown';
@@ -175,7 +181,7 @@ class DebugController
     {
         http_response_code(500);
         Config::loadEnv();
-        
+
         View::render('Internal::errors.database', [
             'message' => $e->getMessage(),
             'config_errors' => $e->getConfigErrors(),

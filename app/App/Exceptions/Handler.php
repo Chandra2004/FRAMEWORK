@@ -776,9 +776,16 @@ class Handler
             return;
         }
 
+        $safeEnv = [
+            'DB_HOST' => $_ENV['DB_HOST'] ?? 'N/A',
+            'DB_NAME' => $_ENV['DB_NAME'] ?? 'N/A',
+            'DB_PORT' => $_ENV['DB_PORT'] ?? '3306',
+            'APP_ENV' => $_ENV['APP_ENV'] ?? 'N/A',
+        ];
+
         $data = [
             'message' => $e->getMessage(),
-            'env_values' => $_ENV,
+            'env_values' => $safeEnv,
             'request_info' => self::getRequestInfo(),
             'environment' => ['php_version' => PHP_VERSION, 'app_env' => $env],
         ];

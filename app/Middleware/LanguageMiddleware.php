@@ -8,9 +8,13 @@ class LanguageMiddleware implements Middleware
 {
     public function before()
     {
-        // 1. Ambil daftar bahasa yang didukung dari config
-        $supportedLocales = config('app.supported_locales', ['en', 'id']);
-        $defaultLocale = config('app.locale', 'id');
+        // 1. Ambil daftar bahasa yang didukung (mendukung dot notation atau ENV direct string)
+        $supportedLocales = config('app.supported_locales', config('APP_SUPPORTED_LOCALES', 'en,id'));
+        if (is_string($supportedLocales)) {
+            $supportedLocales = array_map('trim', explode(',', $supportedLocales));
+        }
+
+        $defaultLocale = config('app.locale', config('APP_LOCALE', 'id'));
 
         // 2. Cek Query Parameter (?lang=id)
         $requestedLang = request('lang');

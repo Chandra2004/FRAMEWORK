@@ -13,10 +13,14 @@ class UserRequest extends FormRequest
 
     public function rules(): array
     {
+        // Deteksi create vs update berdasarkan route parameter 'uid'
+        $isCreate = empty(request()->route('uid'));
+
         return [
             'name' => 'required|min:3|max:100',
             'email' => 'required|email',
-            'profile_picture' => 'nullable|images|max:1024',
+            'password' => $isCreate ? 'required|min:8' : 'nullable|min:8',
+            'profile_picture' => 'nullable|image|max:1024',
             'delete_profile_picture' => 'nullable'
         ];
     }

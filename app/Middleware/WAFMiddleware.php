@@ -53,9 +53,9 @@ class WAFMiddleware implements Middleware
                         ];
 
                         if (config('APP_ENV') === 'production') {
-                            return abort(403, 'Sistem keamanan kami mendeteksi aktivitas mencurigakan.');
+                            abort(403, 'Sistem keamanan kami mendeteksi aktivitas mencurigakan.');
                         } else {
-                            return json($response, 403);
+                            json($response, 403);
                         }
                     }
                 }
@@ -68,7 +68,7 @@ class WAFMiddleware implements Middleware
         // Scan specific helper to check URI for XSS too
         $uri = request()->path();
         if (preg_match($patterns['xss']['pattern'], urldecode($uri))) {
-            return abort(403, 'Akses ditolak: URI mengandung karakter tidak aman.');
+            abort(403, 'Akses ditolak: URI mengandung karakter tidak aman.');
         }
     }
 

@@ -308,29 +308,38 @@ class Queue
      */
     public static function fail(int|string $id, ?\Throwable $exception = null): void
     {
+        // Auto-ensure (DDL di luar transaksi agar tidak implicit commit di MySQL)
+        static::createFailedJobsTable();
+
         $db = Database::getInstance();
+        $db->beginTransaction();
 
-        // Ambil job data dulu
-        $db->query("SELECT `queue`, `payload` FROM `" . static::$table . "` WHERE `id` = :id;");
-        $db->bind(':id', $id);
-        $row = $db->single();
+        try {
+            // Ambil job data dulu dengan exclusive lock
+            $db->query("SELECT `queue`, `payload` FROM `" . static::$table . "` WHERE `id` = :id FOR UPDATE;");
+            $db->bind(':id', $id);
+            $row = $db->single();
 
-        if ($row) {
-            // Insert ke failed_jobs
-            static::createFailedJobsTable(); // Auto-ensure
+            if ($row) {
+                $exceptionText = $exception
+                    ? $exception::class . ": " . $exception->getMessage() . "\n" . $exception->getTraceAsString()
+                    : null;
 
-            $exceptionText = $exception
-                ? $exception::class . ": " . $exception->getMessage() . "\n" . $exception->getTraceAsString()
-                : null;
+                $db->query("INSERT INTO `" . static::$failedTable . "` (`queue`, `payload`, `exception`) VALUES (:queue, :payload, :exception);");
+                $db->bind(':queue', $row['queue']);
+                $db->bind(':payload', $row['payload']);
+                $db->bind(':exception', $exceptionText);
+                $db->execute();
 
-            $db->query("INSERT INTO `" . static::$failedTable . "` (`queue`, `payload`, `exception`) VALUES (:queue, :payload, :exception);");
-            $db->bind(':queue', $row['queue']);
-            $db->bind(':payload', $row['payload']);
-            $db->bind(':exception', $exceptionText);
-            $db->execute();
-
-            // Hapus dari jobs
-            static::delete($id);
+                // Hapus dari jobs
+                $db->query("DELETE FROM `" . static::$table . "` WHERE `id` = :id;");
+                $db->bind(':id', $id);
+                $db->execute();
+            }
+            $db->commit();
+        } catch (\Throwable $e) {
+            $db->rollBack();
+            throw $e;
         }
     }
 
@@ -648,8 +657,11 @@ class Queue
         $db = Database::getInstance();
         $uniqueId = $job->uniqueId();
 
-        $db->query("SELECT COUNT(*) AS cnt FROM `" . static::$table . "` WHERE `payload` LIKE :uid;");
-        $db->bind(':uid', '%' . addslashes($uniqueId) . '%');
+        // Escape % and _ for LIKE query
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $uniqueId);
+
+        $db->query("SELECT COUNT(*) AS cnt FROM `" . static::$table . "` WHERE `payload` LIKE :uid ESCAPE '\\\\';");
+        $db->bind(':uid', '%"' . $escaped . '"%');
         $row = $db->single();
 
         return ((int) ($row['cnt'] ?? 0)) > 0;
@@ -835,12 +847,18 @@ class Queue
      */
     public static function dispatchClosure(callable $closure, string $queue = 'default', int $delay = 0): int|string|null
     {
-        // Karena PHP closure tidak bisa di-serialize secara native,
-        // kita simpan sebagai ClosureJob dengan serialized code reference
+        if (!class_exists('\\Opis\\Closure\\SerializableClosure')) {
+            throw new \RuntimeException("Closure dispatching requires opis/closure library. Please install opis/closure.");
+        }
+
+        $class = '\\Opis\\Closure\\SerializableClosure';
+        $wrapper = new $class($closure);
+        $serialized = serialize($wrapper);
+
         $payload = json_encode([
             'job' => '__closure__',
             'data' => [
-                'closure_hash' => spl_object_id((object) $closure),
+                'closure_serialized' => base64_encode($serialized),
             ],
         ]);
 

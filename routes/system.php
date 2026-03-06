@@ -21,12 +21,12 @@ function checkSystemKey()
 {
     // === LAYER 1: Feature Toggle ===
     if (\TheFramework\App\Core\Config::get('ALLOW_WEB_MIGRATION') !== 'true') {
-        header('HTTP/1.0 403 Forbidden');
-        die("⛔ FEATURE DISABLED: Web migration tools are disabled in configuration.");
+        abort(403, "⛔ FEATURE DISABLED: Web migration tools are disabled in configuration.");
     }
 
     // === LAYER 2: IP Whitelist ===
-    $clientIp = \TheFramework\Helpers\Helper::get_client_ip();
+    // Gunakan REMOTE_ADDR langsung agar tidak bisa di-spoof via header HTTP_CLIENT_IP
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     $allowedIps = \TheFramework\App\Core\Config::get('SYSTEM_ALLOWED_IPS', '127.0.0.1');
     $ipWhitelist = array_map('trim', explode(',', $allowedIps));
 
@@ -35,8 +35,7 @@ function checkSystemKey()
             "System route access denied for IP: $clientIp",
             ['uri' => $_SERVER['REQUEST_URI'] ?? '']
         );
-        header('HTTP/1.0 403 Forbidden');
-        die("⛔ ACCESS DENIED: Your IP ($clientIp) is not whitelisted for system access.");
+        abort(403, "⛔ ACCESS DENIED: Your IP ($clientIp) is not whitelisted for system access.");
     }
 
     // === LAYER 3: Basic Auth (Required if configured) ===
@@ -68,8 +67,7 @@ function checkSystemKey()
 
         if (!$validUser || !$validPass) {
             header('WWW-Authenticate: Basic realm="System Administration Panel"');
-            header('HTTP/1.0 401 Unauthorized');
-            die("⛔ AUTHENTICATION REQUIRED: Please login to access system tools.");
+            abort(401, "⛔ AUTHENTICATION REQUIRED: Please login to access system tools.");
         }
     }
 
@@ -294,7 +292,12 @@ Router::add('GET', '/_system/schema', function () {
         echo str_repeat("-", 45) . "\n";
 
         foreach ($tables as $table) {
-            $count = $db->query("SELECT COUNT(*) as total FROM `$table`")->single();
+            // Validasi nama tabel hanya alphanumeric + underscore untuk mencegah SQLi/Break
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) {
+                printf("%-30s | %-10s\n", substr((string)$table, 0, 30), "SKIPPED");
+                continue;
+            }
+            $count = $db->query("SELECT COUNT(*) as total FROM `{$table}`")->single();
             printf("%-30s | %-10d\n", $table, $count['total'] ?? 0);
         }
         
@@ -446,8 +449,11 @@ Router::add('GET', '/_system/check-files', function () {
 
 // 6. WHAT'S MY IP
 Router::add('GET', '/_system/my-ip', function () {
-    return renderTerminal('my-ip', function () {
-        $ip = \TheFramework\Helpers\Helper::get_client_ip();
+    // === SARAN-B4-003: Rate Limit for reconnaissance protection ===
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    \TheFramework\App\Http\RateLimiter::check($ip, 10, 300); // Max 10 checks per 5 min
+
+    return renderTerminal('my-ip', function () use ($ip) {
         echo "🌐 YOUR CURRENT IP ADDRESS:\n==============================\n";
         echo $ip . "\n\n";
         echo "Note: Use this IP to update SYSTEM_ALLOWED_IPS in your .env or GitHub Secrets.";
@@ -640,16 +646,28 @@ Router::add('GET', '/_system/tinker', function () {
 Router::add('POST', '/_system/tinker', function () {
     checkSystemKey();
 
-    // Pastikan request AJAX
-    if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {
-        // Optional security check
+    // === CSRF PROTECTION VALIDATION ===
+    $token = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!\TheFramework\Middleware\CsrfMiddleware::verifyToken($token)) {
+        return json(['error' => 'Security Error', 'result' => 'CSRF token mismatch'], 403);
     }
 
     $code = $_POST['code'] ?? '';
 
     if (trim($code) === '') {
-        echo json_encode(['output' => '', 'result' => null]);
-        return;
+        return json(['output' => '', 'result' => null]);
+    }
+
+    // === BLACKLIST DANGEROUS FUNCTIONS (RCE Protection) ===
+    $blocked = [
+        'system', 'exec', 'shell_exec', 'passthru', 'popen', 'proc_open', 'pcntl_exec',
+        'eval', 'assert', 'preg_replace', 'create_function', 'include', 'require',
+        'file_put_contents', 'file_get_contents', 'unlink', 'rmdir', 'chmod', 'chown'
+    ];
+    foreach ($blocked as $func) {
+        if (preg_match('/\b' . preg_quote($func) . '\s*\(/i', $code)) {
+            return json(['output' => '', 'result' => "🔥 Security Error: Function '$func' is blocked for security reasons."], 403);
+        }
     }
 
     // 1. Auto-Alias Models (Fix Path Detection)

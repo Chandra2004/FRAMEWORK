@@ -8,6 +8,10 @@ use TheFramework\App\Core\Config;
 
 /**
  * Global Helpers - The Framework v5.0 (Paten All-In)
+ * 
+ * CATATAN PENTING:
+ * - redirect() dan keluarganya (back, to) memanggil exit() secara internal.
+ * - abort() melempar HttpException (terminal).
  */
 
 if (!function_exists('url')) {
@@ -86,6 +90,13 @@ if (!function_exists('config')) {
 }
 
 if (!function_exists('request')) {
+    /**
+     * Get the Request instance or a specific input value.
+     *
+     * @param string|null $key
+     * @param mixed $default
+     * @return \TheFramework\App\Http\Request|mixed
+     */
     function request($key = null, $default = null)
     {
         return Helper::request($key, $default);
@@ -116,17 +127,20 @@ if (!function_exists('cache')) {
      */
     function cache(string|array|null $key = null, $default = null)
     {
-        $cache = \TheFramework\App\Cache\CacheManager::class;
-
         if ($key === null) {
-            return $cache;
+            return new class {
+                public function __call($method, $args)
+                {
+                    return \TheFramework\App\Cache\CacheManager::$method(...$args);
+                }
+            };
         }
 
         if (is_array($key)) {
-            return $cache::putMany($key);
+            return \TheFramework\App\Cache\CacheManager::putMany($key);
         }
 
-        return $cache::get($key, $default);
+        return \TheFramework\App\Cache\CacheManager::get($key, $default);
     }
 }
 
@@ -204,9 +218,7 @@ if (!function_exists('now')) {
 if (!function_exists('abort')) {
     function abort(int $code, string $message = '')
     {
-        http_response_code($code);
-        // Bisa diarahkan ke ErrorController atau View khusus
-        die("Error $code: $message");
+        throw new \TheFramework\App\Exceptions\HttpException($code, $message);
     }
 }
 

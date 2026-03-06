@@ -37,11 +37,11 @@ class BladeInit
             $root = defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__);
             $cachePath = $root . '/storage/framework/views';
             if (!is_dir($cachePath)) {
-                if (!@mkdir($cachePath, 0777, true) && !is_dir($cachePath)) {
+                if (!@mkdir($cachePath, 0755, true) && !is_dir($cachePath)) {
                     throw new \Exception("Failed to create Blade cache directory: $cachePath");
                 }
             } else if (!is_writable($cachePath)) {
-                @chmod($cachePath, 0777);
+                @chmod($cachePath, 0755);
             }
 
             $resolver->register('blade', function () use ($filesystem, $cachePath) {
@@ -54,12 +54,12 @@ class BladeInit
 
                 // @auth
                 $compiler->if('auth', function () {
-                    return session('user') !== null;
+                    return session('user.uid') !== null && session('auth_token') !== null;
                 });
 
                 // @guest
                 $compiler->if('guest', function () {
-                    return session('user') === null;
+                    return session('user.uid') === null;
                 });
 
                 // @error('field_name')

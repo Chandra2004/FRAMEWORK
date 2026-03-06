@@ -145,9 +145,13 @@ class Schema
     {
         try {
             $db = Database::getInstance();
-            $db->query("SELECT 1 FROM `$table` LIMIT 1;");
-            $db->execute();
-            return true;
+            $db->query(
+                "SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.TABLES
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table;"
+            );
+            $db->bind(':table', $table);
+            $row = $db->single();
+            return ($row['cnt'] ?? 0) > 0;
         } catch (\Throwable) {
             return false;
         }

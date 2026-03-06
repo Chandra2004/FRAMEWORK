@@ -2,10 +2,10 @@
 
 namespace TheFramework\Console\Commands;
 
-use TheFramework\Console\CommandInterface;
+use TheFramework\Console\BaseCommand;
 use TheFramework\App\Http\Router;
 
-class RouteCacheCommand implements CommandInterface
+class RouteCacheCommand extends BaseCommand
 {
     public function getName(): string
     {
@@ -17,18 +17,13 @@ class RouteCacheCommand implements CommandInterface
         return 'Cache file route untuk performa yang lebih cepat';
     }
 
-    public function run(array $args): void
+    public function handle(array $args): void
     {
-        echo "\n  \033[1;44;97m INFO \033[0m Sedang memproses route caching...\n";
+        $this->info("Sedang memproses route caching...");
 
         if (!defined('ROOT_DIR')) {
             define('ROOT_DIR', dirname(__DIR__, 3));
         }
-
-        // Fresh load routes
-        // PENTING: Kita harus reset Router dulu jika ada sisa route sebelumnya,
-        // tapi class Router saat ini property-nya static private tanpa method reset.
-        // Asumsi: artisan baru jalan, Router masih kosong.
 
         $routeFile = ROOT_DIR . '/routes/web.php';
         if (file_exists($routeFile)) {
@@ -38,21 +33,20 @@ class RouteCacheCommand implements CommandInterface
         $routes = Router::getRouteDefinitions();
 
         if (empty($routes)) {
-            echo "\n  \033[1;41;97m ERROR \033[0m Tidak ada route yang ditemukan untuk di-cache.\n";
+            $this->error("Tidak ada route yang ditemukan untuk di-cache.");
             return;
         }
 
-        // Trik Optimasi: Grouping by Method untuk lookup lebih cepat O(1)
-        // Struktur cache:
-        // [
-        //   'GET' => [
-        //      '/url' => [...data check direct...],
-        //      'REGEX' => [ ...list regex... ]
-        //   ]
-        // ]
-        // Tapi untuk sekarang kita simpan flat dulu agar Router::loadCachedRoutes mudah mencernanya.
+        // Filter routes yang mengandung Closure sebelum cache
+        $cacheable = array_filter($routes, function ($route) {
+            return !($route['handler'] instanceof \Closure);
+        });
 
-        $cacheContent = "<?php\n\nreturn " . var_export($routes, true) . ";\n";
+        if (count($cacheable) < count($routes)) {
+            $this->warn((count($routes) - count($cacheable)) . " route dengan Closure di-skip (tidak bisa di-cache)");
+        }
+
+        $cacheContent = "<?php\n\nreturn " . var_export($cacheable, true) . ";\n";
         $cacheFile = ROOT_DIR . '/storage/cache/routes.php';
 
         if (!is_dir(dirname($cacheFile))) {
@@ -60,10 +54,10 @@ class RouteCacheCommand implements CommandInterface
         }
 
         if (file_put_contents($cacheFile, $cacheContent)) {
-            echo "\n  \033[1;42;30m SUCCESS \033[0m Route berhasil di-cache! (" . count($routes) . " routes)\n";
-            echo "\033[38;5;240m  Lokasi: " . $cacheFile . "\033[0m\n";
+            $this->success("Route berhasil di-cache! (" . count($routes) . " routes)");
+            $this->line("  Lokasi: " . $cacheFile);
         } else {
-            echo "\n  \033[1;41;97m ERROR \033[0m Gagal menulis file cache.\n";
+            $this->error("Gagal menulis file cache.");
         }
     }
 }

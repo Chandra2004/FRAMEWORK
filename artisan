@@ -110,6 +110,16 @@ if (!isset($commands[$commandName])) {
 
 // Actual Execution
 try {
+    // === SARAN-B4-005: Handle --help flag ===
+    if (in_array('--help', $args) || in_array('-h', $args)) {
+        showHeader();
+        echo C_YELLOW . " Command: " . C_RESET . C_BOLD . $commandName . C_RESET . PHP_EOL;
+        echo C_YELLOW . " Description: " . C_RESET . $commands[$commandName]->getDescription() . PHP_EOL . PHP_EOL;
+        echo C_CYAN . " Usage:" . C_RESET . PHP_EOL;
+        echo "   php artisan $commandName [options] [arguments]" . PHP_EOL . PHP_EOL;
+        exit(0);
+    }
+
     $commands[$commandName]->run($args);
 } catch (\Throwable $e) {
     echo C_RED . " ✖ CRITICAL ERROR: " . $e->getMessage() . C_RESET . PHP_EOL;

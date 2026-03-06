@@ -153,7 +153,15 @@ class Migrator
      */
     public function resolve(string $filePath): object
     {
-        require_once $filePath;
+        try {
+            require_once $filePath;
+        } catch (\ParseError $e) {
+            throw new \RuntimeException(
+                "Syntax error di file migrasi: $filePath — " . $e->getMessage(),
+                0,
+                $e
+            );
+        }
 
         $filename = pathinfo($filePath, PATHINFO_FILENAME);
         $className = $this->resolveClassName($filename);
@@ -691,7 +699,7 @@ class Migrator
         $filename = "{$timestamp}_{$snakeName}.php";
         $filepath = $path . DIRECTORY_SEPARATOR . $filename;
 
-        $className = str_replace(' ', '', ucwords(str_replace('_', ' ', $snakeName)));
+        $className = 'Migration_' . $timestamp . '_' . $snakeName;
 
         if ($create && $table) {
             $stub = $this->getCreateStub($className, $table);
@@ -712,9 +720,11 @@ class Migrator
         return <<<PHP
 <?php
 
-use TheFramework\\App\\Schema\\Schema;
-use TheFramework\\App\\Schema\\Blueprint;
-use TheFramework\\Database\\Migration;
+namespace Database\Migrations;
+
+use TheFramework\App\Schema\Schema;
+use TheFramework\App\Schema\Blueprint;
+use TheFramework\Database\Migration;
 
 class {$className} extends Migration
 {
@@ -740,9 +750,11 @@ PHP;
         return <<<PHP
 <?php
 
-use TheFramework\\App\\Schema\\Schema;
-use TheFramework\\App\\Schema\\Blueprint;
-use TheFramework\\Database\\Migration;
+namespace Database\Migrations;
+
+use TheFramework\App\Schema\Schema;
+use TheFramework\App\Schema\Blueprint;
+use TheFramework\Database\Migration;
 
 class {$className} extends Migration
 {
@@ -768,9 +780,11 @@ PHP;
         return <<<PHP
 <?php
 
-use TheFramework\\App\\Schema\\Schema;
-use TheFramework\\App\\Schema\\Blueprint;
-use TheFramework\\Database\\Migration;
+namespace Database\Migrations;
+
+use TheFramework\App\Schema\Schema;
+use TheFramework\App\Schema\Blueprint;
+use TheFramework\Database\Migration;
 
 class {$className} extends Migration
 {

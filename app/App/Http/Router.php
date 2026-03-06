@@ -67,7 +67,7 @@ class Router
     public static function redirect(string $uri, string $destination, int $status = 302): Route
     {
         return self::any($uri, function () use ($destination, $status) {
-            \TheFramework\Helpers\Helper::redirect($destination, null, null, 0);
+            header("Location: $destination", true, $status);
             exit;
         });
     }
@@ -254,10 +254,37 @@ class Router
 
                     $params = array_intersect_key($matches, array_flip(array_filter(array_keys($matches), 'is_string')));
 
+                    // ✅ FIX: Set route parameters globally so request()->route() works
+                    Request::setRouteParams($params);
+
                     if ($route['handler'] instanceof \Closure) {
                         $reflection = new \ReflectionFunction($route['handler']);
-                        $dependencies = Container::getInstance()->resolveDependencies($reflection->getParameters());
-                        call_user_func_array($route['handler'], $params);
+                        $container = Container::getInstance();
+                        $finalArgs = [];
+                        foreach ($reflection->getParameters() as $param) {
+                            $name = $param->getName();
+                            $type = $param->getType();
+
+                            if (array_key_exists($name, $params)) {
+                                $finalArgs[] = $params[$name];
+                                unset($params[$name]);
+                            } elseif ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
+                                try {
+                                    $finalArgs[] = $container->make($type->getName());
+                                } catch (\Exception $e) {
+                                    if ($param->isDefaultValueAvailable()) {
+                                        $finalArgs[] = $param->getDefaultValue();
+                                    } else {
+                                        throw $e;
+                                    }
+                                }
+                            } elseif ($param->isDefaultValueAvailable()) {
+                                $finalArgs[] = $param->getDefaultValue();
+                            } else {
+                                $finalArgs[] = null;
+                            }
+                        }
+                        call_user_func_array($route['handler'], $finalArgs);
 
                     } else {
                         if (!class_exists($route['handler'])) {

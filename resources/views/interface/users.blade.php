@@ -169,6 +169,22 @@
                             </div>
                         </div>
 
+                        <!-- Password Field -->
+                        <div class="space-y-2">
+                            <label for="password"
+                                class="block text-sm font-semibold text-slate-300">{{ __('messages.password') }}</label>
+                            <div class="relative group">
+                                <div
+                                    class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors">
+                                    <i data-lucide="lock" class="w-5 h-5"></i>
+                                </div>
+                                <input type="password" name="password" id="password" 
+                                    class="block w-full rounded-xl border-slate-700 bg-slate-950 pl-11 py-3.5 text-white placeholder-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none"
+                                    placeholder="********">
+                            </div>
+                            <p class="text-xs text-slate-500">{{ __('messages.password_desc') }}</p>
+                        </div>
+
                         <!-- File Upload Area -->
                         <div class="space-y-2">
                             <label

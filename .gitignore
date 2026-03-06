@@ -64,6 +64,7 @@ Thumbs.db
 # PROJECT SPECIFIC (Audit & Verification)
 #-----------------------------------------------------------------------------
 /.PENILAIAN/
+/.report/
 .AUDIT/
 .BACKUP/
 QA_AUDIT.md

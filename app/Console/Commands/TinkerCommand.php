@@ -3,6 +3,7 @@
 namespace TheFramework\Console\Commands;
 
 use TheFramework\Console\BaseCommand;
+use TheFramework\App\Core\Config;
 use Throwable;
 
 class TinkerCommand extends BaseCommand
@@ -19,6 +20,11 @@ class TinkerCommand extends BaseCommand
 
     public function handle(array $args): void
     {
+        if (Config::get('APP_ENV') === 'production') {
+            $this->error("Tinker dinonaktifkan di production! Set APP_ENV=local.");
+            return;
+        }
+
         $this->clear();
         $this->line("──────────────────────────────────────────────────", self::COLOR_MAGENTA);
         $this->line("  THE FRAMEWORK TINKER ENGINE v5.0", self::STYLE_BOLD . self::COLOR_CYAN);
@@ -55,6 +61,17 @@ class TinkerCommand extends BaseCommand
             $code = trim($input);
             if ($code === '')
                 continue;
+
+            // Minimal safety check
+            $dangerous = ['system', 'exec', 'shell_exec', 'passthru', 'popen', 'proc_open',
+                          'pcntl_exec', 'file_put_contents', 'unlink', 'rmdir'];
+            foreach ($dangerous as $func) {
+                if (preg_match('/\b' . preg_quote($func) . '\s*\(/i', $code)) {
+                    $this->warn("⚠️  Perintah berbahaya '{$func}()' diblokir di Tinker.");
+                    $this->comment("Gunakan terminal langsung untuk operasi sistem.");
+                    continue 2; // Skip ke prompt berikutnya
+                }
+            }
 
             if (substr($code, -1) === ';')
                 $code = substr($code, 0, -1);

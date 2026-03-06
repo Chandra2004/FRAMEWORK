@@ -59,46 +59,20 @@ class Helper
 
     /**
      * Manipulasi Request (Wrapper).
+     *
+     * @param string|null $key
+     * @param mixed $default
+     * @return \TheFramework\App\Http\Request|mixed
      */
     public static function request($key = null, $default = null)
     {
-        $data = array_merge($_GET, $_POST);
-        if ($key !== null)
-            return $data[$key] ?? $default;
+        $request = \TheFramework\App\Core\Container::getInstance()->make(\TheFramework\App\Http\Request::class);
 
-        return new class ($data) {
-            private $data;
-            public function __construct($data)
-            {
-                $this->data = $data; }
-            public function all()
-            {
-                return $this->data; }
-            public function only(array $keys)
-            {
-                return array_intersect_key($this->data, array_flip($keys)); }
-            public function except(array $keys)
-            {
-                return array_diff_key($this->data, array_flip($keys)); }
-            public function get($key, $default = null)
-            {
-                return $this->data[$key] ?? $default; }
-            public function has($key)
-            {
-                return isset($this->data[$key]); }
-            public function path()
-            {
-                return parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); }
-            public function ip()
-            {
-                return Helper::get_client_ip(); }
-            public function method()
-            {
-                return strtoupper($_SERVER['REQUEST_METHOD']); }
-            public function isMethod($method)
-            {
-                return strtoupper($_SERVER['REQUEST_METHOD']) === strtoupper($method); }
-        };
+        if ($key !== null) {
+            return $request->input($key, $default);
+        }
+
+        return $request;
     }
 
     /**
@@ -191,13 +165,9 @@ class Helper
      */
     public static function get_client_ip(): string
     {
-        foreach (['HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'] as $key) {
-            if (!empty($_SERVER[$key])) {
-                $ips = explode(',', $_SERVER[$key]);
-                return filter_var(trim($ips[0]), FILTER_VALIDATE_IP) ?: '0.0.0.0';
-            }
-        }
-        return '0.0.0.0';
+        // REMOTE_ADDR adalah satu-satunya yang tidak bisa di-spoof oleh client secara langsung.
+        // Header lain seperti HTTP_X_FORWARDED_FOR hanya boleh dipercaya jika kita tahu ada proxy/WAF.
+        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 
     public static function is_ajax(): bool
@@ -273,12 +243,14 @@ class Helper
     public static function validateAuthToken(string $token, string $uid): bool
     {
         $sessionToken = self::session_get('auth_token');
-        if (!$sessionToken)
-            return false;
+        $sessionUid = self::session_get('user.uid');
 
-        // Sederhana: Token harus sama dengan di session
-        // Kita bisa tambahkan pengecekan fingerprint IP/User-Agent disini agar LEBIH AMAN.
-        return hash_equals($sessionToken, $token);
+        if (!$sessionToken || !$sessionUid) {
+            return false;
+        }
+
+        // Validasi token DAN kepemilikan UID agar tidak terjadi session hijacking lintas user
+        return hash_equals($sessionToken, $token) && hash_equals((string)$sessionUid, (string)$uid);
     }
 
     /**
