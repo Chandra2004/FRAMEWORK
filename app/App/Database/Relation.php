@@ -660,7 +660,7 @@ class Relation
         $db->beginTransaction();
         try {
             if ($detaching) {
-                $existing = $this->query->pluck($this->relatedKey);
+                $existing = $this->query->pluck("{$this->pivotTable}.{$this->relatedKey}");
                 $toRemove = array_diff($existing, (array) $ids);
                 if (!empty($toRemove)) {
                     $this->detach($toRemove);
@@ -682,7 +682,7 @@ class Relation
 
     public function syncWithPivotValues(array $ids, array $attributes): bool
     {
-        $existing = $this->query->pluck($this->relatedKey);
+        $existing = $this->query->pluck("{$this->pivotTable}.{$this->relatedKey}");
         $toRemove = array_diff($existing, $ids);
         if (!empty($toRemove)) {
             $this->detach($toRemove);
@@ -695,7 +695,7 @@ class Relation
 
     public function toggle($ids)
     {
-        $existing = $this->query->pluck($this->relatedKey);
+        $existing = $this->query->pluck("{$this->pivotTable}.{$this->relatedKey}");
         $attached = [];
         $detached = [];
 

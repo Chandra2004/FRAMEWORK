@@ -947,11 +947,16 @@ class QueryBuilder
         $results = $this->get();
         $this->columns = $originalColumns;
         $plain = [];
+
+        // When raw SQL returns columns, table prefix is discarded in PDO array keys.
+        $colName = (strpos($column, '.') !== false) ? explode('.', $column)[1] : $column;
+        $keyName = ($key && strpos($key, '.') !== false) ? explode('.', $key)[1] : $key;
+
         foreach ($results as $row) {
             $rowArray = (array) $row;
-            $val = $rowArray[$column] ?? null;
+            $val = $rowArray[$colName] ?? null;
             if ($key)
-                $plain[$rowArray[$key]] = $val;
+                $plain[$rowArray[$keyName]] = $val;
             else
                 $plain[] = $val;
         }
