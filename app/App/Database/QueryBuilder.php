@@ -201,6 +201,19 @@ class QueryBuilder
 
     public function where($column, $operator = null, $value = null, $boolean = 'AND')
     {
+        if (is_array($column)) {
+            foreach ($column as $key => $val) {
+                if (is_array($val) && count($val) === 3) {
+                    $this->where($val[0], $val[1], $val[2], $boolean);
+                } elseif (is_array($val)) {
+                    $this->where($val[0], $val[1], $val[2] ?? null, $boolean);
+                } else {
+                    $this->where($key, '=', $val, $boolean);
+                }
+            }
+            return $this;
+        }
+
         if ($column instanceof Closure) {
             return $this->whereNested($column, $boolean);
         }
