@@ -8,7 +8,7 @@ use Closure;
 
 /**
  * @method static \TheFramework\App\Database\QueryBuilder query()
- * @method static array all()
+ * @method static \TheFramework\Helpers\Collection all()
  * @method static mixed find($id)
  * @method static mixed findOrFail($id)
  * @method static static with(array $relations)
@@ -111,78 +111,81 @@ abstract class Model implements \JsonSerializable, ArrayAccess
 
     public function save(array $options = [])
     {
-        $query = $this->newQuery();
-
-        // Fire saving event
-        if ($this->fireModelEvent('saving') === false)
+        if ($this->fireModelEvent('saving') === false) {
             return false;
+        }
 
         if ($this->timestamps && ($options['timestamps'] ?? true) !== false) {
             $this->updateTimestamps();
         }
 
-        $attributes = $this->getAttributes();
-
         if ($this->exists) {
-            // Fire updating event
-            if ($this->fireModelEvent('updating') === false)
-                return false;
-
-            if (empty($attributes))
-                return true;
-
-            $id = $this->getKey();
-            $saved = $query->where($this->getKeyName(), $id)->update($attributes) > 0;
-
-            if ($saved) {
-                $this->changes = $this->getDirty();
-                $this->syncOriginal();
-                $this->fireModelEvent('updated');
-                $this->touchOwners();
-            }
+            $saved = $this->isDirty() ? $this->performUpdate($options) : true;
         } else {
-            // Fire creating event
-            if ($this->fireModelEvent('creating') === false)
-                return false;
-
-            if (empty($attributes[$this->getKeyName()]) && !$this->incrementing) {
-                $attributes[$this->getKeyName()] = $this->generateKey();
-                $this->setAttribute($this->getKeyName(), $attributes[$this->getKeyName()]);
-            }
-
-            // Get fresh attributes after UUID generation
-            $attributes = $this->getAttributes();
-
-            if (empty($attributes)) {
-                error_log("[MODEL SAVE] No attributes to save for model [" . static::class . "].");
-                return false;
-            }
-
-            // Refactor: Use insert() instead of insertGetId() for non-incrementing models
-            // to avoid false-negatives when lastInsertId() returns "0"
-            if (!$this->incrementing) {
-                $saved = $query->insert($attributes) > 0;
-            } else {
-                $id = $query->insertGetId($attributes);
-                if ($id) {
-                    $this->setAttribute($this->getKeyName(), $id);
-                    $saved = true;
-                } else {
-                    $saved = false;
-                }
-            }
-
-            if ($saved) {
-                $this->exists = true;
-                $this->syncOriginal();
-                $this->fireModelEvent('created');
-            } else {
-                return false;
-            }
+            $saved = $this->performInsert($options);
         }
 
+        if ($saved) {
+            $this->finishSave($options);
+        }
+
+        return $saved;
+    }
+
+    protected function performUpdate(array $options = [])
+    {
+        if ($this->fireModelEvent('updating') === false) {
+            return false;
+        }
+
+        $dirty = $this->getDirty();
+
+        if (count($dirty) > 0) {
+            $this->newQuery()->where($this->getKeyName(), $this->getKey())->update($dirty);
+            $this->syncChanges();
+            $this->fireModelEvent('updated');
+        }
+
+        return true;
+    }
+
+    protected function performInsert(array $options = [])
+    {
+        if ($this->fireModelEvent('creating') === false) {
+            return false;
+        }
+
+        $attributes = $this->attributes;
+
+        if (empty($attributes[$this->getKeyName()]) && !$this->incrementing) {
+            $attributes[$this->getKeyName()] = $this->generateKey();
+            $this->setAttribute($this->getKeyName(), $attributes[$this->getKeyName()]);
+        }
+
+        if ($this->incrementing) {
+            $id = $this->newQuery()->insertGetId($attributes);
+            $this->setAttribute($this->getKeyName(), $id);
+        } else {
+            $this->newQuery()->insert($attributes);
+        }
+
+        $this->exists = true;
+        $this->syncOriginal();
+        $this->fireModelEvent('created');
+
+        return true;
+    }
+
+    protected function finishSave(array $options = [])
+    {
         $this->fireModelEvent('saved');
-        return $saved ?? false;
+        $this->syncOriginal();
+        $this->touchOwners();
+    }
+
+    protected function syncChanges()
+    {
+        $this->changes = $this->getDirty();
     }
 
     /**
@@ -724,7 +727,6 @@ abstract class Model implements \JsonSerializable, ArrayAccess
     {
         $this->attributes = $attributes;
         if ($sync) {
-            $this->exists = true;
             $this->syncOriginal();
         }
         return $this;
@@ -816,23 +818,46 @@ abstract class Model implements \JsonSerializable, ArrayAccess
 
     public function getAttribute($key)
     {
-        if (array_key_exists($key, $this->attributes)) {
-            $value = $this->attributes[$key];
-            if ($this->hasGetMutator($key)) {
-                return $this->mutateAttribute($key, $value);
-            }
-            if (isset($this->casts[$key])) {
-                return $this->castAttribute($key, $value);
-            }
-            return $value;
+        if (!$key) {
+            return null;
         }
-        if (array_key_exists($key, $this->relations))
+
+        // 1. Check if it's in attributes
+        if (array_key_exists($key, $this->attributes)) {
+            return $this->getRawAttributeValue($key);
+        }
+
+        // 2. Check if it's a loaded relation
+        if (array_key_exists($key, $this->relations)) {
             return $this->relations[$key];
-        if ($this->hasGetMutator($key))
-            return $this->mutateAttribute($key, null);
-        if (method_exists($this, $key))
+        }
+
+        // 3. Check for relationship method
+        if (method_exists($this, $key)) {
             return $this->getRelationValue($key);
+        }
+
+        // 4. Check for getter/mutator if nothing found yet
+        if ($this->hasGetMutator($key)) {
+            return $this->mutateAttribute($key, null);
+        }
+
         return null;
+    }
+
+    protected function getRawAttributeValue($key)
+    {
+        $value = $this->attributes[$key];
+
+        if ($this->hasGetMutator($key)) {
+            return $this->mutateAttribute($key, $value);
+        }
+
+        if (isset($this->casts[$key])) {
+            return $this->castAttribute($key, $value);
+        }
+
+        return $value;
     }
 
     public function setAttribute($key, $value)
@@ -855,10 +880,18 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         if (array_key_exists($key, $this->relations)) {
             return $this->relations[$key];
         }
-        $value = $this->$key();
-        if (!$value instanceof Relation)
-            return $value;
-        $results = $value->getResults();
+
+        // Execute the relation method
+        $relation = $this->$key();
+
+        // If it's not a Relation instance, just return it (calculated attribute)
+        if (!$relation instanceof Relation) {
+            return $relation;
+        }
+
+        // Otherwise, fetch and cache the result
+        $results = $relation->getResults();
+        
         return $this->setRelation($key, $results);
     }
 
@@ -1207,5 +1240,10 @@ abstract class Model implements \JsonSerializable, ArrayAccess
             'dirty' => $this->getDirty(),
             'relations' => array_keys($this->relations),
         ];
+    }
+
+    public function newCollection(array $models = []): \TheFramework\Helpers\Collection
+    {
+        return new \TheFramework\Helpers\Collection($models);
     }
 }

@@ -235,6 +235,11 @@ class Helper
     /**
      * Auth Token Helpers.
      */
+    public static function generateAuthToken(string $uid): string
+    {
+        return bin2hex(random_bytes(32)) . '.' . hash('sha256', $uid . time());
+    }
+
     public static function getAuthToken(): ?string
     {
         return self::session_get('auth_token');

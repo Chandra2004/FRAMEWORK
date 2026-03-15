@@ -9,6 +9,7 @@ class Request
     protected array $input = [];
     protected array $files = [];
     protected static array $routeParams = [];
+    protected array $attributes = [];
     protected bool $forceJson = false;
     protected ?string $content = null;
 
@@ -119,6 +120,42 @@ class Request
             unset($results[$key]);
         }
         return $results;
+    }
+
+    // ========================================================
+    //  INPUT MUTATION & ATTRIBUTES (Pipeline Support)
+    // ========================================================
+
+    public function merge(array $input): static
+    {
+        $this->input = array_merge($this->input, $input);
+        return $this;
+    }
+
+    public function replace(array $input): static
+    {
+        $this->input = $input;
+        return $this;
+    }
+
+    public function getAttribute(string $key, $default = null)
+    {
+        return $this->attributes[$key] ?? $default;
+    }
+
+    public function setAttribute(string $key, $value): static
+    {
+        $this->attributes[$key] = $value;
+        return $this;
+    }
+
+    // ========================================================
+    //  AUTH INTEGRATION
+    // ========================================================
+
+    public function user()
+    {
+        return \TheFramework\App\Auth\AuthManager::user();
     }
 
     // ========================================================

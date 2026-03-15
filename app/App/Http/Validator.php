@@ -101,7 +101,7 @@ class Validator
 
     protected function shouldValidate($rule, $value): bool
     {
-        if ($rule === 'required' || $rule === 'required_if')
+        if (in_array($rule, ['required', 'required_if', 'required_unless', 'required_with', 'required_without', 'nullable', 'present', 'prohibited', 'prohibited_if']))
             return true;
         return !in_array($value, [null, '', []], true);
     }
@@ -644,5 +644,232 @@ class Validator
     private function is_file_input($value): bool
     {
         return is_array($value) && (isset($value['tmp_name']) || (isset($value[0]['tmp_name'])));
+    }
+
+    /* ==================================================
+       🔹 ENTERPRISE VALIDATION RULES (v5.1)
+    ================================================== */
+
+    /**
+     * nullable — Jika value kosong/null, skip seluruh validasi untuk field ini.
+     * 
+     * @example 'bio' => 'nullable|string|max:500'
+     */
+    protected function validate_nullable(string $field, string $label, $value, array $params): void
+    {
+        if (is_null($value) || (is_string($value) && trim($value) === '') || (is_array($value) && empty($value))) {
+            throw new SkipValidationException();
+        }
+    }
+
+    /**
+     * required_if:field,value — Wajib jika field lain bernilai tertentu.
+     * 
+     * @example 'company' => 'required_if:type,business'
+     */
+    protected function validate_required_if(string $field, string $label, $value, array $params): void
+    {
+        $otherField = $params[0] ?? '';
+        $expectedValues = array_slice($params, 1);
+        $otherValue = $this->getValue($this->inputData, $otherField);
+
+        if (in_array((string) $otherValue, $expectedValues, true)) {
+            if (is_null($value) || (is_string($value) && trim($value) === '')) {
+                $this->addError($field, 'required_if', "{$label} is required when {$otherField} is " . implode('/', $expectedValues) . ".");
+                throw new SkipValidationException();
+            }
+        }
+    }
+
+    /**
+     * required_unless:field,value — Wajib KECUALI field lain bernilai tertentu.
+     */
+    protected function validate_required_unless(string $field, string $label, $value, array $params): void
+    {
+        $otherField = $params[0] ?? '';
+        $exceptValues = array_slice($params, 1);
+        $otherValue = $this->getValue($this->inputData, $otherField);
+
+        if (!in_array((string) $otherValue, $exceptValues, true)) {
+            if (is_null($value) || (is_string($value) && trim($value) === '')) {
+                $this->addError($field, 'required_unless', "{$label} is required unless {$otherField} is " . implode('/', $exceptValues) . ".");
+                throw new SkipValidationException();
+            }
+        }
+    }
+
+    /**
+     * required_with:field1,field2 — Wajib jika SALAH SATU field lain ada.
+     */
+    protected function validate_required_with(string $field, string $label, $value, array $params): void
+    {
+        $anyPresent = false;
+        foreach ($params as $otherField) {
+            $otherValue = $this->getValue($this->inputData, $otherField);
+            if (!is_null($otherValue) && !(is_string($otherValue) && trim($otherValue) === '')) {
+                $anyPresent = true;
+                break;
+            }
+        }
+
+        if ($anyPresent && (is_null($value) || (is_string($value) && trim($value) === ''))) {
+            $this->addError($field, 'required_with', "{$label} is required when " . implode(' / ', $params) . " is present.");
+            throw new SkipValidationException();
+        }
+    }
+
+    /**
+     * required_without:field1,field2 — Wajib jika SALAH SATU field lain TIDAK ada.
+     */
+    protected function validate_required_without(string $field, string $label, $value, array $params): void
+    {
+        $anyMissing = false;
+        foreach ($params as $otherField) {
+            $otherValue = $this->getValue($this->inputData, $otherField);
+            if (is_null($otherValue) || (is_string($otherValue) && trim($otherValue) === '')) {
+                $anyMissing = true;
+                break;
+            }
+        }
+
+        if ($anyMissing && (is_null($value) || (is_string($value) && trim($value) === ''))) {
+            $this->addError($field, 'required_without', "{$label} is required when " . implode(' / ', $params) . " is not present.");
+            throw new SkipValidationException();
+        }
+    }
+
+    /**
+     * present — Field HARUS ada di data (boleh kosong).
+     */
+    protected function validate_present(string $field, string $label, $value, array $params): void
+    {
+        $exists = false;
+        $data = $this->inputData;
+        foreach (explode('.', $field) as $segment) {
+            if (is_array($data) && array_key_exists($segment, $data)) {
+                $data = $data[$segment];
+                $exists = true;
+            } else {
+                $exists = false;
+                break;
+            }
+        }
+
+        if (!$exists && !array_key_exists($field, $this->inputData)) {
+            $this->addError($field, 'present', "{$label} must be present.");
+        }
+    }
+
+    /**
+     * prohibited — Field TIDAK BOLEH ada atau harus kosong.
+     */
+    protected function validate_prohibited(string $field, string $label, $value, array $params): void
+    {
+        if (!is_null($value) && !(is_string($value) && trim($value) === '')) {
+            $this->addError($field, 'prohibited', "{$label} is prohibited.");
+        }
+    }
+
+    /**
+     * prohibited_if:field,value — Prohibited if another field has value.
+     */
+    protected function validate_prohibited_if(string $field, string $label, $value, array $params): void
+    {
+        $otherField = $params[0] ?? '';
+        $expectedValues = array_slice($params, 1);
+        $otherValue = $this->getValue($this->inputData, $otherField);
+
+        if (in_array((string) $otherValue, $expectedValues, true)) {
+            if (!is_null($value) && !(is_string($value) && trim($value) === '')) {
+                $this->addError($field, 'prohibited_if', "{$label} is prohibited when {$otherField} is " . implode('/', $expectedValues) . ".");
+            }
+        }
+    }
+
+
+
+    /**
+     * in_array:field — Value harus ada dalam array dari field lain.
+     */
+    protected function validate_in_array(string $field, string $label, $value, array $params): void
+    {
+        $otherField = $params[0] ?? '';
+        $otherValue = $this->getValue($this->inputData, $otherField);
+
+        if (!is_array($otherValue) || !in_array($value, $otherValue)) {
+            $this->addError($field, 'in_array', "{$label} must exist in {$otherField}.");
+        }
+    }
+
+    /**
+     * distinct — Untuk array items, setiap value harus unik.
+     */
+    protected function validate_distinct(string $field, string $label, $value, array $params): void
+    {
+        // Find parent array and check for duplicates
+        $segments = explode('.', $field);
+        $lastSegment = array_pop($segments);
+        $parentPath = implode('.', $segments);
+
+        // Get sibling values
+        $parent = $this->getValue($this->inputData, $parentPath);
+
+        if (is_array($parent)) {
+            $values = array_column($parent, $lastSegment);
+            $filtered = array_filter($values, fn($v) => $v === $value);
+
+            if (count($filtered) > 1) {
+                $this->addError($field, 'distinct', "{$label} must be distinct.");
+            }
+        }
+    }
+
+    /**
+     * password — Password strength validation.
+     * 
+     * @example 'password' => 'required|password:8,mixed,numbers,symbols'
+     * - min length (default 8)
+     * - mixed: uppercase + lowercase
+     * - numbers: min 1 digit
+     * - symbols: min 1 special char
+     * - uncompromised: basic check against common passwords
+     */
+    protected function validate_password(string $field, string $label, $value, array $params): void
+    {
+        if (!is_string($value)) return;
+
+        $minLength = intval($params[0] ?? 8);
+
+        if (strlen($value) < $minLength) {
+            $this->addError($field, 'password', "{$label} must be at least {$minLength} characters.");
+            return;
+        }
+
+        $flags = array_slice($params, 1);
+
+        if (in_array('mixed', $flags)) {
+            if (!preg_match('/[a-z]/', $value) || !preg_match('/[A-Z]/', $value)) {
+                $this->addError($field, 'password', "{$label} must contain both uppercase and lowercase letters.");
+            }
+        }
+
+        if (in_array('numbers', $flags)) {
+            if (!preg_match('/[0-9]/', $value)) {
+                $this->addError($field, 'password', "{$label} must contain at least one number.");
+            }
+        }
+
+        if (in_array('symbols', $flags)) {
+            if (!preg_match('/[^a-zA-Z0-9]/', $value)) {
+                $this->addError($field, 'password', "{$label} must contain at least one symbol.");
+            }
+        }
+
+        if (in_array('uncompromised', $flags)) {
+            $common = ['password', '12345678', 'qwerty123', 'admin123', 'letmein', 'welcome', 'monkey', 'dragon', 'master'];
+            if (in_array(strtolower($value), $common)) {
+                $this->addError($field, 'password', "{$label} is too common. Choose a stronger password.");
+            }
+        }
     }
 }

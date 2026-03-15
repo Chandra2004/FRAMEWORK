@@ -129,6 +129,7 @@ class Relation
             case 'belongsToMany':
                 $relatedTable = $this->related->getTable();
                 $pivot = $this->pivotTable;
+                $this->query->select(["{$relatedTable}.*", "{$pivot}.{$this->foreignKey}", "{$pivot}.{$this->relatedKey}"]);
                 $this->query->table($relatedTable)
                     ->join($pivot, "{$pivot}.{$this->relatedKey}", '=', "{$relatedTable}.{$this->related->getKeyName()}")
                     ->where("{$pivot}.{$this->foreignKey}", '=', $this->parent->getAttribute($this->localKey));
@@ -176,6 +177,7 @@ class Relation
         $relatedTable = $this->related->getTable();
         $morphType = $this->extra['morphType'];
 
+        $this->query->select(["{$relatedTable}.*", "{$pivot}.{$this->foreignKey}", "{$pivot}.{$this->relatedKey}", "{$pivot}.{$morphType}"]);
         $this->query->table($relatedTable)
             ->join($pivot, "{$pivot}.{$this->relatedKey}", '=', "{$relatedTable}.{$this->related->getKeyName()}")
             ->where("{$pivot}.{$this->foreignKey}", '=', $this->parent->getAttribute($this->localKey))
@@ -188,6 +190,7 @@ class Relation
         $relatedTable = $this->related->getTable();
         $morphType = $this->extra['morphType'];
 
+        $this->query->select(["{$relatedTable}.*", "{$pivot}.{$this->foreignKey}", "{$pivot}.{$this->relatedKey}", "{$pivot}.{$morphType}"]);
         $this->query->table($relatedTable)
             ->join($pivot, "{$pivot}.{$this->foreignKey}", '=', "{$relatedTable}.{$this->related->getKeyName()}")
             ->where("{$pivot}.{$this->relatedKey}", '=', $this->parent->getAttribute($this->localKey))
@@ -220,6 +223,7 @@ class Relation
             $keys = $this->getKeys($models, $this->localKey);
             $pivot = $this->pivotTable;
             $relatedTable = $this->related->getTable();
+            $this->query->select(["{$relatedTable}.*", "{$pivot}.{$this->foreignKey}", "{$pivot}.{$this->relatedKey}"]);
             $this->query->table($relatedTable)
                 ->join($pivot, "{$pivot}.{$this->relatedKey}", '=', "{$relatedTable}.{$this->related->getKeyName()}")
                 ->whereIn("{$pivot}.{$this->foreignKey}", $keys);
@@ -235,11 +239,13 @@ class Relation
             $morphClass = $this->extra['morphClass'];
 
             if ($this->type === 'morphToMany') {
+                $this->query->select(["{$relatedTable}.*", "{$pivot}.{$this->foreignKey}", "{$pivot}.{$this->relatedKey}", "{$pivot}.{$morphType}"]);
                 $this->query->table($relatedTable)
                     ->join($pivot, "{$pivot}.{$this->relatedKey}", '=', "{$relatedTable}.{$this->related->getKeyName()}")
                     ->whereIn("{$pivot}.{$this->foreignKey}", $keys)
                     ->where("{$pivot}.{$morphType}", '=', $morphClass);
             } else {
+                $this->query->select(["{$relatedTable}.*", "{$pivot}.{$this->foreignKey}", "{$pivot}.{$this->relatedKey}", "{$pivot}.{$morphType}"]);
                 $this->query->table($relatedTable)
                     ->join($pivot, "{$pivot}.{$this->foreignKey}", '=', "{$relatedTable}.{$this->related->getKeyName()}")
                     ->whereIn("{$pivot}.{$this->relatedKey}", $keys)
@@ -267,13 +273,18 @@ class Relation
     //  MATCH
     // ========================================================
 
-    public function match(array $models, array $results, string $relationName)
+    public function match(array $models, $results, string $relationName)
     {
         $dictionary = $this->buildDictionary($results);
         $relationKey = in_array($this->type, ['hasMany', 'hasOne', 'morphMany', 'morphOne', 'belongsToMany', 'morphToMany', 'morphedByMany', 'hasOneThrough', 'hasManyThrough'])
             ? $this->localKey : $this->foreignKey;
 
         foreach ($models as $model) {
+            // Ensure model is an instance
+            if (!$model instanceof Model) {
+                continue;
+            }
+
             $key = $model->getAttribute($relationKey);
 
             if (isset($dictionary[$key])) {
@@ -281,11 +292,11 @@ class Relation
                 if (in_array($this->type, ['hasOne', 'belongsTo', 'morphOne', 'hasOneThrough'])) {
                     $model->setRelation($relationName, $value[0] ?? null);
                 } else {
-                    $model->setRelation($relationName, $value);
+                    $model->setRelation($relationName, $this->related->newCollection($value));
                 }
             } else {
                 if (in_array($this->type, ['hasMany', 'belongsToMany', 'morphMany', 'morphToMany', 'morphedByMany', 'hasManyThrough'])) {
-                    $model->setRelation($relationName, []);
+                    $model->setRelation($relationName, $this->related->newCollection());
                 } elseif ($this->type === 'belongsTo' && $this->withDefault) {
                     $default = $this->related->newInstance($this->defaultAttributes);
                     $model->setRelation($relationName, $default);
@@ -297,7 +308,7 @@ class Relation
         return $models;
     }
 
-    protected function buildDictionary(array $results)
+    protected function buildDictionary($results)
     {
         $dictionary = [];
 
@@ -305,12 +316,27 @@ class Relation
             $keyName = $this->foreignKey;
         } elseif (in_array($this->type, ['hasMany', 'hasOne', 'morphMany', 'morphOne'])) {
             $keyName = $this->foreignKey;
+        } elseif (in_array($this->type, ['belongsToMany', 'morphToMany', 'morphedByMany'])) {
+            $keyName = $this->foreignKey;
         } else {
             $keyName = $this->relatedKey;
         }
 
         foreach ($results as $result) {
-            $key = $result->getAttribute($keyName);
+            // Ensure result is a model instance if we have a related model
+            if ($this->related && !$result instanceof Model) {
+                // If it's an array/object, try to hydrate it?
+                // But QueryBuilder->get() should have done this.
+                // Just for safety:
+                if (is_array($result) || is_object($result)) {
+                   $result = $this->related->newInstance((array)$result, true);
+                } else {
+                    continue; // Skip if it's something weird like a string
+                }
+            }
+
+            $key = $result instanceof Model ? $result->getAttribute($keyName) : ($result[$keyName] ?? null);
+            
             if ($key !== null) {
                 $dictionary[$key][] = $result;
             }
@@ -659,14 +685,21 @@ class Relation
         $db = Database::getInstance();
         $db->beginTransaction();
         try {
+            $ids = (array) $ids;
+            $current = $this->get()->pluck($this->relatedKey)->all();
+            
             if ($detaching) {
-                $existing = $this->query->pluck("{$this->pivotTable}.{$this->relatedKey}");
-                $toRemove = array_diff($existing, (array) $ids);
+                $toRemove = array_diff($current, $ids);
                 if (!empty($toRemove)) {
                     $this->detach($toRemove);
                 }
             }
-            $this->attach($ids);
+            
+            $toAttach = array_diff($ids, $current);
+            if (!empty($toAttach)) {
+                $this->attach($toAttach);
+            }
+            
             $db->commit();
             return true;
         } catch (\Exception $e) {
@@ -682,7 +715,7 @@ class Relation
 
     public function syncWithPivotValues(array $ids, array $attributes): bool
     {
-        $existing = $this->query->pluck("{$this->pivotTable}.{$this->relatedKey}");
+        $existing = $this->get()->pluck($this->relatedKey)->all();
         $toRemove = array_diff($existing, $ids);
         if (!empty($toRemove)) {
             $this->detach($toRemove);
@@ -695,7 +728,7 @@ class Relation
 
     public function toggle($ids)
     {
-        $existing = $this->query->pluck("{$this->pivotTable}.{$this->relatedKey}");
+        $existing = $this->get()->pluck($this->relatedKey)->all();
         $attached = [];
         $detached = [];
 

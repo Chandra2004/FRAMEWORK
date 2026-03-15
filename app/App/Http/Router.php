@@ -16,6 +16,8 @@ class Router
     private static array $groupStack = [];
     private static array $namedRoutes = [];
     private static ?array $fallbackRoute = null;
+    private static ?string $currentRouteName = null;
+    private static array $currentRouteParams = [];
 
     // ==========================================================
     //  HTTP VERB HELPERS
@@ -160,14 +162,38 @@ class Router
     {
         $basePath = rtrim($basePath, '/');
         $middlewares = $options['middleware'] ?? [];
+        $only = $options['only'] ?? null;
+        $except = $options['except'] ?? [];
 
-        self::add('GET', $basePath, $controller, 'index', $middlewares);
-        self::add('GET', $basePath . '/create', $controller, 'create', $middlewares);
-        self::add('POST', $basePath, $controller, 'store', $middlewares);
-        self::add('GET', $basePath . '/{id}', $controller, 'show', $middlewares);
-        self::add('GET', $basePath . '/{id}/edit', $controller, 'edit', $middlewares);
-        self::add('POST', $basePath . '/{id}', $controller, 'update', $middlewares);
-        self::add('POST', $basePath . '/{id}/delete', $controller, 'destroy', $middlewares);
+        // Determine resource name for named routes
+        $resourceName = $options['as'] ?? trim(str_replace('/', '.', $basePath), '.');
+
+        $actions = [
+            'index'   => ['GET',    $basePath,               'index'],
+            'create'  => ['GET',    $basePath . '/create',   'create'],
+            'store'   => ['POST',   $basePath,               'store'],
+            'show'    => ['GET',    $basePath . '/{id}',     'show'],
+            'edit'    => ['GET',    $basePath . '/{id}/edit', 'edit'],
+            'update'  => ['PUT',    $basePath . '/{id}',     'update'],
+            'destroy' => ['DELETE', $basePath . '/{id}',     'destroy'],
+        ];
+
+        foreach ($actions as $action => [$method, $path, $function]) {
+            if ($only !== null && !in_array($action, $only)) continue;
+            if (in_array($action, $except)) continue;
+
+            $route = self::add($method, $path, $controller, $function, $middlewares);
+            $route->name("{$resourceName}.{$action}");
+        }
+    }
+
+    /**
+     * API Resource — resource tanpa create dan edit (form views)
+     */
+    public static function apiResource(string $basePath, $controller, array $options = []): void
+    {
+        $options['except'] = array_merge($options['except'] ?? [], ['create', 'edit']);
+        self::resource($basePath, $controller, $options);
     }
 
     public static function run()
@@ -334,6 +360,10 @@ class Router
                     foreach (array_reverse($activeMiddlewares) as $instance) {
                         $instance->after();
                     }
+
+                    // Store current route info
+                    self::$currentRouteName = $route['name'] ?? null;
+                    self::$currentRouteParams = $params;
 
                     self::$routeFound = true;
                     return;
@@ -522,6 +552,120 @@ class Router
         return self::$routeDefinitions;
     }
 
+    // ========================================================
+    //  NAMED ROUTE URL GENERATION
+    // ========================================================
+
+    /**
+     * Generate URL from named route
+     * 
+     * @param string $name Route name (e.g., 'users.edit')
+     * @param array $params Parameters to fill (e.g., ['id' => 1])
+     * @param bool $absolute Whether to generate absolute URL
+     * @return string Generated URL
+     * 
+     * @example Router::url('users.edit', ['id' => 1]) // => /admin/users/1/edit
+     * @throws \InvalidArgumentException If route name not found
+     */
+    public static function url(string $name, array $params = [], bool $absolute = false): string
+    {
+        if (!isset(self::$namedRoutes[$name])) {
+            throw new \InvalidArgumentException("Route [{$name}] not defined.");
+        }
+
+        $index = self::$namedRoutes[$name];
+        $definition = self::$routeDefinitions[$index] ?? null;
+
+        if (!$definition) {
+            throw new \InvalidArgumentException("Route definition for [{$name}] not found.");
+        }
+
+        $path = $definition['path'];
+
+        // Replace route parameters {param} with values
+        $path = preg_replace_callback('/\{([a-zA-Z_][a-zA-Z0-9_-]*)\}/', function ($matches) use (&$params) {
+            $key = $matches[1];
+            if (isset($params[$key])) {
+                $value = $params[$key];
+                unset($params[$key]);
+                return urlencode($value);
+            }
+            // If param not provided, try direct match or leave placeholder
+            throw new \InvalidArgumentException("Missing required parameter [{$key}] for route.");
+        }, $path);
+
+        // Append remaining params as query string
+        if (!empty($params)) {
+            $path .= '?' . http_build_query($params);
+        }
+
+        if ($absolute) {
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $path = "{$scheme}://{$host}{$path}";
+        }
+
+        return $path;
+    }
+
+    /**
+     * Check if a named route exists
+     */
+    public static function hasRoute(string $name): bool
+    {
+        return isset(self::$namedRoutes[$name]);
+    }
+
+    /**
+     * Get the currently matched route name
+     */
+    public static function currentRouteName(): ?string
+    {
+        return self::$currentRouteName;
+    }
+
+    /**
+     * Check if current route matches a given name or pattern
+     * Supports wildcards: routeIs('admin.*')
+     */
+    public static function currentRouteIs(string ...$patterns): bool
+    {
+        $current = self::$currentRouteName;
+        if (!$current) return false;
+
+        foreach ($patterns as $pattern) {
+            if ($pattern === $current) return true;
+
+            if (str_contains($pattern, '*')) {
+                $regex = str_replace('.', '\\.', $pattern);
+                $regex = str_replace('*', '.*', $regex);
+                if (preg_match("/^{$regex}$/", $current)) return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get all named routes
+     */
+    public static function getNamedRoutes(): array
+    {
+        return self::$namedRoutes;
+    }
+
+    /**
+     * Get current route parameters
+     */
+    public static function getCurrentParams(): array
+    {
+        return self::$currentRouteParams;
+    }
+
+    // ========================================================
+    //  ROUTE CACHE
+    // ========================================================
+
     public static function loadCachedRoutes(array $cachedRoutes)
     {
         foreach ($cachedRoutes as $route) {
@@ -533,5 +677,20 @@ class Router
     {
         // TODO: Implement route caching logic
         // File ini dipanggil oleh composer scripts
+    }
+
+    /**
+     * Reset state (for testing)
+     */
+    public static function flush(): void
+    {
+        self::$routes = [];
+        self::$routeDefinitions = [];
+        self::$routeFound = false;
+        self::$groupStack = [];
+        self::$namedRoutes = [];
+        self::$fallbackRoute = null;
+        self::$currentRouteName = null;
+        self::$currentRouteParams = [];
     }
 }

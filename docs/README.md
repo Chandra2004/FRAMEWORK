@@ -83,6 +83,7 @@
 41. [Email Handler](email.md) - SMTP & Queue sending ⭐
 42. [Payment Handler](payment.md) - Midtrans integration ⭐
 43. [Upload Handler](file-uploads.md) - Smart Image Engine ⭐
+44. [TFWire Components](tfwire.md) - Turbo-Powered Livewire Alternative ⚡ NEW
 
 ### 📝 Tutorials
 

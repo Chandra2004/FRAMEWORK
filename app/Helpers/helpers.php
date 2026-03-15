@@ -106,14 +106,40 @@ if (!function_exists('request')) {
 if (!function_exists('session')) {
     function session($key = null, $default = null)
     {
-        if ($key === null)
+        if (session_status() === PHP_SESSION_NONE) {
+            try {
+                \TheFramework\App\Http\SessionManager::startSecureSession();
+            } catch (\Throwable $e) {
+                // Ignore if session cannot be started
+            }
+        }
+
+        if ($key === null) {
             return $_SESSION;
+        }
+
         if (is_array($key)) {
-            foreach ($key as $k => $v)
+            foreach ($key as $k => $v) {
                 $_SESSION[$k] = $v;
+            }
             return null;
         }
+
         return $_SESSION[$key] ?? $default;
+    }
+}
+
+if (!function_exists('class_basename')) {
+    /**
+     * Get the class "basename" of the given object / class.
+     *
+     * @param  string|object  $class
+     * @return string
+     */
+    function class_basename($class)
+    {
+        $class = is_object($class) ? get_class($class) : $class;
+        return basename(str_replace('\\', '/', $class));
     }
 }
 
@@ -215,6 +241,88 @@ if (!function_exists('now')) {
     }
 }
 
+if (!function_exists('tap')) {
+    function tap($value, $callback = null)
+    {
+        if (is_null($callback)) {
+            return new class($value) {
+                public $target;
+                public function __construct($target) { $this->target = $target; }
+                public function __call($method, $parameters)
+                {
+                    $this->target->{$method}(...$parameters);
+                    return $this->target;
+                }
+            };
+        }
+        $callback($value);
+        return $value;
+    }
+}
+
+if (!function_exists('data_get')) {
+    function data_get($target, $key, $default = null)
+    {
+        if (is_null($key)) {
+            return $target;
+        }
+
+        foreach (is_array($key) ? $key : explode('.', $key) as $segment) {
+            if (is_array($target)) {
+                if (array_key_exists($segment, $target)) {
+                    $target = $target[$segment];
+                } else {
+                    return $default;
+                }
+            } elseif ($target instanceof ArrayAccess) {
+                if ($target->offsetExists($segment)) {
+                    $target = $target[$segment];
+                } else {
+                    return $default;
+                }
+            } elseif (is_object($target)) {
+                if (isset($target->{$segment})) {
+                    $target = $target->{$segment};
+                } elseif (method_exists($target, 'getAttribute')) {
+                    $target = $target->getAttribute($segment);
+                } else {
+                    return $default;
+                }
+            } else {
+                return $default;
+            }
+        }
+
+        return $target;
+    }
+}
+
+if (!function_exists('value')) {
+    function value($value, ...$args)
+    {
+        return $value instanceof Closure ? $value(...$args) : $value;
+    }
+}
+
+if (!function_exists('optional')) {
+    function optional($value = null, callable $callback = null)
+    {
+        if (is_callable($callback)) {
+            return is_null($value) ? null : $callback($value);
+        }
+
+        return new class($value) {
+            private $target;
+            public function __construct($target) { $this->target = $target; }
+            public function __get($key) { return $this->target->{$key} ?? null; }
+            public function __call($method, $parameters)
+            {
+                return is_object($this->target) ? $this->target->{$method}(...$parameters) : null;
+            }
+        };
+    }
+}
+
 if (!function_exists('abort')) {
     function abort(int $code, string $message = '')
     {
@@ -236,42 +344,159 @@ if (!function_exists('storage_path')) {
     }
 }
 
+if (!function_exists('__tf_dump')) {
+    function __tf_dump($var, $depth = 0)
+    {
+        if ($depth > 10) {
+            return '<span style="color: #EF4444; font-weight: bold;">*MAX DEPTH REACHED*</span>';
+        }
+
+        if (is_null($var)) {
+            return '<span style="color: #EF4444; font-weight: bold;">null</span>';
+        } elseif (is_bool($var)) {
+            return '<span style="color: #F59E0B; font-weight: bold;">' . ($var ? 'true' : 'false') . '</span>';
+        } elseif (is_int($var) || is_float($var)) {
+            return '<span style="color: #F97316; font-weight: bold;">' . $var . '</span>';
+        } elseif (is_string($var)) {
+            $value = htmlspecialchars($var);
+            return '<span style="color: #10B981;">"' . $value . '"</span> <span style="color: #6B7280; font-size: 0.85em;">(' . strlen($var) . ')</span>';
+        } elseif (is_array($var)) {
+            if (empty($var)) return '<span style="color: #9CA3AF;">[]</span>';
+            $id = uniqid('dump_');
+            $html = '<span style="color: #60A5FA; cursor: pointer; font-weight:bold; user-select:none;" onclick="var el=document.getElementById(\''.$id.'\'); el.style.display=el.style.display===\'none\'?\'block\':\'none\'"><span style="color:#9CA3AF; font-size:0.8em; margin-right:3px;">▶</span>array:' . count($var) . ' [</span>';
+            $html .= '<div id="'.$id.'" style="display: block; margin-left: 20px; border-left: 1px dotted #4B5563; padding-left: 10px; margin-top:2px;">';
+            foreach ($var as $k => $v) {
+                $html .= '<div style="margin: 3px 0; line-height:1.4;">';
+                $html .= '<span style="color: #D97706; font-weight:bold;">' . (is_string($k) ? '"'.htmlspecialchars($k).'"' : $k) . '</span> <span style="color: #6B7280;">=></span> ';
+                $html .= __tf_dump($v, $depth + 1);
+                $html .= '</div>';
+            }
+            $html .= '</div><span style="color: #60A5FA;">]</span>';
+            return $html;
+        } elseif (is_object($var)) {
+            $class = get_class($var);
+            $id = uniqid('dump_');
+            $html = '<span style="color: #34D399; cursor: pointer; font-weight:bold; user-select:none;" onclick="var el=document.getElementById(\''.$id.'\'); el.style.display=el.style.display===\'none\'?\'block\':\'none\'"><span style="color:#9CA3AF; font-size:0.8em; margin-right:3px;">▶</span>' . $class . ' {#'.spl_object_id($var).'</span>';
+            $html .= '<div id="'.$id.'" style="display: block; margin-left: 20px; border-left: 1px dotted #4B5563; padding-left: 10px; margin-top:2px;">';
+            
+            if (method_exists($var, '__debugInfo')) {
+                $properties = $var->__debugInfo();
+                foreach ($properties as $name => $val) {
+                    $html .= '<div style="margin: 3px 0; line-height:1.4;">';
+                    $html .= '<span style="color: #D97706; font-weight:bold;">"' . htmlspecialchars($name) . '"</span> <span style="color: #6B7280;">=></span> ';
+                    $html .= __tf_dump($val, $depth + 1);
+                    $html .= '</div>';
+                }
+            } else {
+                $reflection = new \ReflectionClass($class);
+                $properties = [];
+                foreach ($reflection->getProperties() as $property) {
+                    $property->setAccessible(true);
+                    $name = $property->getName();
+                    $visibility = $property->isPrivate() ? '-' : ($property->isProtected() ? '#' : '+');
+                    try {
+                        $val = $property->isInitialized($var) ? $property->getValue($var) : '*UNINITIALIZED*';
+                    } catch (\Throwable $e) {
+                        $val = '*ERROR*';
+                    }
+                    $html .= '<div style="margin: 3px 0; line-height:1.4;">';
+                    $html .= '<span style="color: #9CA3AF; font-size:0.9em; margin-right:4px;">' . $visibility . '</span><span style="color: #D97706; font-weight:bold;">"' . htmlspecialchars($name) . '"</span> <span style="color: #6B7280;">=></span> ';
+                    if ($val === '*UNINITIALIZED*') {
+                        $html .= '<span style="color: #9CA3AF; font-style:italic;">uninitialized</span>';
+                    } elseif ($val === '*ERROR*') {
+                        $html .= '<span style="color: #EF4444; font-style:italic;">error accessing</span>';
+                    } else {
+                        $html .= __tf_dump($val, $depth + 1);
+                    }
+                    $html .= '</div>';
+                }
+            }
+            $html .= '</div><span style="color: #34D399;">}</span>';
+            return $html;
+        } elseif (is_resource($var)) {
+            return '<span style="color: #3B82F6; font-weight:bold;">resource(' . get_resource_type($var) . ')</span>';
+        }
+
+        return '<span style="color: #D1D5DB;">unknown type</span>';
+    }
+}
+
 if (!function_exists('dd')) {
     /**
-     * Dump and Die - Premium Version
+     * Dump and Die - Premium Native Version (Laravel Alike)
      */
     function dd(...$vars)
     {
         if (php_sapi_name() === 'cli') {
-            foreach ($vars as $v)
+            foreach ($vars as $v) {
                 var_dump($v);
+            }
             die();
         }
 
-        echo '<div style="background:#111; color:#0f0; padding:20px; font-family:monospace; font-size:13px; border-left:5px solid #ff4444; margin:10px; border-radius:4px; box-shadow:0 10px 30px rgba(0,0,0,0.5); overflow:auto; max-height:800px;">';
-        echo '<div style="color:#666; margin-bottom:10px; font-size:10px;">THE FRAMEWORK v5.0 BUG HUNTER</div>';
-        foreach ($vars as $var) {
-            echo '<pre style="white-space:pre-wrap;">';
-            var_dump($var);
-            echo '</pre>';
-            echo '<hr style="border:0; border-top:1px solid #333; margin:10px 0;">';
-        }
+        echo '<div style="background:#18171B; color:#A9A9B3; padding:20px; font-family:Menlo, Monaco, Consolas, monospace; font-size:14px; border-top:5px solid #F97316; margin:0; width:100%; height:100vh; overflow:auto; box-sizing:border-box; position:absolute; top:0; left:0; z-index:999999;">';
+        echo '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">';
+        echo '<strong style="color:#FFF;">THE FRAMEWORK BUG HUNTER</strong>';
+        
         $trace = debug_backtrace()[0];
-        echo '<div style="color:#fff; background:#333; display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px;">Called in: ' . $trace['file'] . ' on line ' . $trace['line'] . '</div>';
+        $file = str_replace(defined('ROOT_DIR') ? ROOT_DIR : dirname(__DIR__, 2), '', $trace['file']);
+        echo '<span style="color:#9CA3AF; background:#2D2C31; padding:4px 8px; border-radius:4px; font-size:12px;">'.$file.':'.$trace['line'].'</span>';
+        echo '</div>';
+        
+        foreach ($vars as $var) {
+            echo '<div style="margin-bottom:15px; background:#1E1D21; padding:15px; border-radius:6px; box-shadow:inset 0 1px 3px rgba(0,0,0,0.5); overflow-x:auto;">';
+            echo __tf_dump($var);
+            echo '</div>';
+        }
+        
         echo '</div>';
         die();
     }
 }
 
 if (!function_exists('response')) {
-    function response()
+    /**
+     * Create a new HTTP Response instance.
+     */
+    function response(): \TheFramework\App\Http\Response
+    {
+        return new \TheFramework\App\Http\Response();
+    }
+}
+
+if (!function_exists('route')) {
+    /**
+     * Generate a URL for a named route.
+     */
+    function route(string $name, array $parameters = [], bool $absolute = true): string
+    {
+        return \TheFramework\App\Http\Router::url($name, $parameters, $absolute);
+    }
+}
+
+if (!function_exists('auth')) {
+    /**
+     * Get the available auth instance or user.
+     */
+    function auth()
     {
         return new class {
-            public function json(array $data, int $status = 200)
-            {
-                return Helper::json($data, $status);
-            }
+            public function user() { return \TheFramework\App\Auth\AuthManager::user(); }
+            public function check() { return \TheFramework\App\Auth\AuthManager::check(); }
+            public function guest() { return \TheFramework\App\Auth\AuthManager::guest(); }
+            public function id() { return \TheFramework\App\Auth\AuthManager::id(); }
+            public function logout() { return \TheFramework\App\Auth\AuthManager::logout(); }
         };
+    }
+}
+
+if (!function_exists('event')) {
+    /**
+     * Dispatch an event and call the listeners.
+     */
+    function event(string|object ...$args)
+    {
+        return \TheFramework\App\Events\Dispatcher::dispatch(...$args);
     }
 }
 
@@ -316,3 +541,119 @@ if (!function_exists('trans_choice')) {
         return \TheFramework\App\Core\Lang::choice($key, $count, $replace, $locale);
     }
 }
+
+// ─── RBAC & Auth View Helpers ───────────────────────────────────────
+if (!function_exists('auth_user')) {
+    /**
+     * Dapatkan instance user yang sedang login.
+     */
+    function auth_user()
+    {
+        return \TheFramework\App\Auth\AuthManager::user();
+    }
+}
+
+if (!function_exists('can')) {
+    /**
+     * Cek permission/ability menggunakan Gate.
+     */
+    function can(string $ability, mixed ...$arguments): bool
+    {
+        return \TheFramework\App\Auth\Gate::allows($ability, ...$arguments);
+    }
+}
+
+if (!function_exists('cannot')) {
+    /**
+     * Cek permission/ability menggunakan Gate.
+     */
+    function cannot(string $ability, mixed ...$arguments): bool
+    {
+        return \TheFramework\App\Auth\Gate::denies($ability, ...$arguments);
+    }
+}
+
+if (!function_exists('is_role')) {
+    /**
+     * Cek role menggunakan RBAC helper pada user model.
+     */
+    function is_role(string ...$roles): bool
+    {
+        $user = auth_user();
+        return $user && method_exists($user, 'hasRole') && $user->hasRole(...$roles);
+    }
+}
+
+if (!function_exists('tfwire')) {
+    /**
+     * Render TFWire Component — The Turbo-Powered Livewire.
+     * 
+     * Usage:
+     *   {!! tfwire(UserTable::class) !!}
+     *   {!! tfwire(UserTable::class, 'custom_id') !!}
+     *   {!! tfwire(UserTable::class, 'custom_id', ['status' => 'active']) !!}
+     * 
+     * @param string $componentClass  FQCN dari komponen
+     * @param string|null $id         ID kustom untuk Turbo Frame
+     * @param array $params           Parameter untuk method mount()
+     */
+    function tfwire(string $componentClass, ?string $id = null, array $params = []): string
+    {
+        if (!class_exists($componentClass)) {
+            return "<!-- TFWire Error: Component [{$componentClass}] not found -->";
+        }
+
+        try {
+            /** @var \TheFramework\App\TFWire\Component $component */
+            $component = new $componentClass($id);
+
+            // Panggil lifecycle mount() dengan parameter
+            $component->mount(...$params);
+
+            return $component->render();
+        } catch (\Throwable $e) {
+            if (config('app.debug', false)) {
+                return "<!-- TFWire Error: " . htmlspecialchars($e->getMessage()) . " -->";
+            }
+            return "<!-- TFWire: Component render failed -->";
+        }
+    }
+}
+
+if (!function_exists('turbo_stream')) {
+    /**
+     * Fluent Turbo Stream builder.
+     * 
+     * Usage di Controller:
+     *   return turbo_stream()
+     *       ->remove('user_row_5')
+     *       ->success('User berhasil dihapus!')
+     *       ->send();
+     */
+    function turbo_stream(): \TheFramework\App\TFWire\TurboStream
+    {
+        return new \TheFramework\App\TFWire\TurboStream();
+    }
+}
+
+if (!function_exists('is_turbo_request')) {
+    /**
+     * Cek apakah request saat ini adalah Turbo Stream request.
+     */
+    function is_turbo_request(): bool
+    {
+        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        return str_contains($accept, 'text/vnd.turbo-stream.html');
+    }
+}
+
+if (!function_exists('is_tfwire_request')) {
+    /**
+     * Cek apakah request saat ini adalah TFWire component request.
+     */
+    function is_tfwire_request(): bool
+    {
+        return \TheFramework\App\TFWire\TFWireEngine::isTFWireRequest();
+    }
+}
+

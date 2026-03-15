@@ -1,0 +1,410 @@
+/**
+ * TFWire.css — Built-in Styles for TFWire Components
+ * Version: 1.0.0 | License: MIT
+ *
+ * Include this in your layout for automatic styling of:
+ * • Toast Notifications
+ * • Modal Dialogs
+ * • Loading States
+ * • Offline Indicator
+ * • Transitions
+ */
+
+/* ═══════════════════════════════════════════════════════════
+   LOADING STATES
+   ═══════════════════════════════════════════════════════════ */
+.tf-wire-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.tf-wire-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(1px);
+    border-radius: inherit;
+    z-index: 10;
+    animation: tfFadeIn 0.15s ease;
+}
+
+.tf-wire-loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    z-index: 11;
+    animation: tfSpin 0.6s linear infinite;
+}
+
+/* Placeholder spinner for lazy loading */
+.tf-wire-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    opacity: 0.6;
+}
+
+.tf-wire-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: tfSpin 0.6s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════ */
+#tf-notifications {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 380px;
+    pointer-events: none;
+}
+
+.tf-toast {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    pointer-events: auto;
+    animation: tfSlideIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1);
+    overflow: hidden;
+    position: relative;
+}
+
+.tf-toast-success { background: linear-gradient(135deg, #059669, #10b981); }
+.tf-toast-error   { background: linear-gradient(135deg, #dc2626, #ef4444); }
+.tf-toast-warning { background: linear-gradient(135deg, #d97706, #f59e0b); }
+.tf-toast-info    { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+
+.tf-toast-icon { font-size: 1.1em; flex-shrink: 0; }
+.tf-toast-msg  { flex: 1; line-height: 1.4; }
+
+.tf-toast-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+
+.tf-toast-close:hover { color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL
+   ═══════════════════════════════════════════════════════════ */
+.tf-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: tfFadeIn 0.2s ease;
+}
+
+.tf-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.tf-modal-content {
+    position: relative;
+    background: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    max-width: 560px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: tfModalIn 0.3s cubic-bezier(0.21, 1.02, 0.73, 1);
+}
+
+.tf-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: #f3f4f6;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.tf-modal-close:hover {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   OFFLINE INDICATOR
+   ═══════════════════════════════════════════════════════════ */
+.tf-wire-offline {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+[tf-wire\:offline] {
+    padding: 0.5rem 1rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 0.375rem;
+    color: #991b1b;
+    font-size: 0.875rem;
+    text-align: center;
+    animation: tfFadeIn 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════════════════ */
+@keyframes tfSpin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes tfFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes tfSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes tfModalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGINATION
+   ═══════════════════════════════════════════════════════════ */
+.tf-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 0.875rem;
+}
+
+.tf-page-info {
+    color: #6b7280;
+}
+
+.tf-page-links {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.tf-page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    background: #fff;
+    color: #374151;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.tf-page-btn:hover {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.tf-page-active {
+    background: #6366f1 !important;
+    border-color: #6366f1 !important;
+    color: #fff !important;
+}
+
+.tf-page-dots {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.375rem;
+    color: #9ca3af;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SORTING
+   ═══════════════════════════════════════════════════════════ */
+.tf-sort-icon {
+    display: inline-block;
+    margin-left: 0.25rem;
+    font-size: 0.75em;
+    transition: transform 0.2s ease;
+}
+
+.tf-sort-none { color: #d1d5db; }
+.tf-sort-asc  { color: #6366f1; }
+.tf-sort-desc { color: #6366f1; }
+
+/* ═══════════════════════════════════════════════════════════
+   SEARCH HIGHLIGHT
+   ═══════════════════════════════════════════════════════════ */
+.tf-highlight {
+    background: #fef08a;
+    padding: 0.05em 0.15em;
+    border-radius: 0.15rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FILE UPLOAD PROGRESS
+   ═══════════════════════════════════════════════════════════ */
+[tf-wire\:upload\.progress] {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.375rem;
+    background: #f3f4f6;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+[tf-wire\:upload\.progress]::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: var(--tf-upload-progress, 0%);
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    transition: width 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOAD MORE & INFINITE SCROLL
+   ═══════════════════════════════════════════════════════════ */
+.tf-load-more {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.tf-load-more-btn {
+    padding: 0.5rem 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: #374151;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tf-load-more-btn:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.tf-infinite-trigger {
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE SUPPORT
+   ═══════════════════════════════════════════════════════════ */
+@media (prefers-color-scheme: dark) {
+    .tf-wire-loading::after {
+        background: rgba(0, 0, 0, 0.4);
+    }
+
+    .tf-modal-content {
+        background: #1f2937;
+        color: #f9fafb;
+    }
+
+    .tf-modal-close {
+        background: #374151;
+        color: #9ca3af;
+    }
+
+    .tf-modal-close:hover {
+        background: #4b5563;
+        color: #f9fafb;
+    }
+
+    [tf-wire\:offline] {
+        background: #451a1a;
+        border-color: #7f1d1d;
+        color: #fca5a5;
+    }
+
+    .tf-page-btn {
+        background: #1f2937;
+        border-color: #374151;
+        color: #d1d5db;
+    }
+
+    .tf-page-btn:hover {
+        background: #374151;
+    }
+
+    .tf-highlight {
+        background: #854d0e;
+        color: #fef08a;
+    }
+
+    .tf-load-more-btn {
+        background: #1f2937;
+        border-color: #374151;
+        color: #d1d5db;
+    }
+}

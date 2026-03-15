@@ -414,7 +414,7 @@
                 <li>Jika <strong>"Call to undefined function"</strong> — pastikan helper terdaftar di
                     <code>helpers.php</code></li>
                 <li>Clear view cache: <code>php artisan view:clear</code></li>
-                <li>Cek syntax Blade directive: <code>@if</code>, <code>@foreach</code>, <code>@php</code> harus punya
+                <li>Cek syntax Blade directive: <code>@@if</code>, <code>@@foreach</code>, <code>@@php</code> harus punya
                     closing tag</li>
             </ul>
         </div>

@@ -5,6 +5,7 @@ namespace TheFramework\App\Database;
 use InvalidArgumentException;
 use Closure;
 use TheFramework\App\Exceptions\ModelNotFoundException;
+use TheFramework\Helpers\Collection;
 
 class QueryBuilder
 {
@@ -192,8 +193,11 @@ class QueryBuilder
 
         foreach ($bindings as $key => $value) {
             $quoted = is_string($value) ? "'$value'" : $value;
-            if (is_null($value))
+            if (is_null($value)) {
                 $quoted = 'NULL';
+            } elseif (is_bool($value)) {
+                $quoted = $value ? '1' : '0';
+            }
             $sql = str_replace($key, $quoted, $sql);
         }
         return $sql;
@@ -543,18 +547,35 @@ class QueryBuilder
 
     protected function addSubqueryWhere($type, $relationName, $boolean, ?Closure $callback = null)
     {
+        if (!$this->model) {
+            throw new \Exception("Relationship queries require a model instance.");
+        }
+
         $relation = $this->model->$relationName();
         $subQuery = $relation->getRelated()->newQueryWithoutScopes();
-        $subQuery->whereColumn($relation->getQualifiedForeignKeyName(), '=', $this->model->getQualifiedKeyName());
+        
+        // Basic implementation of relationship constraints for subquery
+        // In a real framework, this is handled by Relation::getRelationQuery
+        $relation->addConstraints(); // Apply base constraints
+        
+        // Link to parent query
+        $subQuery->whereColumn(
+            $relation->getQualifiedForeignKeyName(), 
+            '=', 
+            $this->model->getQualifiedKeyName()
+        );
 
-        if ($callback)
+        if ($callback) {
             $callback($subQuery);
+        }
 
         $this->wheres[] = [
-            'type' => $type,
-            'subquery' => $subQuery,
+            'type' => $type === 'exists' ? 'Raw' : ($type === 'not_exists' ? 'Raw' : $type),
+            'sql' => ($type === 'exists' ? 'EXISTS' : 'NOT EXISTS') . " (" . $subQuery->toSql()[0] . ")",
+            'bindings' => $subQuery->toSql()[1],
             'boolean' => $boolean,
         ];
+        
         return $this;
     }
 
@@ -709,12 +730,13 @@ class QueryBuilder
         return $this;
     }
 
-    public function when($value, callable $callback, ?callable $default = null)
+    public function when($value, callable $callback, ?callable $default = null): static
     {
-        if ($value)
-            return $callback($this, $value) ?? $this;
-        elseif ($default)
-            return $default($this, $value) ?? $this;
+        if ($value) {
+            $callback($this, $value);
+        } elseif ($default) {
+            $default($this, $value);
+        }
         return $this;
     }
 
@@ -940,7 +962,7 @@ class QueryBuilder
         return $this->get();
     }
 
-    public function pluck(string $column, ?string $key = null): array
+    public function pluck(string $column, ?string $key = null): Collection
     {
         $originalColumns = $this->columns;
         $this->columns = $key ? "{$this->wrapColumn($column)}, {$this->wrapColumn($key)}" : $this->wrapColumn($column);
@@ -953,14 +975,24 @@ class QueryBuilder
         $keyName = ($key && strpos($key, '.') !== false) ? explode('.', $key)[1] : $key;
 
         foreach ($results as $row) {
-            $rowArray = (array) $row;
-            $val = $rowArray[$colName] ?? null;
-            if ($key)
-                $plain[$rowArray[$keyName]] = $val;
-            else
+            if (is_object($row) && method_exists($row, 'getAttribute')) {
+                $val = $row->getAttribute($colName);
+                if ($key) $keyVal = $row->getAttribute($keyName);
+            } elseif (is_object($row)) {
+                $val = $row->$colName ?? null;
+                if ($key) $keyVal = $row->$keyName ?? null;
+            } else {
+                $val = $row[$colName] ?? null;
+                if ($key) $keyVal = $row[$keyName] ?? null;
+            }
+
+            if ($key) {
+                $plain[$keyVal] = $val;
+            } else {
                 $plain[] = $val;
+            }
         }
-        return $plain;
+        return new Collection($plain);
     }
 
     public function value(string $column)
@@ -1009,7 +1041,7 @@ class QueryBuilder
 
     public function implode(string $column, string $glue = ''): string
     {
-        return implode($glue, $this->pluck($column));
+        return implode($glue, $this->pluck($column)->all());
     }
 
     private function executeQuery()
@@ -1042,9 +1074,10 @@ class QueryBuilder
                 $models = $this->model->loadCounts($models, $this->withCounts);
             if (!empty($this->withAggregates))
                 $models = $this->model->loadAggregates($models, $this->withAggregates);
-            return $models;
+            
+            return $this->model->newCollection($models);
         }
-        return $results;
+        return new Collection($results);
     }
 
     public function getModels(array $results): array

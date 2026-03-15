@@ -326,6 +326,14 @@ class Handler
     }
 
     /**
+     * Session helper
+     */
+    public static function session(string $key, $default = null)
+    {
+        return $_SESSION[$key] ?? $default;
+    }
+
+    /**
      * Get log level based on exception type
      */
     protected static function getLogLevel(\Throwable $e): string
@@ -857,14 +865,66 @@ class Handler
     private static function renderCriticalFallback(string $title, string $message, string $renderError, ?string $file = null, ?int $line = null): void
     {
         $debug = Config::get('APP_DEBUG', 'false') === 'true';
-        echo "<style>body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#f1f5f9;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;padding:20px;box-sizing:border-box;}.card{background:#1e293b;padding:40px;border-radius:16px;max-width:600px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);border:1px solid #334155;}h1{font-size:24px;margin:0 0 12px 0;color:#f87171;}.debug-box{background:#020617;padding:16px;border-radius:8px;font-size:13px;font-family:'JetBrains Mono',monospace;color:#38bdf8;margin-top:12px;border:1px solid #1e3a5f;overflow-x:auto;word-break:break-all;}.status{color:#94a3b8;font-size:14px;}</style>";
-        echo "<div class='card'><h1>" . htmlspecialchars($title) . "</h1><p>" . htmlspecialchars($message) . "</p>";
+        $status = http_response_code();
+        
+        // Premium Fallback View (Safe, No Dependencies)
+        echo <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$title} — The Framework</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --accent: #f43f5e; --code: #020617; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .container { max-width: 800px; width: 100%; }
+        .card { background: var(--card); padding: 40px; border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid #334155; position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--accent), #fb7185); }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; background: rgba(244, 63, 94, 0.1); color: var(--accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 20px; }
+        h1 { font-size: 32px; font-weight: 800; margin: 0 0 16px 0; color: #fff; line-height: 1.2; letter-spacing: -0.025em; }
+        p { font-size: 16px; color: var(--muted); line-height: 1.6; margin: 0 0 24px 0; }
+        .debug-section { margin-top: 32px; border-top: 1px solid #334155; padding-top: 24px; }
+        .debug-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+        .debug-box { background: var(--code); padding: 16px; border-radius: 12px; font-size: 13px; font-family: 'ui-monospace', 'SFMono-Regular', 'JetBrains Mono', monospace; color: #38bdf8; margin-bottom: 12px; border: 1px solid #1e3a5f; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+        .location { color: #fb7185; }
+        .footer { margin-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .status { color: var(--muted); font-size: 14px; font-weight: 500; }
+        .brand { font-weight: 800; color: #475569; font-size: 14px; }
+        .reload-btn { background: #334155; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: none; transition: background 0.2s; }
+        .reload-btn:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <span class="badge">Critical Handler Error</span>
+            <h1>{$title}</h1>
+            <p>{$message}</p>
+            
+HTML;
         if ($debug) {
-            if ($file)
-                echo "<div class='debug-box'>📄 Location: " . htmlspecialchars($file) . ":" . $line . "</div>";
-            echo "<div class='debug-box'>⚠️ Render Error: " . htmlspecialchars($renderError) . "</div>";
+            echo '<div class="debug-section">';
+            if ($file) {
+                echo '<div class="debug-title">Occurred In</div>';
+                echo '<div class="debug-box"><span class="location">' . htmlspecialchars($file) . ':' . $line . '</span></div>';
+            }
+            echo '<div class="debug-title">Internal Render Error</div>';
+            echo '<div class="debug-box">' . htmlspecialchars($renderError) . '</div>';
+            echo '</div>';
         }
-        echo "<p class='status'>HTTP " . http_response_code() . "</p></div>";
+
+        echo <<<HTML
+            <div class="footer">
+                <div class="status">HTTP {$status}</div>
+                <div class="brand">THE FRAMEWORK</div>
+                <a href="javascript:location.reload()" class="reload-btn">Retry Request</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
     }
 
     private static function getSnippet(string $file, int $line, int $linesAround = 10): array
