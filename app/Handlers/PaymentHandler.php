@@ -5,66 +5,78 @@ namespace TheFramework\Handlers;
 use Exception;
 
 /**
- * 💳 PaymentHandler - Premium Midtrans Wrapper
- * Mempermudah integrasi pembayaran Midtrans Snap & Status Checking.
+ * 💳 PaymentHandler — Universal Multi-Driver Payment Gateway
+ * 
+ * Mendukung 20 Payment Gateway (10 🇮🇩 Nasional + 10 🌍 Internasional).
+ * Developer cukup: composer require [sdk] → isi .env → langsung pakai.
+ * 
+ * USAGE:
+ *   PaymentHandler::driver('midtrans')->createTransaction($payload);
+ *   PaymentHandler::driver('stripe')->createTransaction($payload);
+ *   PaymentHandler::driver('xendit')->checkStatus($orderId);
+ * 
+ * SUPPORTED DRIVERS:
+ *   🇮🇩 midtrans, xendit, doku, faspay, nicepay, ipay88, ipaymu, oy, dana, espay
+ *   🌍 stripe, paypal, adyen, square, authorizenet, braintree, checkoutcom, worldpay, airwallex, helcim
  */
 class PaymentHandler
 {
+    protected static ?object $instance = null;
     protected array $config;
+    protected ?object $driver = null;
 
-    public function __construct()
+    public function __construct(?string $driverName = null)
     {
-        $configFile = ROOT_DIR . '/config/payment.php';
+        $configFile = defined('ROOT_DIR') ? ROOT_DIR . '/config/payment.php' : __DIR__ . '/../../config/payment.php';
+        
         if (!file_exists($configFile)) {
-            throw new \RuntimeException(
-                "File konfigurasi payment tidak ditemukan: config/payment.php. " .
-                "Salin dari config/payment.example.php atau buat manual."
-            );
+            throw new \RuntimeException("Config file 'config/payment.php' not found.");
         }
-        $config = require $configFile;
-        $this->config = $config['midtrans'] ?? throw new \RuntimeException(
-            "Key 'midtrans' tidak ditemukan di config/payment.php"
-        );
-        $this->init();
-    }
 
-    protected function init()
-    {
-        \Midtrans\Config::$serverKey = $this->config['server_key'];
-        \Midtrans\Config::$isProduction = $this->config['is_production'];
-        \Midtrans\Config::$isSanitized = $this->config['is_sanitized'];
-        \Midtrans\Config::$is3ds = $this->config['is_3ds'];
+        $allConfigs = require $configFile;
+        
+        // Pilih driver (default ke configurasi 'default' di file config)
+        $driverName = $driverName ?? ($allConfigs['default'] ?? 'midtrans');
+        
+        if (!isset($allConfigs[$driverName])) {
+            throw new \RuntimeException("Configuration for driver '{$driverName}' not found.");
+        }
+
+        $this->config = $allConfigs[$driverName];
+        $this->loadDriver($driverName);
     }
 
     /**
-     * Ambil Snap Token untuk ditampilkan di frontend
+     * Factory untuk memuat class driver secara dinamis
      */
-    public function getSnapToken(array $payload): string
+    protected function loadDriver(string $name)
     {
-        try {
-            return \Midtrans\Snap::getSnapToken($payload);
-        } catch (Exception $e) {
-            throw new Exception("Midtrans Error: " . $e->getMessage());
+        $className = "TheFramework\Handlers\PaymentDrivers\\" . ucfirst($name) . "Driver";
+        
+        if (!class_exists($className)) {
+            throw new \RuntimeException("Payment driver class '{$className}' not found.");
         }
+
+        $this->driver = new $className($this->config);
     }
 
     /**
-     * Cek status transaksi langsung ke server Midtrans
+     * Static helper: PaymentHandler::driver('stripe')->createTransaction(...)
      */
-    public function status(string $orderId): object
+    public static function driver(string $name): object
     {
-        try {
-            return \Midtrans\Transaction::status($orderId);
-        } catch (Exception $e) {
-            throw new Exception("Midtrans Status Error: " . $e->getMessage());
-        }
+        return new self($name);
     }
 
     /**
-     * Handle Webhook Notification
+     * Proxy semua panggil ke driver yang dipilih
      */
-    public function handleNotification(): object
+    public function __call($method, $arguments)
     {
-        return new \Midtrans\Notification();
+        if (method_exists($this->driver, $method)) {
+            return call_user_func_array([$this->driver, $method], $arguments);
+        }
+
+        throw new \BadMethodCallException("Method {$method} does not exist on driver " . get_class($this->driver));
     }
 }

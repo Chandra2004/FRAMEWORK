@@ -34,5 +34,9 @@
 
     "[blade]": {
         "editor.defaultFormatter": "shufo.vscode-blade-formatter"
-    }
+    },
+
+    "intelephense.files.associations": ["*.php"],
+
+    "php.validate.enable": false
 }
