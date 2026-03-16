@@ -102,4 +102,38 @@ class View
         $viewPath = str_replace('.', '/', $view);
         return file_exists(base_path('resources/views/' . $viewPath . '.php'));
     }
+
+    /**
+     * Render view dan kembalikan sebagai string HTML (tanpa echo).
+     * Sangat berguna untuk dikirim via Email atau dicetak ke PDF.
+     * Mendukung Blade (.blade.php) dan Native PHP (.php).
+     */
+    public static function renderToString(string $view, array $model = []): string|false
+    {
+        $view = str_replace(['/', '\\'], '.', $view);
+        $data = array_merge(self::$shared, $model);
+
+        // 1. Coba menggunakan Blade
+        try {
+            $factory = BladeInit::getInstance();
+            if ($factory && $factory->exists($view)) {
+                return $factory->make($view, $data)->render();
+            }
+        } catch (Throwable $e) {
+            // Abaikan jika error / fallback ke native
+        }
+
+        // 2. Fallback Native PHP via Output Buffering
+        $viewPath = str_replace('.', '/', $view);
+        $fallbackPath = base_path('resources/views/' . $viewPath . '.php');
+
+        if (file_exists($fallbackPath)) {
+            extract($data);
+            ob_start();
+            include $fallbackPath;
+            return ob_get_clean();
+        }
+
+        return false;
+    }
 }
