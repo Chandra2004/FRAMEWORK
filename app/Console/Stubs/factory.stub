@@ -1,0 +1,61 @@
+<?php
+
+namespace {{namespace}};
+
+use TheFramework\App\Database\Factory;
+use {{modelImport}};
+
+/**
+ * Factory untuk model {{model}}.
+ *
+ * Usage:
+ *   {{model}}::factory()->create();             // 1 data, simpan ke DB
+ *   {{model}}::factory()->count(10)->create();  // 10 data, simpan ke DB
+ *   {{model}}::factory()->make();               // 1 data, tanpa simpan
+ *   {{model}}::factory()->raw();                // 1 array, tanpa model
+ *
+ * State:
+ *   {{model}}::factory()->state('admin')->create();
+ *
+ * Override:
+ *   {{model}}::factory()->create(['name' => 'Custom Name']);
+ */
+class {{class}} extends Factory
+{
+    /**
+     * Nama model yang dihasilkan factory ini.
+     */
+    public function model(): string
+    {
+        return {{model}}::class;
+    }
+
+    /**
+     * Definisi atribut default.
+     * Gunakan $this->fake() untuk mengakses Faker.
+     *
+     * Referensi Faker: https://fakerphp.org/formatters/
+     *
+     * @return array
+     */
+    public function definition(): array
+    {
+        return [
+            // 'name'  => $this->fake()->name(),
+            // 'email' => $this->fake()->unique()->safeEmail(),
+            // 'phone' => $this->fake()->phoneNumber(),
+        ];
+    }
+
+    // ─── STATES (Opsional) ──────────────────────────────────
+    // Definisikan variasi data di bawah ini.
+    //
+    // Contoh:
+    //   public function admin(): callable
+    //   {
+    //       return fn() => ['role' => 'admin'];
+    //   }
+    //
+    // Usage: {{model}}::factory()->state('admin')->create();
+    // ────────────────────────────────────────────────────────
+}

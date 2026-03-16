@@ -3,9 +3,12 @@
 namespace {{namespace}};
 
 use TheFramework\App\Database\Model;
+use TheFramework\App\Database\Traits\HasFactory;
 
 class {{class}} extends Model
 {
+    use HasFactory;
+
     protected $table = '{{table}}';
     protected $primaryKey = 'id';
 

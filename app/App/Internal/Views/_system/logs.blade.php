@@ -40,43 +40,45 @@
             </div>
 
             <div class="flex-1 overflow-auto p-4 font-mono text-xs leading-relaxed space-y-1 custom-scrollbar">
-                @forelse($logs as $line)
-                    @php
-                        // Simple syntax coloring
-                        $colorClass = 'text-slate-300';
-                        $bgClass = '';
-                        $icon = '';
-
-                        if (str_contains($line, '.ERROR:')) {
-                            $colorClass = 'text-rose-400';
-                            $bgClass = 'bg-rose-500/5';
-                            $icon = '❌';
-                        } elseif (str_contains($line, '.WARNING:')) {
-                            $colorClass = 'text-amber-400';
-                            $icon = '⚠️';
-                        } elseif (str_contains($line, '.INFO:')) {
-                            $colorClass = 'text-cyan-400';
-                            $icon = 'ℹ️';
-                        } elseif (str_contains($line, 'Stack trace:')) {
-                            $colorClass = 'text-slate-500 italic pl-4';
-                        } elseif (str_contains($line, '#')) {
-                            $colorClass = 'text-slate-500 pl-8';
-                        }
-                    @endphp
-                    <div
-                        class="whitespace-pre-wrap {{ $colorClass }} {{ $bgClass }} px-2 py-0.5 -mx-2 rounded hover:bg-slate-800/30 transition-colors border-l-2 border-transparent hover:border-slate-700">
-                        <span class="opacity-50 select-none mr-2 w-4 inline-block text-right">{{ $loop->iteration }}</span>
-                        @if ($icon)
-                            <span class="mr-1 select-none">{{ $icon }}</span>
-                        @endif
-                        {!! nl2br(htmlspecialchars($line)) !!}
-                    </div>
-                @empty
+                @if(empty($logs))
                     <div class="h-full flex flex-col items-center justify-center text-slate-600">
                         <i data-lucide="check-circle" class="w-12 h-12 mb-4 opacity-50"></i>
                         <p>No logs found. Everything looks clean!</p>
                     </div>
-                @endforelse
+                @else
+                    @foreach($logs as $index => $line)
+                        @php
+                            // Simple syntax coloring
+                            $colorClass = 'text-slate-300';
+                            $bgClass = '';
+                            $icon = '';
+
+                            if (str_contains($line, '.ERROR:')) {
+                                $colorClass = 'text-rose-400';
+                                $bgClass = 'bg-rose-500/5';
+                                $icon = '❌';
+                            } elseif (str_contains($line, '.WARNING:')) {
+                                $colorClass = 'text-amber-400';
+                                $icon = '⚠️';
+                            } elseif (str_contains($line, '.INFO:')) {
+                                $colorClass = 'text-cyan-400';
+                                $icon = 'ℹ️';
+                            } elseif (str_contains($line, 'Stack trace:')) {
+                                $colorClass = 'text-slate-500 italic pl-4';
+                            } elseif (str_contains($line, '#')) {
+                                $colorClass = 'text-slate-500 pl-8';
+                            }
+                        @endphp
+                        <div
+                            class="whitespace-pre-wrap {{ $colorClass }} {{ $bgClass }} px-2 py-0.5 -mx-2 rounded hover:bg-slate-800/30 transition-colors border-l-2 border-transparent hover:border-slate-700">
+                            <span class="opacity-50 select-none mr-2 w-4 inline-block text-right">{{ $index + 1 }}</span>
+                            @if ($icon)
+                                <span class="mr-1 select-none">{{ $icon }}</span>
+                            @endif
+                            {!! nl2br(htmlspecialchars($line)) !!}
+                        </div>
+                    @endforeach
+                @endif
             </div>
         </div>
 

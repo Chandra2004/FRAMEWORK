@@ -11,8 +11,6 @@
     "editor.letterSpacing": 0,
     "debug.console.fontSize": 13,
     "window.commandCenter": false,
-    "workbench.preferredDarkColorTheme": "Google Dark",
-    "workbench.preferredLightColorTheme": "Google Light",
     "workbench.iconTheme": "office-material-icon-theme",
     "window.autoDetectColorScheme": true,
     "workbench.layoutControl.enabled": false,

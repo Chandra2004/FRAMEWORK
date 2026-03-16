@@ -41,54 +41,7 @@
 
         <!-- USERS GRID -->
         <div id="userGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            @forelse($users as $user)
-                <!-- User Card Item -->
-                <article>
-                    <a href="/users/information/{{ $user['uid'] }}"
-                        class="group relative block glass-card rounded-2xl p-6 hover:border-cyan-500/50 transition-all duration-500 transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-cyan-500/10 overflow-hidden">
-
-                        <div class="flex items-center gap-5">
-                            <!-- Avatar / Initials -->
-                            <div class="relative shrink-0">
-                                @if (!empty($user['profile_picture']))
-                                    <img src="{{ url('/file/user-pictures/' . $user['profile_picture']) }}"
-                                        alt="{{ $user['name'] }}"
-                                        class="w-16 h-16 rounded-2xl object-cover border border-slate-700 group-hover:border-cyan-400 transition-colors shadow-xl">
-                                @else
-                                    <div
-                                        class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 group-hover:border-cyan-400 flex items-center justify-center text-xl font-bold text-slate-400 group-hover:text-cyan-400 transition-all shadow-xl">
-                                        {{ strtoupper(substr($user['name'], 0, 1)) }}
-                                    </div>
-                                @endif
-                                <!-- Status Indicator (Active) -->
-                                <div
-                                    class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full shadow-lg pulse-emerald">
-                                </div>
-                            </div>
-
-                            <!-- Info -->
-                            <div class="relative z-10 min-w-0 flex-1">
-                                <h3
-                                    class="text-xl font-bold text-white truncate group-hover:text-cyan-400 transition-colors mb-0.5">
-                                    {{ $user['name'] }}
-                                </h3>
-                                <p class="text-sm text-slate-400 truncate mb-2">{{ $user['email'] ?? 'No Email' }}</p>
-                                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                                    <span>{{ __('messages.joined') }}
-                                        {{ date('M d, Y', strtotime($user['created_at'])) }}</span>
-                                </div>
-                            </div>
-
-                            <!-- Arrow Icon -->
-                            <div
-                                class="text-slate-600 group-hover:text-cyan-400 transition-all transform group-hover:translate-x-1">
-                                <i data-lucide="chevron-right" class="w-6 h-6"></i>
-                            </div>
-                        </div>
-                    </a>
-                </article>
-            @empty
+            @if(empty($users))
                 <!-- Empty State -->
                 <div id="emptyState"
                     class="col-span-full py-24 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-800 rounded-3xl bg-slate-900/50">
@@ -102,7 +55,56 @@
                         {{ __('messages.add_first_member') }}
                     </button>
                 </div>
-            @endforelse
+            @else
+                @foreach($users as $user)
+                    <!-- User Card Item -->
+                    <article>
+                        <a href="/users/information/{{ $user['uid'] }}"
+                            class="group relative block glass-card rounded-2xl p-6 hover:border-cyan-500/50 transition-all duration-500 transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-cyan-500/10 overflow-hidden">
+
+                            <div class="flex items-center gap-5">
+                                <!-- Avatar / Initials -->
+                                <div class="relative shrink-0">
+                                    @if (!empty($user['profile_picture']))
+                                        <img src="{{ url('/file/user-pictures/' . $user['profile_picture']) }}"
+                                            alt="{{ $user['name'] }}"
+                                            class="w-16 h-16 rounded-2xl object-cover border border-slate-700 group-hover:border-cyan-400 transition-colors shadow-xl">
+                                    @else
+                                        <div
+                                            class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 group-hover:border-cyan-400 flex items-center justify-center text-xl font-bold text-slate-400 group-hover:text-cyan-400 transition-all shadow-xl">
+                                            {{ strtoupper(substr($user['name'], 0, 1)) }}
+                                        </div>
+                                    @endif
+                                    <!-- Status Indicator (Active) -->
+                                    <div
+                                        class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full shadow-lg pulse-emerald">
+                                    </div>
+                                </div>
+
+                                <!-- Info -->
+                                <div class="relative z-10 min-w-0 flex-1">
+                                    <h3
+                                        class="text-xl font-bold text-white truncate group-hover:text-cyan-400 transition-colors mb-0.5">
+                                        {{ $user['name'] }}
+                                    </h3>
+                                    <p class="text-sm text-slate-400 truncate mb-2">{{ $user['email'] ?? 'No Email' }}</p>
+                                    <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                                        <span>{{ __('messages.joined') }}
+                                            {{ date('M d, Y', strtotime($user['created_at'])) }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Arrow Icon -->
+                                <div
+                                    class="text-slate-600 group-hover:text-cyan-400 transition-all transform group-hover:translate-x-1">
+                                    <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                        </a>
+                    </article>
+                @endforeach
+            @endif
         </div>
     </main>
 

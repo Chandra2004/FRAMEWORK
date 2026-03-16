@@ -33,6 +33,7 @@ class MakeModelCommand extends BaseCommand
         }
 
         $createMigration = in_array('-m', $args) || in_array('--migration', $args);
+        $createFactory = in_array('-f', $args) || in_array('--factory', $args);
 
         $parts = explode('/', str_replace('\\', '/', $name));
         $className = array_pop($parts);
@@ -78,9 +79,15 @@ class MakeModelCommand extends BaseCommand
         if ($createMigration) {
             $migrationName = "create_{$tableName}_table";
             $this->comment("Memicu pembuatan migrasi...");
-            // We use another command instance
             $makeMigration = new MakeMigrationCommand();
             $makeMigration->run([$migrationName]);
+        }
+
+        if ($createFactory) {
+            $factoryName = $name . 'Factory';
+            $this->comment("Memicu pembuatan factory...");
+            $makeFactory = new MakeFactoryCommand();
+            $makeFactory->run([$factoryName, '--model=' . $name]);
         }
     }
 }

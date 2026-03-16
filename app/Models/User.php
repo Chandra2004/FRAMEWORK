@@ -3,9 +3,11 @@
 namespace TheFramework\Models;
 
 use TheFramework\App\Database\Model;
+use TheFramework\App\Database\Traits\HasFactory;
 
 class User extends Model
 {
+    use HasFactory;
     protected $table = 'users';
     protected $primaryKey = 'uid';
     public $incrementing = false;
