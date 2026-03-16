@@ -57,7 +57,7 @@ class Request
         return array_merge($this->input, $this->files);
     }
 
-    public function input(string $key = null, $default = null)
+    public function input(?string $key = null, $default = null)
     {
         if (is_null($key)) {
             return $this->input;
@@ -65,7 +65,7 @@ class Request
         return $this->input[$key] ?? $default;
     }
 
-    public function query(string $key = null, $default = null)
+    public function query(?string $key = null, $default = null)
     {
         if (is_null($key)) {
             return $_GET;
@@ -73,7 +73,7 @@ class Request
         return $_GET[$key] ?? $default;
     }
 
-    public function post(string $key = null, $default = null)
+    public function post(?string $key = null, $default = null)
     {
         if (is_null($key)) {
             return $_POST;
@@ -84,7 +84,7 @@ class Request
     /**
      * Get route parameter
      */
-    public function route(string $key = null, $default = null)
+    public function route(?string $key = null, $default = null)
     {
         if (is_null($key)) {
             return self::$routeParams;
@@ -215,7 +215,7 @@ class Request
         return filter_var($this->input($key, false), FILTER_VALIDATE_BOOLEAN);
     }
 
-    public function date(string $key, string $format = null, string $tz = null): ?\DateTimeInterface
+    public function date(string $key, ?string $format = null, ?string $tz = null): ?\DateTimeInterface
     {
         if ($this->isMissing($key)) {
             return null;
@@ -337,7 +337,7 @@ class Request
     //  HEADERS & TOKENS
     // ========================================================
 
-    public function header(string $key = null, $default = null)
+    public function header(?string $key = null, $default = null)
     {
         $headers = function_exists('getallheaders') ? getallheaders() : [];
         if (!$headers) {
@@ -368,7 +368,7 @@ class Request
         return null;
     }
 
-    public function server(string $key = null, $default = null)
+    public function server(?string $key = null, $default = null)
     {
         if (is_null($key)) {
             return $_SERVER;
