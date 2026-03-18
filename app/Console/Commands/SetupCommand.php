@@ -61,11 +61,14 @@ class SetupCommand extends BaseCommand
             } else {
                 $hashed = password_hash($password, PASSWORD_BCRYPT);
 
+                // Escape $ dalam hash agar tidak diinterpretasi sebagai backreference oleh preg_replace
+                $escapedHash = str_replace(['\\', '$'], ['\\\\', '\\$'], $hashed);
+
                 $env = preg_replace('/^SYSTEM_AUTH_USER=.*/m', "SYSTEM_AUTH_USER={$username}", $env);
                 if (!preg_match('/^SYSTEM_AUTH_USER=/m', $env))
                     $env .= "\nSYSTEM_AUTH_USER={$username}";
 
-                $env = preg_replace('/^SYSTEM_AUTH_PASS=.*/m', "SYSTEM_AUTH_PASS=\"{$hashed}\"", $env);
+                $env = preg_replace('/^SYSTEM_AUTH_PASS=.*/m', "SYSTEM_AUTH_PASS=\"{$escapedHash}\"", $env);
                 if (!preg_match('/^SYSTEM_AUTH_PASS=/m', $env))
                     $env .= "\nSYSTEM_AUTH_PASS=\"{$hashed}\"";
 

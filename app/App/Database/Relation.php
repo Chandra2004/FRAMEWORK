@@ -32,6 +32,7 @@ class Relation
     // Default model for belongsTo
     protected $withDefault = false;
     protected array $defaultAttributes = [];
+    protected ?string $pivotModel = null;
 
     public function __construct(
         $type,
@@ -532,6 +533,15 @@ class Relation
     public function as(string $accessor): self
     {
         $this->pivotAlias = $accessor;
+        return $this;
+    }
+
+    /**
+     * Set custom model class untuk tabel pivot.
+     */
+    public function using(string $class): self
+    {
+        $this->pivotModel = $class;
         return $this;
     }
 

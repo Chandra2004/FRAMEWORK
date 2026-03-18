@@ -26,7 +26,7 @@ class ConfigCacheCommand extends BaseCommand
         }
 
         try {
-            $dotenv = Dotenv::createMutable(ROOT_DIR);
+            $dotenv = \Dotenv\Dotenv::createMutable(ROOT_DIR);
             $envVars = $dotenv->load();
 
             if (empty($envVars)) {

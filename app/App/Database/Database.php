@@ -9,16 +9,17 @@ use TheFramework\App\Core\Config;
 
 class Database
 {
-    private static ?self $instance = null;
+    private static array $instances = [];
+    private string $connectionName;
     private ?PDO $dbh = null;
     private $stmt;
     private bool $isConnected = false;
     private static bool $databaseEnabled = true;
     private array $queryLog = [];
 
-    private function __construct()
+    private function __construct(string $name = 'default')
     {
-        // Lazy connection - tidak langsung connect
+        $this->connectionName = $name;
     }
 
     /**
@@ -78,16 +79,27 @@ class Database
     }
 
     /**
-     * Mendapatkan instance singleton
+     * Dapatkan koneksi berdasarkan nama.
+     *
+     * @param string $name
+     * @return Database
+     */
+    public static function connection(string $name = 'default'): self
+    {
+        if (!isset(self::$instances[$name])) {
+            self::$instances[$name] = new self($name);
+        }
+        return self::$instances[$name];
+    }
+
+    /**
+     * Mendapatkan instance default (singleton backward compatibility)
      *
      * @return Database
      */
     public static function getInstance(): self
     {
-        if (!self::$instance) {
-            self::$instance = new self();
-        }
-        return self::$instance;
+        return static::connection('default');
     }
 
     /**
@@ -159,13 +171,24 @@ class Database
 
         Config::loadEnv();
 
-        // Get database configuration with Railway fallbacks
-        $host = Config::get('DB_HOST') ?: Config::get('MYSQLHOST');
-        $dbname = Config::get('DB_NAME') ?: Config::get('MYSQLDATABASE');
-        $user = Config::get('DB_USER') ?: Config::get('MYSQLUSER');
-        $pass = Config::get('DB_PASS') ?: Config::get('MYSQLPASSWORD');
-        $port = Config::get('DB_PORT') ?: Config::get('MYSQLPORT', '3306');
+        $prefix = $this->connectionName === 'default' ? '' : strtoupper($this->connectionName) . '_';
+
+        // Get database configuration
+        $host = Config::get($prefix . 'DB_HOST') ?: Config::get($prefix . 'MYSQLHOST');
+        $dbname = Config::get($prefix . 'DB_NAME') ?: Config::get($prefix . 'MYSQLDATABASE');
+        $user = Config::get($prefix . 'DB_USER') ?: Config::get($prefix . 'MYSQLUSER');
+        $pass = Config::get($prefix . 'DB_PASS') ?: Config::get($prefix . 'MYSQLPASSWORD');
+        $port = Config::get($prefix . 'DB_PORT') ?: Config::get($prefix . 'MYSQLPORT', '3306');
         $debug = Config::get('APP_DEBUG', false);
+
+        // Fallback ke default jika koneksi bernama tidak ditemukan env-nya
+        if ($this->connectionName !== 'default' && empty($host)) {
+            $host = Config::get('DB_HOST') ?: Config::get('MYSQLHOST');
+            $dbname = Config::get('DB_NAME') ?: Config::get('MYSQLDATABASE');
+            $user = Config::get('DB_USER') ?: Config::get('MYSQLUSER');
+            $pass = Config::get('DB_PASS') ?: Config::get('MYSQLPASSWORD');
+            $port = Config::get('DB_PORT') ?: Config::get('MYSQLPORT', '3306');
+        }
 
         // Check for missing required values (after considering fallbacks)
         if (empty($host)) {
@@ -461,10 +484,10 @@ class Database
      * Prepare statement
      *
      * @param string $sql
-     * @return void
+     * @return self
      * @throws DatabaseException
      */
-    public function query(string $sql): void
+    public function query(string $sql): self
     {
         $this->ensureConnection(true);
         // Jika ada kelas Config, manfaatkan DEBUG_MODE
@@ -486,6 +509,8 @@ class Database
             error_log("Prepare Statement Error: " . $e->getMessage());
             throw $e;
         }
+
+        return $this;
     }
 
     /**

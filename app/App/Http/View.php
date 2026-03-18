@@ -108,7 +108,7 @@ class View
      * Sangat berguna untuk dikirim via Email atau dicetak ke PDF.
      * Mendukung Blade (.blade.php) dan Native PHP (.php).
      */
-    public static function renderToString(string $view, array $model = []): string|false
+    public static function renderToString(string $view, array $model = []): string|bool
     {
         $view = str_replace(['/', '\\'], '.', $view);
         $data = array_merge(self::$shared, $model);

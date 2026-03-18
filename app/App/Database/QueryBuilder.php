@@ -488,6 +488,47 @@ class QueryBuilder
         return $this->addSubqueryWhere('not_exists', $relation, $boolean, $callback);
     }
 
+    /**
+     * Polimorfik whereHas
+     */
+    public function whereHasMorph(string $relation, $types, ?Closure $callback = null, $boolean = 'AND')
+    {
+        $types = is_array($types) ? $types : [$types];
+
+        return $this->where(function ($query) use ($relation, $types, $callback) {
+            foreach ($types as $type) {
+                $query->orWhere(function ($q) use ($relation, $type, $callback) {
+                    $q->where($relation . '_type', $type)
+                      ->whereHas($relation, $callback);
+                });
+            }
+        }, null, null, $boolean);
+    }
+
+    public function orWhereHasMorph(string $relation, $types, ?Closure $callback = null)
+    {
+        return $this->whereHasMorph($relation, $types, $callback, 'OR');
+    }
+
+    public function whereDoesntHaveMorph(string $relation, $types, ?Closure $callback = null)
+    {
+        $types = is_array($types) ? $types : [$types];
+
+        return $this->where(function ($query) use ($relation, $types, $callback) {
+            foreach ($types as $type) {
+                $query->orWhere(function ($q) use ($relation, $type, $callback) {
+                    $q->where($relation . '_type', $type)
+                      ->whereDoesntHave($relation, $callback);
+                });
+            }
+        }, null, null, 'AND', true); // TRUE for NOT
+    }
+
+    public function orWhereDoesntHaveMorph(string $relation, $types, ?Closure $callback = null)
+    {
+        return $this->whereHasMorph($relation, $types, $callback, 'OR', true);
+    }
+
     public function orDoesntHave(string $relation, ?Closure $callback = null)
     {
         return $this->doesntHave($relation, 'OR', $callback);
@@ -569,10 +610,11 @@ class QueryBuilder
             $callback($subQuery);
         }
 
+        [$subSql, $subBindings] = $subQuery->toSql();
         $this->wheres[] = [
-            'type' => $type === 'exists' ? 'Raw' : ($type === 'not_exists' ? 'Raw' : $type),
-            'sql' => ($type === 'exists' ? 'EXISTS' : 'NOT EXISTS') . " (" . $subQuery->toSql()[0] . ")",
-            'bindings' => $subQuery->toSql()[1],
+            'type' => 'raw',
+            'sql' => ($type === 'exists' ? 'EXISTS' : 'NOT EXISTS') . " ({$subSql})",
+            'bindings' => $subBindings,
             'boolean' => $boolean,
         ];
         
@@ -762,7 +804,7 @@ class QueryBuilder
                         $part = $where['not'] ? '1=1' : '0=1';
                     } else {
                         $inPlaceholders = [];
-                        foreach ($where['values'] as $value) {
+                        foreach ((array) $where['values'] as $value) {
                             $inParam = ":in_{$counter}";
                             $inPlaceholders[] = $inParam;
                             $bindings[$inParam] = $value;
@@ -776,16 +818,12 @@ class QueryBuilder
                     $part = "{$this->wrapColumn($where['first'])} {$where['operator']} {$this->wrapColumn($where['second'])}";
                     break;
                 case 'nested':
-                    [$nestedSql, $nestedBindings] = $where['query']->compileWheres();
-                    $part = "(" . ltrim(ltrim($nestedSql, 'WHERE ')) . ")";
-                    $bindings = array_merge($bindings, $nestedBindings);
-                    break;
-                case 'exists':
-                case 'not_exists':
-                    [$subSql, $subBindings] = $where['subquery']->toSql();
-                    $operator = $where['type'] === 'exists' ? 'EXISTS' : 'NOT EXISTS';
-                    $part = "{$operator} ({$subSql})";
-                    $bindings = array_merge($bindings, $subBindings);
+                    $nestedQuery = $where['query'] ?? null;
+                    if ($nestedQuery instanceof self) {
+                        [$nestedSql, $nestedBindings] = $nestedQuery->compileWheres();
+                        $part = "(" . ltrim(ltrim($nestedSql, 'WHERE ')) . ")";
+                        $bindings = array_merge($bindings, $nestedBindings);
+                    }
                     break;
                 case 'between':
                     $param1 = ":btw_{$counter}";
@@ -822,7 +860,7 @@ class QueryBuilder
                     break;
                 case 'raw':
                     $part = $where['sql'];
-                    $bindings = array_merge($bindings, $where['bindings']);
+                    $bindings = array_merge($bindings, $where['bindings'] ?? []);
                     break;
             }
             $sqlParts[] = "{$boolean} {$part}";
@@ -1387,7 +1425,8 @@ class QueryBuilder
     {
         $page = 1;
         do {
-            $results = $this->limit($count)->offset(($page - 1) * $count)->get();
+            $clone = clone $this;
+            $results = $clone->forPage($page, $count)->get();
             $countResults = count($results);
 
             if ($countResults == 0)
@@ -1403,45 +1442,118 @@ class QueryBuilder
         return true;
     }
 
-    public function chunkById(int $count, callable $callback, $column = null)
+    public function chunkById(int $count, callable $callback, $column = null, $alias = null)
     {
         $column = $column ?? ($this->model ? $this->model->getKeyName() : 'id');
+        $alias = $alias ?? $column;
         $lastId = null;
+
         do {
-            $query = $this->when($lastId, fn($q) => $q->where($column, '>', $lastId));
-            $results = $query->limit($count)->orderBy($column, 'ASC')->get();
+            $clone = clone $this;
+            if ($lastId !== null) {
+                $clone->where($column, '>', $lastId);
+            }
+            $results = $clone->limit($count)->orderBy($column, 'ASC')->get();
             $countResults = count($results);
+
             if ($countResults == 0)
                 break;
-            $lastId = $results[$countResults - 1]->getAttribute($column);
-            if ($callback($results) === false)
+
+            $lastResult = $results[$countResults - 1];
+            $lastId = is_object($lastResult) && method_exists($lastResult, 'getAttribute') 
+                ? $lastResult->getAttribute($alias) 
+                : (is_array($lastResult) ? ($lastResult[$alias] ?? null) : ($lastResult->$alias ?? null));
+
+            if ($callback($results) === false) {
                 return false;
+            }
         } while ($countResults == $count);
+
         return true;
     }
 
-    public function lazy($chunkSize = 100)
+    public function chunkByIdDesc(int $count, callable $callback, $column = null, $alias = null)
     {
-        $generator = function () use ($chunkSize) {
-            $this->chunk($chunkSize, function ($results) use (&$generator) {
-                foreach ($results as $r) {
-                    yield $r;
-                }
-            });
-        };
-        return $generator();
+        $column = $column ?? ($this->model ? $this->model->getKeyName() : 'id');
+        $alias = $alias ?? $column;
+        $lastId = null;
+
+        do {
+            $clone = clone $this;
+            if ($lastId !== null) {
+                $clone->where($column, '<', $lastId);
+            }
+            $results = $clone->limit($count)->orderBy($column, 'DESC')->get();
+            $countResults = count($results);
+
+            if ($countResults == 0)
+                break;
+
+            $lastResult = $results[$countResults - 1];
+            $lastId = is_object($lastResult) && method_exists($lastResult, 'getAttribute') 
+                ? $lastResult->getAttribute($alias) 
+                : (is_array($lastResult) ? ($lastResult[$alias] ?? null) : ($lastResult->$alias ?? null));
+
+            if ($callback($results) === false) {
+                return false;
+            }
+        } while ($countResults == $count);
+
+        return true;
     }
 
-    public function lazyById($chunkSize = 100, $column = null)
+    public function lazy($chunkSize = 100): \TheFramework\Helpers\LazyCollection
     {
-        $generator = function () use ($chunkSize, $column) {
-            $this->chunkById($chunkSize, function ($results) use (&$generator) {
-                foreach ($results as $r) {
-                    yield $r;
+        return new \TheFramework\Helpers\LazyCollection(function () use ($chunkSize) {
+            $page = 1;
+            while (true) {
+                $clone = clone $this;
+                $results = $clone->forPage($page++, $chunkSize)->get();
+
+                if (empty($results)) {
+                    break;
                 }
-            }, $column);
-        };
-        return $generator();
+
+                foreach ($results as $result) {
+                    yield $result;
+                }
+
+                if (count($results) < $chunkSize) {
+                    break;
+                }
+            }
+        });
+    }
+
+    public function lazyById($chunkSize = 100, $column = null): \TheFramework\Helpers\LazyCollection
+    {
+        return new \TheFramework\Helpers\LazyCollection(function () use ($chunkSize, $column) {
+            $column = $column ?? ($this->model ? $this->model->getKeyName() : 'id');
+            $lastId = null;
+
+            while (true) {
+                $clone = clone $this;
+                if ($lastId !== null) {
+                    $clone->where($column, '>', $lastId);
+                }
+                $results = $clone->limit($chunkSize)->orderBy($column, 'ASC')->get();
+
+                if (empty($results)) {
+                    break;
+                }
+
+                foreach ($results as $result) {
+                    $lastId = is_object($result) && method_exists($result, 'getAttribute') 
+                        ? $result->getAttribute($column) 
+                        : (is_array($result) ? ($result[$column] ?? null) : ($result->$column ?? null));
+                    yield $result;
+                }
+
+                if (count($results) < $chunkSize) {
+                    break;
+                }
+            }
+        });
     }
 
     public function paginate(int $perPage = 15, int $page = 1)
@@ -1774,7 +1886,7 @@ class QueryBuilder
     {
         $op = $caseSensitive ? 'LIKE BINARY' : 'LIKE';
         $this->wheres[] = [
-            'type' => 'Basic',
+            'type' => 'basic',
             'column' => $column,
             'operator' => $op,
             'value' => $value,
@@ -1792,7 +1904,7 @@ class QueryBuilder
     {
         $op = $caseSensitive ? 'NOT LIKE BINARY' : 'NOT LIKE';
         $this->wheres[] = [
-            'type' => 'Basic',
+            'type' => 'basic',
             'column' => $column,
             'operator' => $op,
             'value' => $value,
@@ -1814,11 +1926,12 @@ class QueryBuilder
     {
         $subQuery = new self($this->db);
         $callback($subQuery);
-        [$subSql] = $subQuery->toSql();
+        [$subSql, $subBindings] = $subQuery->toSql();
         $keyword = $not ? 'NOT EXISTS' : 'EXISTS';
         $this->wheres[] = [
-            'type' => 'Raw',
+            'type' => 'raw',
             'sql' => "{$keyword} ({$subSql})",
+            'bindings' => $subBindings,
             'boolean' => $boolean,
         ];
         return $this;
@@ -1837,18 +1950,12 @@ class QueryBuilder
     {
         $cols = implode(', ', array_map(fn($c) => $this->wrapColumn($c), $columns));
         $mode = ($options['mode'] ?? '') === 'boolean' ? ' IN BOOLEAN MODE' : '';
-        $this->wheres[] = [
-            'type' => 'Raw',
-            'sql' => "MATCH({$cols}) AGAINST(:_ft_val_{$boolean}",
-            'boolean' => $boolean,
-        ];
-        // Simplified — store as raw where
         $paramName = ':_ft_' . count($this->wheres);
-        $this->wheres[array_key_last($this->wheres)] = [
-            'type' => 'Raw',
+        $this->wheres[] = [
+            'type' => 'raw',
             'sql' => "MATCH({$cols}) AGAINST({$paramName}{$mode})",
-            'boolean' => $boolean,
             'bindings' => [$paramName => $value],
+            'boolean' => $boolean,
         ];
         return $this;
     }
@@ -1869,8 +1976,9 @@ class QueryBuilder
         $max = $this->wrapColumn($columns[1]);
         $keyword = $not ? 'NOT BETWEEN' : 'BETWEEN';
         $this->wheres[] = [
-            'type' => 'Raw',
+            'type' => 'raw',
             'sql' => "{$col} {$keyword} {$min} AND {$max}",
+            'bindings' => [],
             'boolean' => $boolean,
         ];
         return $this;
@@ -2052,26 +2160,28 @@ class QueryBuilder
     //  CURSOR (Generator — memory efficient)
     // ========================================================
 
-    public function cursor(): \Generator
+    public function cursor(): \TheFramework\Helpers\LazyCollection
     {
-        [$sql, $bindings] = $this->toSql();
-        $this->db->query($sql);
-        foreach ($bindings as $param => $value) {
-            $this->db->bind($param, $value);
-        }
-        $this->db->execute();
-
-        while ($row = $this->db->single()) {
-            if ($row === false)
-                break;
-            if ($this->model) {
-                $instance = $this->model->newInstance([], true);
-                $instance->setRawAttributes((array) $row, true);
-                yield $instance;
-            } else {
-                yield $row;
+        return new \TheFramework\Helpers\LazyCollection(function () {
+            [$sql, $bindings] = $this->toSql();
+            $this->db->query($sql);
+            foreach ($bindings as $param => $value) {
+                $this->db->bind($param, $value);
             }
-        }
+            $this->db->execute();
+
+            while ($row = $this->db->single()) {
+                if ($row === false)
+                    break;
+                if ($this->model) {
+                    $instance = $this->model->newInstance([], true);
+                    $instance->setRawAttributes((array) $row, true);
+                    yield $instance;
+                } else {
+                    yield $row;
+                }
+            }
+        });
     }
 
     /**
@@ -2087,6 +2197,18 @@ class QueryBuilder
             }
             return true;
         });
+    }
+
+    public function eachById(callable $callback, int $chunkSize = 100, $column = null, $alias = null): bool
+    {
+        return $this->chunkById($chunkSize, function ($results) use ($callback) {
+            foreach ($results as $key => $value) {
+                if ($callback($value, $key) === false) {
+                    return false;
+                }
+            }
+            return true;
+        }, $column, $alias);
     }
 
     /**
@@ -2106,28 +2228,30 @@ class QueryBuilder
     /**
      * Lazy by ID descending
      */
-    public function lazyByIdDesc($chunkSize = 100, $column = null): \Generator
+    public function lazyByIdDesc($chunkSize = 100, $column = null): \TheFramework\Helpers\LazyCollection
     {
-        $column = $column ?? ($this->model ? $this->model->getKeyName() : 'id');
-        $lastId = null;
+        return new \TheFramework\Helpers\LazyCollection(function () use ($chunkSize, $column) {
+            $column = $column ?? ($this->model ? $this->model->getKeyName() : 'id');
+            $lastId = null;
 
-        while (true) {
-            $clone = clone $this;
-            if ($lastId !== null) {
-                $clone->where($column, '<', $lastId);
+            while (true) {
+                $clone = clone $this;
+                if ($lastId !== null) {
+                    $clone->where($column, '<', $lastId);
+                }
+                $results = $clone->orderBy($column, 'DESC')->limit($chunkSize)->get();
+                if (empty($results))
+                    break;
+
+                foreach ($results as $result) {
+                    $lastId = is_array($result) ? ($result[$column] ?? null) : ($result->$column ?? null);
+                    yield $result;
+                }
+
+                if (count($results) < $chunkSize)
+                    break;
             }
-            $results = $clone->orderBy($column, 'DESC')->limit($chunkSize)->get();
-            if (empty($results))
-                break;
-
-            foreach ($results as $result) {
-                $lastId = is_array($result) ? ($result[$column] ?? null) : ($result->$column ?? null);
-                yield $result;
-            }
-
-            if (count($results) < $chunkSize)
-                break;
-        }
+        });
     }
 
     public function __call($method, $parameters)

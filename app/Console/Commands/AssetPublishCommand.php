@@ -55,7 +55,7 @@ class AssetPublishCommand implements CommandInterface
         );
 
         foreach ($iterator as $item) {
-            $subPath = $iterator->getSubPathName();
+            $subPath = ltrim(str_replace($source, '', $item->getPathname()), DIRECTORY_SEPARATOR);
             if ($item->isDir()) {
                 if (!is_dir("$dest/$subPath")) {
                     mkdir("$dest/$subPath");

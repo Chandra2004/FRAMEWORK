@@ -140,10 +140,28 @@ User::create([
 
 ---
 
-## 🔍 Debugging
+## ⚡ Fluent Chaining (v5.1.0)
 
-Jika terjadi error database, Framework akan menampilkan **Premium Error UI** yang menunjukkan:
+Engine Database kini mendukung **Fluent Chaining** untuk pemrosesan query manual yang lebih ringkas. Anda bisa memanggil `query()` dan langsung me-return hasilnya.
 
-- Query SQL yang gagal.
-- Parameter Bindings yang dikirim.
-- Detail konfigurasi `.env` yang digunakan.
+```php
+// ✅ NEW (Fluent Interface)
+$tables = $db->query("SHOW TABLES")->resultSet();
+$userCount = $db->query("SELECT COUNT(*) FROM users")->single();
+
+// ❌ OLD (Separated calls)
+$db->query("SHOW TABLES");
+$tables = $db->resultSet();
+```
+
+---
+
+## 🔍 Debugging & Stability
+
+Versi terbaru (v5.1.0) menyertakan banyak perbaikan stabilitas:
+- **Case Sensitivity Fix**: Klausa `WHERE` pada Query Builder kini sudah stabil dan case-insensitive untuk type (e.g., `'RAW'`, `'BASIC'`, `'IN'`).
+- **Subquery Bindings**: Penanganan bindings di dalam subquery `whereExists` dan `whereFullText` kini jauh lebih handal.
+- **Error UI**: Jika terjadi error database, Framework menampilkan:
+    * Query SQL yang gagal.
+    * Parameter Bindings yang dikirim.
+    * Detail konfigurasi `.env` yang digunakan.

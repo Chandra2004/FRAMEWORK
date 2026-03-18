@@ -210,6 +210,28 @@ abstract class Factory
     }
 
     /**
+     * Cross join multiple sequences untuk kombinasi cartesian product.
+     *
+     * @param array ...$sequences
+     * @return static
+     */
+    public function crossJoinSequence(array ...$sequences): static
+    {
+        $result = [[]];
+        foreach ($sequences as $sequence) {
+            $append = [];
+            foreach ($result as $product) {
+                foreach ($sequence as $item) {
+                    $append[] = array_merge($product, $item);
+                }
+            }
+            $result = $append;
+        }
+
+        return $this->sequence(...$result);
+    }
+
+    /**
      * Register callback yang dijalankan SETELAH model di-create (saved ke DB).
      */
     public function afterCreating(callable $callback): static
@@ -536,5 +558,34 @@ abstract class Factory
         }
         $fakerFactory = 'Faker\Factory';
         static::$fakerInstance = $fakerFactory::create($locale);
+    }
+
+    /**
+     * Handle magic methods for relationships. 
+     * Contoh: ->hasPosts(5) akan otomatis memanggil ->has(Post::factory()->count(5), 'posts')
+     */
+    public function __call(string $method, array $parameters): mixed
+    {
+        if (str_starts_with($method, 'has')) {
+            $relationName = lcfirst(substr($method, 3));
+            $count = $parameters[0] ?? 1;
+            $attributes = $parameters[1] ?? [];
+
+            // Find the model from current factory
+            $modelClass = $this->model();
+            $modelInstance = new $modelClass();
+
+            if (method_exists($modelInstance, $relationName)) {
+                $relation = $modelInstance->$relationName();
+                $relatedModel = $relation->getRelated();
+                
+                if (method_exists($relatedModel, 'factory')) {
+                    $factory = $relatedModel::factory($count)->state($attributes);
+                    return $this->has($factory, $relationName);
+                }
+            }
+        }
+
+        throw new Exception("Method [{$method}] tidak ditemukan pada Factory class.");
     }
 }

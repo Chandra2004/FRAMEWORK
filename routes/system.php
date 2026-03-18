@@ -280,7 +280,7 @@ Router::add('GET', '/_system/schema', function () {
         $db = \TheFramework\App\Database\Database::getInstance();
         
         // Get Tables
-        $tables = $db->query("SHOW TABLES")->resultSet(\PDO::FETCH_COLUMN);
+        $tables = array_map(fn($row) => array_values((array) $row)[0] ?? '', $db->query("SHOW TABLES")->resultSet());
         
         if (empty($tables)) {
             echo "ℹ No tables found in the database.\n";
@@ -756,3 +756,354 @@ Router::add('GET', '/_system/health', function () {
         'timestamp' => date('c')
     ], JSON_PRETTY_PRINT);
 });
+
+// ========================================================
+// 16. BACKUP MANAGEMENT
+// ========================================================
+
+// 16a. Backup Dashboard
+Router::add('GET', '/_system/backup', function () {
+    checkSystemKey();
+
+    $databases = [];
+    $tables = [];
+    $currentDb = '';
+
+    try {
+        $db = \TheFramework\App\Database\Database::getInstance();
+        if ($db->testConnection()) {
+            // Ambil database saat ini
+            $currentDb = $_GET['db'] ?? \TheFramework\App\Core\Config::get('DB_NAME', '');
+
+            // List semua database yang bisa diakses
+            $db->query("SHOW DATABASES");
+            $db->execute();
+            $rawDbs = $db->resultSet();
+            // resultSet() returns associative arrays, extract first column value
+            $allDbs = array_map(fn($row) => array_values((array) $row)[0] ?? '', $rawDbs);
+            // Filter system databases
+            $systemDbs = ['information_schema', 'mysql', 'performance_schema', 'sys', 'phpmyadmin'];
+            $databases = array_values(array_filter($allDbs, fn($d) => !in_array($d, $systemDbs)));
+
+            // Pastikan currentDb valid
+            if (empty($currentDb) || !in_array($currentDb, $databases)) {
+                $currentDb = $databases[0] ?? '';
+            }
+
+            // Ambil info tabel dari database yang dipilih
+            if (!empty($currentDb) && preg_match('/^[a-zA-Z0-9_]+$/', $currentDb)) {
+                $db->query("SELECT TABLE_NAME, TABLE_ROWS, 
+                    ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024, 1) as size_kb
+                    FROM information_schema.TABLES 
+                    WHERE TABLE_SCHEMA = :db ORDER BY TABLE_NAME");
+                $db->bind(':db', $currentDb);
+                $db->execute();
+                $rawTables = $db->resultSet();
+
+                foreach ($rawTables as $t) {
+                    $sizeKb = (float) ($t['size_kb'] ?? 0);
+                    $tables[] = [
+                        'name' => $t['TABLE_NAME'],
+                        'rows' => (int) ($t['TABLE_ROWS'] ?? 0),
+                        'size' => $sizeKb >= 1024
+                            ? round($sizeKb / 1024, 1) . ' MB'
+                            : round($sizeKb, 1) . ' KB',
+                    ];
+                }
+            }
+        }
+    } catch (\Throwable $e) {
+        // DB not available - page will show error state
+    }
+
+    return \TheFramework\App\Http\View::render('Internal::_system.backup', [
+        'databases' => $databases,
+        'currentDb' => $currentDb,
+        'tables' => $tables,
+    ]);
+});
+
+// 16b. Download Database Backup (.sql)
+Router::add('GET', '/_system/backup/database', function () {
+    checkSystemKey();
+
+    $dbName = $_GET['db'] ?? \TheFramework\App\Core\Config::get('DB_NAME', '');
+
+    if (empty($dbName) || !preg_match('/^[a-zA-Z0-9_]+$/', $dbName)) {
+        abort(400, 'Invalid database name.');
+    }
+
+    $timestamp = date('Y-m-d_His');
+    $filename = "{$dbName}_backup_{$timestamp}.sql";
+
+    // Set headers untuk download
+    header('Content-Type: application/sql');
+    header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    // Coba mysqldump dulu (lebih cepat & reliable)
+    $dbHost = \TheFramework\App\Core\Config::get('DB_HOST', '127.0.0.1');
+    $dbPort = \TheFramework\App\Core\Config::get('DB_PORT', '3306');
+    $dbUser = \TheFramework\App\Core\Config::get('DB_USER', 'root');
+    $dbPass = \TheFramework\App\Core\Config::get('DB_PASS', '');
+
+    $mysqldumpPath = 'mysqldump';
+    $canUseMysqldump = false;
+
+    // Test apakah mysqldump tersedia
+    if (PHP_OS_FAMILY === 'Windows') {
+        exec('where mysqldump 2>NUL', $output, $code);
+    } else {
+        exec('which mysqldump 2>/dev/null', $output, $code);
+    }
+    $canUseMysqldump = ($code === 0);
+
+    if ($canUseMysqldump) {
+        // Gunakan mysqldump via passthru
+        $passArg = !empty($dbPass) ? '-p' . escapeshellarg($dbPass) : '';
+        $cmd = sprintf(
+            '%s -h %s -P %s -u %s %s --single-transaction --routines --triggers --databases %s',
+            escapeshellarg($mysqldumpPath),
+            escapeshellarg($dbHost),
+            escapeshellarg($dbPort),
+            escapeshellarg($dbUser),
+            $passArg,
+            escapeshellarg($dbName)
+        );
+        passthru($cmd);
+    } else {
+        // Fallback: Manual SQL dump via PDO
+        $db = \TheFramework\App\Database\Database::getInstance();
+
+        echo "-- ========================================\n";
+        echo "-- THE FRAMEWORK Database Backup\n";
+        echo "-- Database: {$dbName}\n";
+        echo "-- Date: " . date('Y-m-d H:i:s') . "\n";
+        echo "-- Server: {$dbHost}:{$dbPort}\n";
+        echo "-- ========================================\n\n";
+        echo "SET NAMES utf8mb4;\n";
+        echo "SET FOREIGN_KEY_CHECKS = 0;\n";
+        echo "SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';\n\n";
+
+        // Ambil semua tabel
+        $db->query("SHOW TABLES FROM `{$dbName}`");
+        $db->execute();
+        $tables = array_map(fn($row) => array_values((array) $row)[0] ?? '', $db->resultSet());
+
+        foreach ($tables as $table) {
+            if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) continue;
+
+            // DROP + CREATE TABLE
+            echo "-- ----------------------------\n";
+            echo "-- Table: {$table}\n";
+            echo "-- ----------------------------\n";
+            echo "DROP TABLE IF EXISTS `{$table}`;\n";
+
+            $db->query("SHOW CREATE TABLE `{$dbName}`.`{$table}`");
+            $db->execute();
+            $createRow = $db->single();
+            $createSql = $createRow['Create Table'] ?? $createRow['Create View'] ?? '';
+            echo "{$createSql};\n\n";
+
+            // INSERT statements
+            $db->query("SELECT * FROM `{$dbName}`.`{$table}`");
+            $db->execute();
+            $rows = $db->resultSet();
+
+            if (!empty($rows)) {
+                $columns = array_keys((array) $rows[0]);
+                $colNames = '`' . implode('`, `', $columns) . '`';
+
+                // Batch insert (500 per batch)
+                $chunks = array_chunk($rows, 500);
+                foreach ($chunks as $chunk) {
+                    echo "INSERT INTO `{$table}` ({$colNames}) VALUES\n";
+                    $valueSets = [];
+                    foreach ($chunk as $row) {
+                        $vals = [];
+                        foreach ((array) $row as $val) {
+                            if (is_null($val)) {
+                                $vals[] = 'NULL';
+                            } else {
+                                $vals[] = "'" . addslashes((string) $val) . "'";
+                            }
+                        }
+                        $valueSets[] = '(' . implode(', ', $vals) . ')';
+                    }
+                    echo implode(",\n", $valueSets) . ";\n\n";
+                }
+            }
+            echo "\n";
+        }
+
+        echo "SET FOREIGN_KEY_CHECKS = 1;\n";
+        echo "\n-- ========================================\n";
+        echo "-- Backup completed: " . date('Y-m-d H:i:s') . "\n";
+        echo "-- ========================================\n";
+    }
+    exit;
+});
+
+// 16c. Download Application Backup (.zip)
+Router::add('GET', '/_system/backup/app', function () {
+    checkSystemKey();
+    generateAppBackup(false);
+});
+
+// 16d. Download Full Backup (App + DB) (.zip)
+Router::add('GET', '/_system/backup/full', function () {
+    checkSystemKey();
+    generateAppBackup(true);
+});
+
+/**
+ * Helper: Generate application ZIP backup
+ */
+function generateAppBackup(bool $includeDb = false)
+{
+    if (!class_exists('ZipArchive')) {
+        abort(500, 'PHP ZipArchive extension (ext-zip) is required for application backup.');
+    }
+
+    $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__));
+    $timestamp = date('Y-m-d_His');
+    $type = $includeDb ? 'full_backup' : 'app_backup';
+    $filename = "theframework_{$type}_{$timestamp}.zip";
+    $tempPath = sys_get_temp_dir() . '/' . $filename;
+
+    $zip = new \ZipArchive();
+    if ($zip->open($tempPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+        abort(500, 'Failed to create ZIP archive.');
+    }
+
+    // Directories to include
+    $includeDirs = ['app', 'bootstrap', 'config', 'database', 'resources', 'routes', 'public', 'storage', 'private-uploads', '.idx', '.vscode'];
+    // Files to include from root (exact names)
+    $includeFiles = ['composer.json', 'composer.lock', 'artisan', 'index.php', '.env', '.htaccess', '.gitignore'];
+    // Patterns to exclude (subdirectories or specific files)
+    $excludePatterns = [
+        'vendor/', 
+        'node_modules/', 
+        '.git/', 
+        'storage/logs/', 
+        'storage/framework/views/', 
+        'storage/framework/cache/', 
+        'storage/session/'
+    ];
+
+    // Add root files
+    foreach ($includeFiles as $file) {
+        $fullPath = $root . '/' . $file;
+        if (file_exists($fullPath)) {
+            $zip->addFile($fullPath, $file);
+        }
+    }
+
+    // Add directories recursively
+    foreach ($includeDirs as $dir) {
+        $dirPath = $root . '/' . ltrim($dir, '/');
+        if (!is_dir($dirPath)) continue;
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dirPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            $relativePath = $dir . '/' . substr($item->getPathname(), strlen($dirPath) + 1);
+            $relativePath = str_replace('\\', '/', $relativePath);
+
+            // Check excluded patterns
+            $skip = false;
+            foreach ($excludePatterns as $pattern) {
+                if (str_contains($relativePath, $pattern)) {
+                    $skip = true;
+                    break;
+                }
+            }
+            if ($skip) continue;
+
+            if ($item->isDir()) {
+                $zip->addEmptyDir($relativePath);
+            } elseif ($item->isFile()) {
+                // Skip files larger than 100MB to prevent timeout
+                if ($item->getSize() > 100 * 1024 * 1024) continue;
+                $zip->addFile($item->getPathname(), $relativePath);
+            }
+        }
+    }
+
+    // Include database dump if full backup
+    if ($includeDb) {
+        $dbName = \TheFramework\App\Core\Config::get('DB_NAME', '');
+        if (!empty($dbName)) {
+            // Generate SQL dump in memory
+            ob_start();
+            $db = \TheFramework\App\Database\Database::getInstance();
+
+            echo "-- THE FRAMEWORK Full Backup - Database Dump\n";
+            echo "-- Database: {$dbName}\n";
+            echo "-- Date: " . date('Y-m-d H:i:s') . "\n\n";
+            echo "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS = 0;\n\n";
+
+            $db->query("SHOW TABLES FROM `{$dbName}`");
+            $db->execute();
+            $tables = array_map(fn($row) => array_values((array) $row)[0] ?? '', $db->resultSet());
+
+            foreach ($tables as $table) {
+                if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$table)) continue;
+
+                echo "DROP TABLE IF EXISTS `{$table}`;\n";
+                $db->query("SHOW CREATE TABLE `{$dbName}`.`{$table}`");
+                $db->execute();
+                $createRow = $db->single();
+                echo ($createRow['Create Table'] ?? $createRow['Create View'] ?? '') . ";\n\n";
+
+                $db->query("SELECT * FROM `{$dbName}`.`{$table}`");
+                $db->execute();
+                $rows = $db->resultSet();
+
+                if (!empty($rows)) {
+                    $columns = array_keys((array) $rows[0]);
+                    $colNames = '`' . implode('`, `', $columns) . '`';
+                    $chunks = array_chunk($rows, 500);
+                    foreach ($chunks as $chunk) {
+                        echo "INSERT INTO `{$table}` ({$colNames}) VALUES\n";
+                        $valueSets = [];
+                        foreach ($chunk as $row) {
+                            $vals = [];
+                            foreach ((array) $row as $val) {
+                                $vals[] = is_null($val) ? 'NULL' : "'" . addslashes((string) $val) . "'";
+                            }
+                            $valueSets[] = '(' . implode(', ', $vals) . ')';
+                        }
+                        echo implode(",\n", $valueSets) . ";\n\n";
+                    }
+                }
+            }
+            echo "SET FOREIGN_KEY_CHECKS = 1;\n";
+
+            $sqlDump = ob_get_clean();
+            $zip->addFromString("database/{$dbName}_dump.sql", $sqlDump);
+        }
+    }
+
+    $zip->close();
+
+    // Send file
+    header('Content-Type: application/zip');
+    header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    header('Content-Length: ' . filesize($tempPath));
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    readfile($tempPath);
+
+    // Cleanup
+    @unlink($tempPath);
+    exit;
+}
+

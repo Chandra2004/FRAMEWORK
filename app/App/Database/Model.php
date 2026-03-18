@@ -37,6 +37,8 @@ abstract class Model implements \JsonSerializable, ArrayAccess
     protected static array $eventHandlers = [];
     protected static array $booted = [];
 
+    protected static bool $preventLazyLoading = false;
+
     protected $table;
     protected $primaryKey = 'id';
     protected $keyType = 'int';
@@ -689,12 +691,21 @@ abstract class Model implements \JsonSerializable, ArrayAccess
             $query->where($this->getTable() . '.deleted_at', '=', null);
         }
 
+        if (!empty($this->with)) {
+            $query->with($this->with);
+        }
+
         return $query;
     }
 
     public function newQueryWithoutScopes(): QueryBuilder
     {
         $query = (new QueryBuilder(Database::getInstance()))->setModel($this);
+
+        if (!empty($this->with)) {
+            $query->with($this->with);
+        }
+
         return $query;
     }
 
@@ -864,9 +875,24 @@ abstract class Model implements \JsonSerializable, ArrayAccess
     {
         if ($this->hasSetMutator($key)) {
             $this->mutateAttributeForSet($key, $value);
-        } else {
-            $this->attributes[$key] = $value;
+            return;
         }
+
+        // Handle casting for SET part (serialization to DB format)
+        if (isset($this->casts[$key])) {
+            $castType = $this->casts[$key];
+
+            if (is_string($castType) && class_exists($castType)) {
+                $caster = new $castType;
+                if ($caster instanceof \TheFramework\App\Database\Casts\CastsAttributes) {
+                    $value = $caster->set($this, $key, $value, $this->attributes);
+                }
+            } elseif (in_array($castType, ['array', 'json', 'object'])) {
+                $value = json_encode($value);
+            }
+        }
+
+        $this->attributes[$key] = $value;
     }
 
     public function setRelation($relation, $value)
@@ -889,10 +915,93 @@ abstract class Model implements \JsonSerializable, ArrayAccess
             return $relation;
         }
 
+        if (static::$preventLazyLoading) {
+            throw new \Exception("LazyLoadingViolationException: Attempted to lazily load [{$key}] on model [" . static::class . "] but lazy loading is disabled.");
+        }
+
         // Otherwise, fetch and cache the result
         $results = $relation->getResults();
         
         return $this->setRelation($key, $results);
+    }
+
+    public static function preventLazyLoading(bool $prevent = true)
+    {
+        static::$preventLazyLoading = $prevent;
+    }
+
+    public function load($relations): static
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+        $this->loadRelations([$this], $relations);
+        return $this;
+    }
+
+    public function loadMissing($relations): static
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+        $missing = [];
+
+        foreach ($relations as $key => $value) {
+            $relationName = is_numeric($key) ? explode(':', $value)[0] : explode(':', $key)[0];
+            $relationNameBase = explode('.', $relationName)[0];
+
+            if (!array_key_exists($relationNameBase, $this->relations)) {
+                if (is_numeric($key)) {
+                    $missing[] = $value;
+                } else {
+                    $missing[$key] = $value;
+                }
+            }
+        }
+
+        if (!empty($missing)) {
+            $this->load($missing);
+        }
+
+        return $this;
+    }
+
+    public function loadCount($relations): static
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+        $this->loadCounts([$this], $relations);
+        return $this;
+    }
+
+    public function loadMax($relations, string $column): static
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+        $this->loadAggregates([$this], $relations, 'MAX', $column);
+        return $this;
+    }
+
+    public function loadMin($relations, string $column): static
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+        $this->loadAggregates([$this], $relations, 'MIN', $column);
+        return $this;
+    }
+
+    public function loadSum($relations, string $column): static
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+        $this->loadAggregates([$this], $relations, 'SUM', $column);
+        return $this;
+    }
+
+    public function loadAvg($relations, string $column): static
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+        $this->loadAggregates([$this], $relations, 'AVG', $column);
+        return $this;
+    }
+
+    public function loadExists($relations): static
+    {
+        $relations = is_string($relations) ? func_get_args() : $relations;
+        $this->loadAggregates([$this], $relations, 'EXISTS', '*');
+        return $this;
     }
 
     protected function hasGetMutator($key): bool
@@ -919,7 +1028,18 @@ abstract class Model implements \JsonSerializable, ArrayAccess
     {
         if (is_null($value))
             return null;
-        switch ($this->casts[$key]) {
+            
+        $castType = $this->casts[$key];
+
+        // 1. Check for custom caster classes
+        if (is_string($castType) && class_exists($castType)) {
+            $caster = new $castType;
+            if ($caster instanceof \TheFramework\App\Database\Casts\CastsAttributes) {
+                return $caster->get($this, $key, $value, $this->attributes);
+            }
+        }
+
+        switch ($castType) {
             case 'int':
             case 'integer':
                 return (int) $value;
@@ -1245,5 +1365,31 @@ abstract class Model implements \JsonSerializable, ArrayAccess
     public function newCollection(array $models = []): \TheFramework\Helpers\Collection
     {
         return new \TheFramework\Helpers\Collection($models);
+    }
+
+    /**
+     * Daftarkan (register) satu atau lebih Observer ke dalam Model ini.
+     * Dapat berguna untuk memisahkan logic binding event agar file Model tetap bersih.
+     *
+     * @param string|object|array $classes Nama class observer, instance, atau array campuran.
+     */
+    public static function observe($classes): void
+    {
+        $classes = is_array($classes) ? $classes : func_get_args();
+        $events = [
+            'retrieved', 'creating', 'created', 'updating', 'updated', 
+            'saving', 'saved', 'restoring', 'restored', 'replicating', 
+            'deleting', 'deleted', 'forceDeleting', 'forceDeleted'
+        ];
+
+        foreach ($classes as $class) {
+            $instance = is_string($class) ? new $class : $class;
+
+            foreach ($events as $event) {
+                if (method_exists($instance, $event)) {
+                    static::registerEvent($event, [$instance, $event]);
+                }
+            }
+        }
     }
 }

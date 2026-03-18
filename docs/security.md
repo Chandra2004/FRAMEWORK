@@ -244,6 +244,9 @@ SYSTEM_AUTH_PASS=$2y$12$ES0eTHxRrDNkEvIW1u3sB.XV3hRn379PogFbcI0OJuMH9rD0g7jRe
 
 Browser will prompt for credentials before accessing system routes. Use `php artisan setup` to generate the hashed password.
 
+#### Update v5.0.2: .env Integrity Fix
+Sistem `SetupCommand` telah diperbarui untuk menangani karakter spesial dalam password hashed (seperti `$`). Ini mencegah rusaknya hash password di file `.env` saat inisialisasi aplikasi.
+
 ### Production Best Practices
 
 ```bash

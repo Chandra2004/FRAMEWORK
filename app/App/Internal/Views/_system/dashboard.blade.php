@@ -29,7 +29,8 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url('_system/migrate/rollback') }}" class="group flex items-start gap-4">
+                    <a href="{{ url('_system/migrate/rollback') }}" class="group flex items-start gap-4"
+                        onclick="return confirm('WARNING: DATABASE ROLLBACK!\n\nThis will UNDO the last batch of migrations. Some data might be removed depending on the migration design.\n\nAre you sure you want to proceed?')">
                         <span class="text-slate-600 group-hover:text-amber-500 font-bold transition-colors">1a.</span>
                         <div>
                             <span
@@ -65,6 +66,24 @@
                         <div>
                             <span class="text-slate-300 group-hover:text-white font-bold transition-colors">db:test</span>
                             <p class="text-[11px] text-slate-500 mt-0.5">Test database connection details</p>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/schema') }}" class="group flex items-start gap-4">
+                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">04.</span>
+                        <div>
+                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">db:schema</span>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Inspect database table structure</p>
+                        </div>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/backup') }}" class="group flex items-start gap-4">
+                        <span class="text-slate-600 group-hover:text-emerald-400 font-bold transition-colors">05.</span>
+                        <div>
+                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">backup</span>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Download database SQL or full app backup</p>
                         </div>
                     </a>
                 </li>

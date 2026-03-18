@@ -48,8 +48,9 @@ Akses dashboard utama melalui: `https://domain.com/_system`
 | Endpoint                    | Perintah    | Deskripsi                                               |
 | --------------------------- | ----------- | ------------------------------------------------------- |
 | `/_system/migrate`          | `migrate`   | Jalankan migrasi database yang pending.                 |
-| `/_system/migrate/rollback` | `rollback`  | Batalkan batch migrasi terakhir.                        |
+| `/_system/migrate/rollback` | `rollback`  | **WARNING**: Batalkan batch migrasi terakhir (with alert). |
 | `/_system/migrate/fresh`    | `fresh`     | **DANGER**: Drop semua tabel dan migrasi ulang.         |
+| `/_system/backup`           | `backup`    | **NEW**: Backup Database (SQL) & Aplikasi (ZIP).        |
 | `/_system/seed`             | `db:seed`   | Isi database dengan data dummy dari seeder.             |
 | `/_system/schema`           | `db:schema` | **Premium Inspector**: Lihat daftar tabel & baris data. |
 | `/_system/test-connection`  | `db:test`   | Uji latensi dan status koneksi database.                |
@@ -72,6 +73,28 @@ Akses dashboard utama melalui: `https://domain.com/_system`
 | `/_system/logs`     | Lihat 100 baris terakhir dari log aplikasi secara real-time.      |
 | `/_system/routes`   | Daftar seluruh rute yang terdaftar di aplikasi.                   |
 | `/_system/health`   | Status kesehatan sistem dalam format JSON (untuk uptime monitor). |
+
+---
+
+## 📦 Backup & Recovery Management (v5.0.2)
+
+Fitur **Backup Management** memungkinkan Anda mengamankan seluruh aset aplikasi dalam hitungan detik.
+
+**URL:** `/_system/backup`
+
+### 🛡️ Apa yang Masuk dalam Backup?
+Sistem akan memaketkan aplikasi ke dalam file `.zip` dengan cerdas:
+- **Core Files:** `index.php`, `artisan`, `composer.json/lock`.
+- **Configs:** `.env`, `.htaccess`, `.gitignore`.
+- **Environment:** `/.idx/`, `/.vscode/` (Untuk konsistensi IDE).
+- **Data User:** `/private-uploads/` dan `storage/app/`.
+- **Database:** Pilihan `.sql` dump murni atau digabung ke dalam ZIP (Full Backup).
+
+> [!IMPORTANT]
+> **Excluded Files**: Folder `vendor/`, `node_modules/`, serta file temporer di `storage/logs/`, `storage/framework/cache/`, dan `storage/session/` otomatis diabaikan untuk mengoptimalkan ukuran file.
+
+### 🔄 Database Export (SQL)
+Sistem akan mencoba menggunakan `mysqldump` jika tersedia di server untuk kecepatan maksimal. Jika tidak, framework memiliki **Native SQL Generator** sebagai fallback yang akan menghasilkan file SQL lengkap melalui PDO.
 
 ---
 

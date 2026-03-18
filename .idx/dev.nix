@@ -19,6 +19,7 @@
     pkgs.zip
     pkgs.unzip
     pkgs.git
+    pkgs.fira
   ];
 
   services.mysql = {

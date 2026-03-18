@@ -1,40 +1,25 @@
 {
-    "http.proxySupport": "off",
-    "terminal.integrated.localEchoLatencyThreshold": -1,
-    "terminal.integrated.localEchoEnabled": "off",
-    "terminal.integrated.fontSize": 13,
-    "workbench.startupEditor": "none",
-    "editor.fontFamily": "JetBrains Mono, Menlo, Monaco, Courier New, monospace",
-    "editor.fontWeight": "normal",
-    "editor.fontSize": 13,
-    "editor.lineHeight": 1.5,
-    "editor.letterSpacing": 0,
-    "debug.console.fontSize": 13,
-    "window.commandCenter": false,
-    "workbench.iconTheme": "office-material-icon-theme",
-    "window.autoDetectColorScheme": true,
-    "workbench.layoutControl.enabled": false,
-    "inlineChat.mode": "preview",
-
+    "php.suggest.basic": false,
+    "php.validate.enable": false,
+    "emmet.excludeLanguages": [
+        "markdown",
+        "php"
+    ],
+    "workbench.iconTheme": "material-icon-theme",
+    "files.autoSave": "afterDelay",
+    "editor.fontFamily": "'Fira Code' , Consolas , 'Courier New' , mnospace",
+    "editor.fontLigatures": true,
+    "editor.fontSize": 12,
+    "workbench.colorTheme": "Monokai",
     "workbench.editorAssociations": {
-        "*.xls": "cweijan.officeViewer",
-        "*.xlsx": "cweijan.officeViewer",
-        "*.csv": "cweijan.officeViewer",
-        "*.docx": "cweijan.officeViewer",
-        "*.pdf": "cweijan.officeViewer",
-        "*.zip": "cweijan.officeViewer",
-        "*.rar": "cweijan.officeViewer",
         "*.md": "cweijan.markdownViewer",
-        "*.markdown": "cweijan.markdownViewer"
-    },
-    "markdown-preview-enhanced.codeBlockTheme": "github-dark.css",
-    "markdown-preview-enhanced.previewTheme": "github-dark.css",
-
-    "[blade]": {
-        "editor.defaultFormatter": "shufo.vscode-blade-formatter"
-    },
-
-    "intelephense.files.associations": ["*.php"],
-
-    "php.validate.enable": false
+        "*.markdown": "cweijan.markdownViewer",
+        "*.docx": "cweijan.officeViewer",
+        "*.doc": "cweijan.officeViewer",
+        "*.pdf": "cweijan.officeViewer",
+        "*.xls": "cweijan.officeViewer",
+        "*.csv": "cweijan.officeViewer",
+        "*.ppt": "cweijan.officeViewer",
+        "*.pptx": "cweijan.officeViewer",
+    }
 }
