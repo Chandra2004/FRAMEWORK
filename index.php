@@ -1,6 +1,12 @@
 <?php
 ob_start();
 
+// Check PHP Version Early
+if (version_compare(PHP_VERSION, '8.3.0') < 0) {
+    header('HTTP/1.1 500 Internal Server Error');
+    die("❌ Error: THE FRAMEWORK requires PHP 8.3 or higher. Your current version is " . PHP_VERSION);
+}
+
 // ✅ SARAN-B4-001: Pastikan buffer selalu di-flush saat skrip berakhir
 register_shutdown_function(function () {
     if (ob_get_level() > 0) {
@@ -10,7 +16,10 @@ register_shutdown_function(function () {
 require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/app/Helpers/helpers.php';
 
-// Error reporting defaults to system PHP settings until bootstrap/app.php loads environment
+// Early Error Reporting (Replaced later by .env setting)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 define('ROOT_DIR', __DIR__);
 

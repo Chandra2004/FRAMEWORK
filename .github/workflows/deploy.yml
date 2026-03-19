@@ -1,4 +1,5 @@
 # .github/workflows/deploy.yml
+# THE FRAMEWORK - Optimized Deployment for InfinityFree (iFastNet)
 name: Deploy to InfinityFree
 
 on:
@@ -21,21 +22,22 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
-          extensions: mbstring, intl, pdo, pdo_mysql
+          extensions: mbstring, intl, pdo, pdo_mysql, dom, xml, curl
           coverage: none
 
       - name: 📦 Install Dependencies
+        # Menggunakan --optimize-autoloader sangat krusial untuk performa di hosting gratis
         run: composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-progress
 
       - name: 🔐 Prepare Configuration
         id: config
         run: |
-          # Buat file .env murni dari GitHub Secrets
+          # Membangun file .env murni dari GitHub Secrets
           echo "${{ secrets.INTI_ENV }}" > .env
           echo "" >> .env
           echo "${{ secrets.INTI_DATABASE }}" >> .env
           
-          # Pecah INTI_FTP menjadi output step
+          # Memisahkan INTI_FTP (Host\nUser\nPass) menjadi output langkah
           echo "${{ secrets.INTI_FTP }}" > ftp_raw
           echo "ftp_server=$(sed -n '1p' ftp_raw)" >> $GITHUB_OUTPUT
           echo "ftp_username=$(sed -n '2p' ftp_raw)" >> $GITHUB_OUTPUT
@@ -50,13 +52,15 @@ jobs:
           server: ${{ steps.config.outputs.ftp_server }}
           username: ${{ steps.config.outputs.ftp_username }}
           password: ${{ steps.config.outputs.ftp_password }}
-          server-dir: chandra-portfolio.rf.gd/htdocs/
+          # Pastikan path ini sesuai dengan root domain Anda di cPanel
+          server-dir: htdocs/
           timeout: 3600000
-          # KUNCINYA: Exclude semua folder cache & session agar tidak terjadi konflik config di production
+          # KUNCINYA: Exclude file sampah sistem, folder testing, dan folder cache agar tidak terjadi konflik
           exclude: |
             **/.git*
             **/.github/**
             **/.idx/**
+            **/.vscode/**
             **/.cursorrules
             **/tests/**
             **/node_modules/**
@@ -64,6 +68,13 @@ jobs:
             **/phpunit.xml
             **/.env.example
             **/README.md
+            **/CHANGELOG.md
+            **/CONTRIBUTING.md
+            **/LICENSE
+            **/.DS_Store
+            **/Thumbs.db
+            private-uploads/**
+            storage/app/public/**
             storage/logs/**
             storage/cache/**
             storage/framework/cache/**

@@ -127,7 +127,7 @@
                 historyContainer.appendChild(entryDiv);
 
                 // Execute
-                fetch('/_system/tinker', {
+                fetch('/system-panel/tinker', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
