@@ -51,7 +51,7 @@ class SetupCommand extends BaseCommand
         }
 
         // 3. Web Command Center Security
-        $this->info("Menyiapkan Keamanan Web Command Center (/system-panel/*)");
+        $this->info("Menyiapkan Keamanan Web Command Center (/_system/*)");
         if ($this->confirm("Aktifkan Basic Auth sekarang?", true)) {
             $username = $this->ask("Username Admin", "admin");
             $password = $this->ask("Password Admin (min 8 char)");

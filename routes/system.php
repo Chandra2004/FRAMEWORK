@@ -117,7 +117,7 @@ function renderTerminal($command, $callback)
         echo "\n❌ FATAL ERROR: " . $e->getMessage();
     }
     $output = ob_get_clean();
-    return \TheFramework\App\Http\View::render('Internal::system_panel.terminal_output', [
+    return \TheFramework\App\Http\View::render('Internal::_system.terminal_output', [
         'command' => $command,
         'output' => $output,
         'success' => $success
@@ -125,13 +125,13 @@ function renderTerminal($command, $callback)
 }
 
 // 0. SYSTEM DASHBOARD (Main Entry Point)
-Router::add('GET', '/system-panel', function () {
+Router::add('GET', '/_system', function () {
     checkSystemKey();
-    return \TheFramework\App\Http\View::render('Internal::system_panel.dashboard');
+    return \TheFramework\App\Http\View::render('Internal::_system.dashboard');
 });
 
 // 1. MIGRATE DATABASE
-Router::add('GET', '/system-panel/migrate', function () {
+Router::add('GET', '/_system/migrate', function () {
     checkSystemKey();
     return renderTerminal('migrate', function () {
         echo "⚙️ SYSTEM MIGRATION TOOL\n==============================\n";
@@ -180,7 +180,7 @@ Router::add('GET', '/system-panel/migrate', function () {
 });
 
 // 1.b MIGRATE ROLLBACK
-Router::add('GET', '/system-panel/migrate/rollback', function () {
+Router::add('GET', '/_system/migrate/rollback', function () {
     checkSystemKey();
     return renderTerminal('migrate:rollback', function () {
         echo "⏪ SYSTEM MIGRATION ROLLBACK\n==============================\n";
@@ -216,7 +216,7 @@ Router::add('GET', '/system-panel/migrate/rollback', function () {
 });
 
 // 1.c MIGRATE FRESH
-Router::add('GET', '/system-panel/migrate/fresh', function () {
+Router::add('GET', '/_system/migrate/fresh', function () {
     checkSystemKey();
     return renderTerminal('migrate:fresh', function () {
         echo "☢️ SYSTEM MIGRATION FRESH (DROP ALL)\n==============================\n";
@@ -255,7 +255,7 @@ Router::add('GET', '/system-panel/migrate/fresh', function () {
 });
 
 // 1.d ASSET PUBLISH
-Router::add('GET', '/system-panel/asset-publish', function () {
+Router::add('GET', '/_system/asset-publish', function () {
     checkSystemKey();
     return renderTerminal('asset:publish', function () {
         echo "📦 ASSET PUBLISHER\n==============================\n";
@@ -298,7 +298,7 @@ Router::add('GET', '/system-panel/asset-publish', function () {
 });
 
 // 1.e DATABASE SCHEMA INSPECTOR (Paten Feature)
-Router::add('GET', '/system-panel/schema', function () {
+Router::add('GET', '/_system/schema', function () {
     checkSystemKey();
     return renderTerminal('db:schema', function () {
         echo "🔍 DATABASE SCHEMA INSPECTOR\n==============================\n";
@@ -332,7 +332,7 @@ Router::add('GET', '/system-panel/schema', function () {
 });
 
 // 2. SEED DATABASE (Web Seeder)
-Router::add('GET', '/system-panel/seed', function () {
+Router::add('GET', '/_system/seed', function () {
     checkSystemKey();
     return renderTerminal('db:seed', function () {
         echo "🌱 SYSTEM DATABASE SEEDER\n==============================\n";
@@ -376,7 +376,7 @@ Router::add('GET', '/system-panel/seed', function () {
 });
 
 // 3. CLEAR CACHE
-Router::add('GET', '/system-panel/clear-cache', function () {
+Router::add('GET', '/_system/clear-cache', function () {
     checkSystemKey();
     return renderTerminal('cache:clear', function () {
         echo "🧹 SYSTEM CACHE CLEANER\n==============================\n";
@@ -402,7 +402,7 @@ Router::add('GET', '/system-panel/clear-cache', function () {
 });
 
 // 4. STORAGE LINK
-Router::add('GET', '/system-panel/storage-link', function () {
+Router::add('GET', '/_system/storage-link', function () {
     checkSystemKey();
     return renderTerminal('storage:link', function () {
         echo "🔗 STORAGE LINKER\n==============================\n";
@@ -433,7 +433,7 @@ Router::add('GET', '/system-panel/storage-link', function () {
 });
 
 // 5. FILE HEALTH CHECK
-Router::add('GET', '/system-panel/check-files', function () {
+Router::add('GET', '/_system/check-files', function () {
     checkSystemKey();
     return renderTerminal('check-files', function () {
         echo "🔍 FILE SYSTEM HEALTH CHECK\n==============================\n";
@@ -473,7 +473,7 @@ Router::add('GET', '/system-panel/check-files', function () {
 });
 
 // 6. WHAT'S MY IP
-Router::add('GET', '/system-panel/my-ip', function () {
+Router::add('GET', '/_system/my-ip', function () {
     // === SARAN-B4-003: Rate Limit for reconnaissance protection ===
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     \TheFramework\App\Http\RateLimiter::check($ip, 10, 300); // Max 10 checks per 5 min
@@ -486,7 +486,7 @@ Router::add('GET', '/system-panel/my-ip', function () {
 });
 
 // 7. SYSTEM STATUS
-Router::add('GET', '/system-panel/status', function () {
+Router::add('GET', '/_system/status', function () {
     checkSystemKey();
 
     $required = ['pdo_mysql', 'mbstring', 'openssl', 'json', 'ctype', 'xml', 'curl', 'gd'];
@@ -495,7 +495,7 @@ Router::add('GET', '/system-panel/status', function () {
         $extensions[$ext] = extension_loaded($ext);
     }
 
-    return \TheFramework\App\Http\View::render('Internal::system_panel.status', [
+    return \TheFramework\App\Http\View::render('Internal::_system.status', [
         'php_version' => phpversion(),
         'server' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
         'extensions' => $extensions,
@@ -506,7 +506,7 @@ Router::add('GET', '/system-panel/status', function () {
 });
 
 // 8. SYSTEM DIAGNOSIS
-Router::add('GET', '/system-panel/diagnose', function () {
+Router::add('GET', '/_system/diagnose', function () {
     checkSystemKey();
     return renderTerminal('diagnose', function () {
         echo "🔧 SYSTEM DIAGNOSIS\n==============================\n\n";
@@ -543,7 +543,7 @@ Router::add('GET', '/system-panel/diagnose', function () {
 });
 
 // 9. LOGS
-Router::add('GET', '/system-panel/logs', function () {
+Router::add('GET', '/_system/logs', function () {
     checkSystemKey();
 
     $logFile = BASE_PATH . '/storage/logs/app.log';
@@ -567,14 +567,14 @@ Router::add('GET', '/system-panel/logs', function () {
         $logs = array_reverse($logs); // Show newest first
     }
 
-    return \TheFramework\App\Http\View::render('Internal::system_panel.logs', [
+    return \TheFramework\App\Http\View::render('Internal::_system.logs', [
         'logs' => $logs,
         'path' => $logFile
     ]);
 });
 
 // 10. OPTIMIZE
-Router::add('GET', '/system-panel/optimize', function () {
+Router::add('GET', '/_system/optimize', function () {
     checkSystemKey();
     return renderTerminal('optimize', function () {
         echo "🚀 SYSTEM OPTIMIZER\n==============================\n";
@@ -596,7 +596,7 @@ Router::add('GET', '/system-panel/optimize', function () {
 });
 
 // 11. ROUTES
-Router::add('GET', '/system-panel/routes', function () {
+Router::add('GET', '/_system/routes', function () {
     checkSystemKey();
 
     $rawRoutes = Router::getRoutes();
@@ -612,7 +612,7 @@ Router::add('GET', '/system-panel/routes', function () {
 
         // Detect Type
         $type = 'App';
-        if (strpos($r['path'], '/system-panel') === 0)
+        if (strpos($r['path'], '/_system') === 0)
             $type = 'System';
         elseif (strpos($r['path'], '/file/') === 0)
             $type = 'Asset';
@@ -626,13 +626,13 @@ Router::add('GET', '/system-panel/routes', function () {
         ];
     }
 
-    return \TheFramework\App\Http\View::render('Internal::system_panel.routes', [
+    return \TheFramework\App\Http\View::render('Internal::_system.routes', [
         'routes' => $routes
     ]);
 });
 
 // 12. PHPINFO
-Router::add('GET', '/system-panel/phpinfo', function () {
+Router::add('GET', '/_system/phpinfo', function () {
     checkSystemKey();
     if (!function_exists('phpinfo')) {
         echo "⛔ phpinfo() is disabled on this server.";
@@ -642,7 +642,7 @@ Router::add('GET', '/system-panel/phpinfo', function () {
 });
 
 // 13. TEST CONNECTION DETAILS
-Router::add('GET', '/system-panel/test-connection', function () {
+Router::add('GET', '/_system/test-connection', function () {
     checkSystemKey();
     return renderTerminal('db:test', function () {
         echo "🔌 DATABASE CONNECTION TEST\n==============================\n";
@@ -663,12 +663,12 @@ Router::add('GET', '/system-panel/test-connection', function () {
 });
 
 // 14. WEB TINKER
-Router::add('GET', '/system-panel/tinker', function () {
+Router::add('GET', '/_system/tinker', function () {
     checkSystemKey();
-    return \TheFramework\App\Http\View::render('Internal::system_panel.tinker');
+    return \TheFramework\App\Http\View::render('Internal::_system.tinker');
 });
 
-Router::add('POST', '/system-panel/tinker', function () {
+Router::add('POST', '/_system/tinker', function () {
     checkSystemKey();
 
     // === CSRF PROTECTION VALIDATION ===
@@ -766,7 +766,7 @@ Router::add('POST', '/system-panel/tinker', function () {
 });
 
 // 15. HEALTH (JSON)
-Router::add('GET', '/system-panel/health', function () {
+Router::add('GET', '/_system/health', function () {
     header('Content-Type: application/json');
     $dbConnected = false;
     try {
@@ -787,7 +787,7 @@ Router::add('GET', '/system-panel/health', function () {
 // ========================================================
 
 // 16a. Backup Dashboard
-Router::add('GET', '/system-panel/backup', function () {
+Router::add('GET', '/_system/backup', function () {
     checkSystemKey();
 
     $databases = [];
@@ -841,7 +841,7 @@ Router::add('GET', '/system-panel/backup', function () {
         // DB not available - page will show error state
     }
 
-    return \TheFramework\App\Http\View::render('Internal::system_panel.backup', [
+    return \TheFramework\App\Http\View::render('Internal::_system.backup', [
         'databases' => $databases,
         'currentDb' => $currentDb,
         'tables' => $tables,
@@ -849,7 +849,7 @@ Router::add('GET', '/system-panel/backup', function () {
 });
 
 // 16b. Download Database Backup (.sql)
-Router::add('GET', '/system-panel/backup/database', function () {
+Router::add('GET', '/_system/backup/database', function () {
     checkSystemKey();
 
     $dbName = $_GET['db'] ?? \TheFramework\App\Core\Config::get('DB_NAME', '');
@@ -972,13 +972,13 @@ Router::add('GET', '/system-panel/backup/database', function () {
 });
 
 // 16c. Download Application Backup (.zip)
-Router::add('GET', '/system-panel/backup/app', function () {
+Router::add('GET', '/_system/backup/app', function () {
     checkSystemKey();
     generateAppBackup(false);
 });
 
 // 16d. Download Full Backup (App + DB) (.zip)
-Router::add('GET', '/system-panel/backup/full', function () {
+Router::add('GET', '/_system/backup/full', function () {
     checkSystemKey();
     generateAppBackup(true);
 });

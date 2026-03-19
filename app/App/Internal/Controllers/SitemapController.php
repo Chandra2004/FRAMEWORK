@@ -37,7 +37,7 @@ class SitemapController
 
             if ($route['method'] !== 'GET')
                 continue;
-            if (str_starts_with($path, '/system-panel'))
+            if (str_starts_with($path, '/_system'))
                 continue;
             if (str_starts_with($path, '/api'))
                 continue;
