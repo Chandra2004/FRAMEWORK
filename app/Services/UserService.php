@@ -64,7 +64,7 @@ class UserService
 
             return $this->repo->createRepo($data);
         } catch (Exception $e) {
-            if ($photoName) {
+            if ($photoName && !UploadHandler::isError($photoName)) {
                 UploadHandler::delete($photoName, '/user-pictures');
             }
             throw new Exception('Failed to save data: ' . $e->getMessage());
@@ -118,7 +118,7 @@ class UserService
         try {
             return $this->repo->updateRepo($data, $uid);
         } catch (Exception $e) {
-            if ($newPhoto) {
+            if ($newPhoto && !UploadHandler::isError($newPhoto)) {
                 UploadHandler::delete($newPhoto, '/user-pictures');
             }
             throw new Exception('Failed to update data: ' . $e->getMessage());

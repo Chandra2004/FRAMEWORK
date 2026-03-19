@@ -185,15 +185,10 @@ class CacheManager
      */
     protected static function addToFile(string $key, mixed $value, int $expiresAt): bool
     {
-        $file = static::getCacheDir() . DIRECTORY_SEPARATOR . static::$prefix . $key . '.cache';
-        $dir = dirname($file);
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
+        $file = static::cacheFilePath($key);
 
         // Use atomic write with LOCK_EX (exclusive lock)
-        $fp = fopen($file, 'c');
+        $fp = @fopen($file, 'c');
         if (!$fp) {
             return false;
         }

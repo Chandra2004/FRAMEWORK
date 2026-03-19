@@ -21,46 +21,46 @@ class WAFMiddleware implements Middleware
         $patterns = [
             'sql_injection' => [
                 // Enhanced SQL injection patterns
-                'pattern' => '/(\b(union\s+select|insert\s+into|delete\s+from|update\s+\w+\s+set|drop\s+table|alter\s+table|truncate\s+table|load_file|outfile|dumpfile|exec\s*\(|xp_)\b|--|\#|\/\*|\*\/|0x\d+)/i',
+                'pattern' => '~' . '(\b(union\s+select|insert\s+into|delete\s+from|update\s+\w+\s+set|drop\s+table|alter\s+table|truncate\s+table|load_file|outfile|dumpfile|exec\s*\(|xp_)\b|--|\#|/\*|\*/|0x\d+)' . '~i',
                 'description' => 'SQL Injection Attempt',
                 'severity' => 'HIGH'
             ],
             'sql_logic' => [
                 // Enhanced SQL logic patterns with better detection
-                'pattern' => '/(\b(\d+\s*=\s*\d+)|\'\s*=\s*\'|or\s+1\s*=\s*1|and\s+1\s*=\s*1|\btrue\b|\bfalse\b|\bnull\b|;\s*waitfor|;\s*dbms_|having\s+\d+\s*=\s*\d+)/i',
+                'pattern' => '~' . '(\b(\d+\s*=\s*\d+)|\'\s*=\s*\'|or\s+1\s*=\s*1|and\s+1\s*=\s*1|\btrue\b|\bfalse\b|\bnull\b|;\s*waitfor|;\s*dbms_|having\s+\d+\s*=\s*\d+)' . '~i',
                 'description' => 'SQL Logic Injection',
                 'severity' => 'HIGH'
             ],
             'xss' => [
                 // Enhanced XSS patterns
-                'pattern' => '/(<script|javascript:|vbscript:|data:text\/html|expression\(|on(load|error|click|mouseover|mouseenter|mouseleave|mousedown|mouseup|submit|reset|focus|blur|change|keydown|keyup|keypress|drop|drag|contextmenu|pointer|wheel)\s*=|alert\(|confirm\(|prompt\(|<\s*iframe|<\s*object|<\s*embed|<\s*base|<\s*link|<\s*meta|<\s*applet|<\s*svg|<\s*math|base64|eval\(|setTimeout\(|setInterval\()/i',
+                'pattern' => '~' . '(<script|javascript:|vbscript:|data:text/html|expression\(|on(load|error|click|mouseover|mouseenter|mouseleave|mousedown|mouseup|submit|reset|focus|blur|change|keydown|keyup|keypress|drop|drag|contextmenu|pointer|wheel)\s*=|alert\(|confirm\(|prompt\(|<\s*iframe|<\s*object|<\s*embed|<\s*base|<\s*link|<\s*meta|<\s*applet|<\s*svg|<\s*math|base64|eval\(|setTimeout\(|setInterval\()' . '~i',
                 'description' => 'XSS Attempt',
                 'severity' => 'HIGH'
             ],
             'path_traversal' => [
                 // Enhanced path traversal
-                'pattern' => '#(\.\.[\\\\/]|%2e%2e|etc\/passwd|etc\/shadow|etc\/group|proc\/self|boot\.ini|win\.ini|C:\\\\Windows|C:\\\\boot|\\\/etc\\\/|\.\.\/|\.\.\\\\)#i',
+                'pattern' => '~' . '(\.\.[\\\\/]|%2e%2e|etc/passwd|etc/shadow|etc/group|proc/self|boot\.ini|win\.ini|C:\\\\Windows|C:\\\\boot|/etc/|\.\./|\.\.\\\\)' . '~i',
                 'description' => 'Path Traversal/LFI',
                 'severity' => 'HIGH'
             ],
             'command_injection' => [
                 // Enhanced command injection
-                'pattern' => '/(\b(exec|system|shell_exec|passthru|proc_open|popen|curl_exec|curl_multi_exec|wget|curl|phpinfo|eval|assert|create_function|preg_replace.*\/e|call_user_func|call_user_func_array|array_map|usort|uasort|uksort|var_dump|var_export|print_r|serialize|unserialize)\s*\(|`|\$\(|\$\{|\||\&|\;|\:\;|\|\||\&\&|>\s*\/|<\s*\w+)/i',
+                'pattern' => '~' . '(\b(exec|system|shell_exec|passthru|proc_open|popen|curl_exec|curl_multi_exec|wget|curl|phpinfo|eval|assert|create_function|preg_replace.*/e|call_user_func|call_user_func_array|array_map|usort|uasort|uksort|var_dump|var_export|print_r|serialize|unserialize)\s*\(|`|\$\(|\$\{|\||\&|\;|\:\;|\|\||\&\&|>\s*/|<\s*\w+)' . '~i',
                 'description' => 'Command/Code Injection',
                 'severity' => 'CRITICAL'
             ],
             'ldap_injection' => [
-                'pattern' => '/(\*\)|\(\||\&\&|\(\!|\(\w+=|%2a\(|#\(|/\*/|\*\/)/i',
+                'pattern' => '~' . '(\*\)|\(\||\&\&|\(\!|\(\w+=|%2a\(|#\(|/\*|\*/)' . '~i',
                 'description' => 'LDAP Injection',
                 'severity' => 'MEDIUM'
             ],
             'xml_injection' => [
-                'pattern' => '/(<!DOCTYPE|<!ENTITY|<!ENTITY.*SYSTEM|CDATA|<\?xml|xmlns:xsi|xsi:schemaLocation)/i',
+                'pattern' => '~' . '(<!DOCTYPE|<!ENTITY|<!ENTITY.*SYSTEM|CDATA|<\?xml|xmlns:xsi|xsi:schemaLocation)' . '~i',
                 'description' => 'XML Injection',
                 'severity' => 'MEDIUM'
             ],
             'template_injection' => [
-                'pattern' => '/(\{\{.*\}\}|\{\%.*\%\}|\{\{.*\|.*\}\}|__tostring__|__invoke__|phpinfo|md5|sha1)/i',
+                'pattern' => '~' . '(\{\{.*\}\}|\{\%.*\%\}|\{\{.*\|.*\}\}|__tostring__|__invoke__|phpinfo|md5|sha1)' . '~i',
                 'description' => 'Template Injection',
                 'severity' => 'MEDIUM'
             ]
