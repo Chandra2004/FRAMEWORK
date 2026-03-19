@@ -17,16 +17,40 @@ if (!defined('BASE_PATH')) {
 // 15. SITEMAP XML (Automatic)
 Router::add('GET', '/sitemap.xml', SitemapController::class, 'index', [WAFMiddleware::class]);
 
+/**
+ * Robust Client IP Detection (Proxy Aware)
+ */
+function getSystemClientIp(): string 
+{
+    $headers = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'];
+    foreach ($headers as $header) {
+        if (!empty($_SERVER[$header])) {
+            $ip = trim(explode(',', $_SERVER[$header])[0]);
+            if (filter_var($ip, FILTER_VALIDATE_IP)) return $ip;
+        }
+    }
+    return '0.0.0.0';
+}
+
 function checkSystemKey()
 {
+    // === LAYER 0: Config Integrity Check ===
+    $isCached = \TheFramework\App\Core\Config::isCached();
+    $dbHost = \TheFramework\App\Core\Config::get('DB_HOST');
+    
+    // Jika config ter-cache tapi isinya kosong (karena salah deploy), ingatkan user.
+    if ($isCached && empty($dbHost)) {
+        abort(403, "🚨 CONFIG CACHE DETECTED: Sistem mendeteksi file cache (storage/cache/config.php) kosong. Silakan hapus file tersebut via FTP agar .env terbaca.");
+    }
+
     // === LAYER 1: Feature Toggle ===
-    if (\TheFramework\App\Core\Config::get('ALLOW_WEB_MIGRATION') !== 'true') {
-        abort(403, "⛔ FEATURE DISABLED: Web migration tools are disabled in configuration.");
+    $allowWeb = \TheFramework\App\Core\Config::get('ALLOW_WEB_MIGRATION', 'false');
+    if (strtolower((string)$allowWeb) !== 'true') {
+        abort(403, "⛔ FEATURE DISABLED: Web migration tools are disabled. Check ALLOW_WEB_MIGRATION in .env");
     }
 
     // === LAYER 2: IP Whitelist ===
-    // Gunakan REMOTE_ADDR langsung agar tidak bisa di-spoof via header HTTP_CLIENT_IP
-    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $clientIp = getSystemClientIp();
     $allowedIps = \TheFramework\App\Core\Config::get('SYSTEM_ALLOWED_IPS', '127.0.0.1');
     $ipWhitelist = array_map('trim', explode(',', $allowedIps));
 
@@ -35,7 +59,7 @@ function checkSystemKey()
             "System route access denied for IP: $clientIp",
             ['uri' => $_SERVER['REQUEST_URI'] ?? '']
         );
-        abort(403, "⛔ ACCESS DENIED: Your IP ($clientIp) is not whitelisted for system access.");
+        abort(403, "⛔ ACCESS DENIED: Your IP ($clientIp) is not whitelisted for system access. Add it to SYSTEM_ALLOWED_IPS in .env");
     }
 
     // === LAYER 3: Basic Auth (Required if configured) ===
@@ -56,13 +80,14 @@ function checkSystemKey()
             }
         }
 
-        $validUser = hash_equals($sysUser, $authUser);
+        $validUser = hash_equals((string)$sysUser, (string)$authUser);
 
         // Support both plain text and bcrypt
-        if (strpos($sysPass, '$2y$') === 0 || strpos($sysPass, '$2a$') === 0) {
-            $validPass = password_verify($authPass, $sysPass);
+        $sysPassStr = (string)$sysPass;
+        if (strpos($sysPassStr, '$2y$') === 0 || strpos($sysPassStr, '$2a$') === 0) {
+            $validPass = password_verify($authPass, $sysPassStr);
         } else {
-            $validPass = hash_equals($sysPass, $authPass);
+            $validPass = hash_equals($sysPassStr, (string)$authPass);
         }
 
         if (!$validUser || !$validPass) {

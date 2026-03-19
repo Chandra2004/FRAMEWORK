@@ -1,4 +1,4 @@
-# deploy.yml
+# .github/workflows/deploy.yml
 name: Deploy to InfinityFree
 
 on:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   web-deploy:
-    name: 🎉 DEPLOY INIT
+    name: 🎉 GACOR DEPLOY
     runs-on: ubuntu-latest
     steps:
       - name: 🚚 Get latest code
@@ -30,7 +30,7 @@ jobs:
       - name: 🔐 Prepare Configuration
         id: config
         run: |
-          # Buat file .env dari gabungan INTI_ENV dan INTI_DATABASE
+          # Buat file .env murni dari GitHub Secrets
           echo "${{ secrets.INTI_ENV }}" > .env
           echo "" >> .env
           echo "${{ secrets.INTI_DATABASE }}" >> .env
@@ -52,6 +52,7 @@ jobs:
           password: ${{ steps.config.outputs.ftp_password }}
           server-dir: htdocs/
           timeout: 3600000
+          # KUNCINYA: Exclude semua folder cache & session agar tidak terjadi konflik config di production
           exclude: |
             **/.git*
             **/.github/**
@@ -64,4 +65,7 @@ jobs:
             **/.env.example
             **/README.md
             storage/logs/**
+            storage/cache/**
             storage/framework/cache/**
+            storage/framework/views/**
+            storage/session/**
