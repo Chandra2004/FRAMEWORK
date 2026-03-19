@@ -1,17 +1,17 @@
+# deploy.yml
 name: Deploy to InfinityFree
 
 on:
   push:
     branches:
-      - main # Ganti dengan branch utama kamu jika beda (misal: "master")
+      - main
 
-# Hardening: Batasi permission GITHUB_TOKEN hanya untuk read code
 permissions:
   contents: read
 
 jobs:
   web-deploy:
-    name: 🎉 Deploy
+    name: 🎉 DEPLOY INIT
     runs-on: ubuntu-latest
     steps:
       - name: 🚚 Get latest code
@@ -20,66 +20,48 @@ jobs:
       - name: ⚡ Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3" # Pastikan versi ini SAMA dengan versi di InfinityFree!
+          php-version: "8.3"
           extensions: mbstring, intl, pdo, pdo_mysql
-          coverage: none # Percepat build
+          coverage: none
 
       - name: 📦 Install Dependencies
-        # Tambahkan --no-interaction --no-progress untuk log yang bersih
         run: composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-progress
 
-      - name: 🔐 Create .env file
+      - name: 🔐 Prepare Configuration
+        id: config
         run: |
-          echo "APP_ENV=production" >> .env
-          echo "APP_DEBUG=false" >> .env
-          echo "APP_KEY=${{ secrets.APP_KEY }}" >> .env
-          echo "ALLOW_WEB_MIGRATION=${{ secrets.ALLOW_WEB_MIGRATION || 'false' }}" >> .env
-          echo "SYSTEM_ALLOWED_IPS=${{ secrets.SYSTEM_ALLOWED_IPS || '*' }}" >> .env
-          echo "SYSTEM_AUTH_USER=${{ secrets.SYSTEM_AUTH_USER }}" >> .env
-          echo 'SYSTEM_AUTH_PASS=${{ secrets.SYSTEM_AUTH_PASS }}' >> .env
-          echo "APP_URL=${{ secrets.APP_URL }}" >> .env
-          echo "DB_CONNECTION=mysql" >> .env
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASS=${{ secrets.DB_PASS }}" >> .env
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+          # Buat file .env dari gabungan INTI_ENV dan INTI_DATABASE
+          echo "${{ secrets.INTI_ENV }}" > .env
+          echo "" >> .env
+          echo "${{ secrets.INTI_DATABASE }}" >> .env
+          
+          # Pecah INTI_FTP menjadi output step
+          echo "${{ secrets.INTI_FTP }}" > ftp_raw
+          echo "ftp_server=$(sed -n '1p' ftp_raw)" >> $GITHUB_OUTPUT
+          echo "ftp_username=$(sed -n '2p' ftp_raw)" >> $GITHUB_OUTPUT
+          echo "ftp_password=$(sed -n '3p' ftp_raw)" >> $GITHUB_OUTPUT
 
       - name: 🚀 Publish Assets
         run: php artisan asset:publish
 
-      - name: Sync files to InfinityFree
+      - name: 📤 Sync files to InfinityFree
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: htdocs/ # Upload ke folder htdocs
-          timeout: 3600000 # 1 jam timeout untuk stabilitas maksimal di InfinityFree
-          # Exclude file sampah agar tidak memenuhi hosting
+          server: ${{ steps.config.outputs.ftp_server }}
+          username: ${{ steps.config.outputs.ftp_username }}
+          password: ${{ steps.config.outputs.ftp_password }}
+          server-dir: htdocs/
+          timeout: 3600000
           exclude: |
             **/.git*
-            **/.git*/**
             **/.github/**
             **/.idx/**
             **/.cursorrules
-            **/.dockerignore
-            **/docker/**
-            **/Dockerfile
             **/tests/**
             **/node_modules/**
             **/docs/**
             **/phpunit.xml
             **/.env.example
             **/README.md
-            **/CHANGELOG.md
-            **/CODE_OF_CONDUCT.md
-            **/CONTRIBUTING.md
-            **/SECURITY.md
-            **/UPGRADE.md
-            **/LICENSE
             storage/logs/**
-            storage/framework/views/**
             storage/framework/cache/**
-            storage/app/**
-            !storage/**/
