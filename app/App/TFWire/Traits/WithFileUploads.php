@@ -123,7 +123,12 @@ trait WithFileUploads
         }
 
         $fullPath = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/') . '/' . $path;
-        move_uploaded_file($file['tmp_name'], $fullPath);
+        
+        if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing') {
+            rename($file['tmp_name'], $fullPath);
+        } else {
+            move_uploaded_file($file['tmp_name'], $fullPath);
+        }
 
         return $path;
     }

@@ -18,7 +18,7 @@ class Seeder_2026_02_27_124238_UserSeeder extends Seeder
                 'uid' => Helper::uuid(),
                 'name' => $faker->name,
                 'email' => $faker->email,
-                'password' => Helper::hash_password('password123') // ⚠️ WARNING: Development only!
+                'password' => Helper::hash_password('password123')
             ]
         ]);
     }

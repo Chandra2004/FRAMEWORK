@@ -712,7 +712,7 @@ class Relation
             
             $db->commit();
             return true;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $db->rollBack();
             throw $e;
         }

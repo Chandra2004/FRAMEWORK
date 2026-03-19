@@ -53,6 +53,9 @@ class Helper
             self::json_redirect($url);
         } else {
             header("Location: " . self::url($url));
+            if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing') {
+                throw new \Exception('REDIRECT:' . self::url($url), 302);
+            }
             exit();
         }
     }

@@ -188,7 +188,10 @@ class UploadHandler
         }
 
         // 7. Upload biasa
-        if (move_uploaded_file($file['tmp_name'], $fullPath)) {
+        $isTest = isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing';
+        $moved = $isTest ? rename($file['tmp_name'], $fullPath) : move_uploaded_file($file['tmp_name'], $fullPath);
+
+        if ($moved) {
             return [
                 'name' => $filename,
                 'path' => $subDir . '/' . $filename,

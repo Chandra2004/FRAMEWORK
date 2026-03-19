@@ -5,11 +5,14 @@ namespace Tests;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use TheFramework\App\Core\Container;
 use TheFramework\App\Http\Router;
+use TheFramework\App\Database\Database;
+use Tests\Traits\DatabaseTransactions;
 
 abstract class TestCase extends BaseTestCase
 {
     protected $app;
     protected $obLevel;
+    protected $defaultHeaders = [];
 
     protected function setUp(): void
     {
@@ -18,10 +21,18 @@ abstract class TestCase extends BaseTestCase
         $this->obLevel = ob_get_level();
 
         $this->bootApp();
+
+        if (method_exists($this, 'beginDatabaseTransaction')) {
+            call_user_func([$this, 'beginDatabaseTransaction']);
+        }
     }
 
     protected function tearDown(): void
     {
+        if (method_exists($this, 'rollBackDatabaseTransaction')) {
+            call_user_func([$this, 'rollBackDatabaseTransaction']);
+        }
+
         // Bersihkan hanya buffer yang dibuat oleh aplikasi/test kita
         while (ob_get_level() > $this->obLevel) {
             ob_end_clean();
@@ -72,22 +83,41 @@ abstract class TestCase extends BaseTestCase
         // Mocking Request Variables
         $_SERVER['REQUEST_METHOD'] = strtoupper($method);
         $_SERVER['REQUEST_URI'] = $uri;
-        $_POST = $method === 'POST' ? $data : [];
-        $_GET = $method === 'GET' ? $data : [];
+        
+        if (strtoupper($method) === 'GET') {
+            $_GET = $data;
+            $_POST = [];
+        } else {
+            $_GET = [];
+            $_POST = $data;
+        }
         $_REQUEST = array_merge($_GET, $_POST);
+
+        // Inject Headers
+        foreach ($this->defaultHeaders as $name => $val) {
+            $serverKey = 'HTTP_' . strtoupper(str_replace('-', '_', $name));
+            $_SERVER[$serverKey] = $val;
+            if (strtolower($name) === 'content-type') {
+                $_SERVER['CONTENT_TYPE'] = $val;
+            }
+        }
 
         // Reset status code sebelum request
         http_response_code(200);
+
+        // Setup Profiler
+        $startTime = microtime(true);
+        $initialQueryCount = count(Database::getInstance()->getQueryLog());
 
         ob_start();
         try {
             // Jalankan aplikasi
             Router::run();
         } catch (\Throwable $e) {
-            // Tangkap exception dan render error page jika perlu, atau biarkan status ter-set
-            // Jika router throw exception (misal 404), status code harusnya sudah di set sebelum throw
-            // atau kita bisa set manual disini
-            if ($e instanceof \Exception && $e->getCode() >= 400) {
+            if ($e instanceof \Exception && str_starts_with($e->getMessage(), 'REDIRECT:')) {
+                http_response_code(302);
+                echo $e->getMessage();
+            } elseif ($e instanceof \Exception && $e->getCode() >= 400) {
                 http_response_code($e->getCode());
             } else {
                 http_response_code(500);
@@ -95,6 +125,9 @@ abstract class TestCase extends BaseTestCase
             }
         } finally {
             $content = ob_get_clean(); // Pastikan buffer selalu dibersihkan
+            $executionTimeMs = (microtime(true) - $startTime) * 1000;
+            $finalQueryCount = count(Database::getInstance()->getQueryLog());
+            $queriesExecuted = max(0, $finalQueryCount - $initialQueryCount);
         }
 
         // Ambil status code terakhir
@@ -103,7 +136,7 @@ abstract class TestCase extends BaseTestCase
             $status = 200; // Fallback
 
         // Pass $this (TestCase instance) to TestResponse
-        return new TestResponse($this, $content, $status);
+        return new TestResponse($this, $content, $status, $executionTimeMs, $queriesExecuted);
     }
 
     protected function get($uri)
@@ -114,6 +147,94 @@ abstract class TestCase extends BaseTestCase
     {
         return $this->call('POST', $uri, $data);
     }
+
+    protected function put($uri, $data = [])
+    {
+        return $this->call('PUT', $uri, $data);
+    }
+
+    protected function patch($uri, $data = [])
+    {
+        return $this->call('PATCH', $uri, $data);
+    }
+
+    protected function delete($uri, $data = [])
+    {
+        return $this->call('DELETE', $uri, $data);
+    }
+
+    protected function json($method, $uri, $data = [])
+    {
+        $this->withHeaders(['Content-Type' => 'application/json', 'Accept' => 'application/json']);
+        return $this->call($method, $uri, $data);
+    }
+
+    public function withHeaders(array $headers)
+    {
+        $this->defaultHeaders = array_merge($this->defaultHeaders, $headers);
+        return $this;
+    }
+
+    public function withSession(array $data)
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start();
+        }
+        foreach ($data as $key => $value) {
+            $_SESSION[$key] = $value;
+        }
+        return $this;
+    }
+
+    public function actingAs($user)
+    {
+        $this->withSession(['user_id' => is_object($user) ? current((array)$user) : $user]);
+        return $this;
+    }
+
+    public function assertDatabaseHas(string $table, array $data)
+    {
+        $db = Database::getInstance();
+        $query = "SELECT COUNT(*) FROM `{$table}` WHERE ";
+        $conditions = [];
+        foreach ($data as $col => $val) {
+            $conditions[] = "`{$col}` = " . (is_null($val) ? "NULL" : "'".addslashes((string)$val)."'");
+        }
+        $query .= implode(' AND ', $conditions);
+        
+        $countResult = $db->query($query)->resultSet();
+        $count = reset($countResult[0]) ?? 0;
+        
+        $this->assertTrue($count > 0, "Failed asserting that database has row in table [{$table}]");
+        return $this;
+    }
+
+    public function assertDatabaseMissing(string $table, array $data)
+    {
+        $db = Database::getInstance();
+        $query = "SELECT COUNT(*) FROM `{$table}` WHERE ";
+        $conditions = [];
+        foreach ($data as $col => $val) {
+            $conditions[] = "`{$col}` = " . (is_null($val) ? "NULL" : "'".addslashes((string)$val)."'");
+        }
+        $query .= implode(' AND ', $conditions);
+        
+        $countResult = $db->query($query)->resultSet();
+        $count = reset($countResult[0]) ?? 0;
+        
+        $this->assertTrue($count == 0, "Failed asserting that database is missing row in table [{$table}]");
+        return $this;
+    }
+
+    public function assertDatabaseCount(string $table, int $expected)
+    {
+        $db = Database::getInstance();
+        $countResult = $db->query("SELECT COUNT(*) FROM `{$table}`")->resultSet();
+        $count = reset($countResult[0]) ?? 0;
+        
+        $this->assertEquals($expected, $count, "Failed asserting that table [{$table}] has {$expected} rows.");
+        return $this;
+    }
 }
 
 class TestResponse
@@ -121,13 +242,53 @@ class TestResponse
     private $test; // TestCase instance
     public $content;
     public $status;
+    public $executionTime;
+    public $queryCount;
 
-    public function __construct($test, $content, $status)
+    public function __construct($test, $content, $status, $executionTime = 0, $queryCount = 0)
     {
         $this->test = $test;
         $this->content = $content;
         $this->status = $status;
+        $this->executionTime = $executionTime;
+        $this->queryCount = $queryCount;
     }
+
+    // ==========================================
+    // ⚡ EXCLUSIVE FEATURE (BEYOND LARAVEL)
+    // ==========================================
+
+    public function assertExecutionTimeUnder(int $milliseconds)
+    {
+        $this->test->assertLessThan(
+            $milliseconds, 
+            $this->executionTime, 
+            "Expected response to take less than {$milliseconds}ms, but took " . round($this->executionTime, 2) . "ms."
+        );
+        return $this;
+    }
+
+    public function assertQueryCount(int $expected)
+    {
+        $this->test->assertEquals(
+            $expected, 
+            $this->queryCount, 
+            "Expected exactly {$expected} database queries, but {$this->queryCount} were executed."
+        );
+        return $this;
+    }
+
+    public function assertQueriesLessThan(int $maxQueries)
+    {
+        $this->test->assertLessThan(
+            $maxQueries, 
+            $this->queryCount, 
+            "Expected less than {$maxQueries} database queries, but {$this->queryCount} were executed. Possible N+1 Query Detected!"
+        );
+        return $this;
+    }
+
+    // ==========================================
 
     public function assertStatus($code)
     {
@@ -145,6 +306,32 @@ class TestResponse
             $text,
             $this->content,
             "Expected to see '$text' in response."
+        );
+        return $this;
+    }
+
+    public function assertSuccessful() { $this->test->assertTrue($this->status >= 200 && $this->status < 300, "Expected successful response, got {$this->status}"); return $this; }
+    public function assertNotFound() { $this->assertStatus(404); return $this; }
+    public function assertForbidden() { $this->assertStatus(403); return $this; }
+    public function assertUnauthorized() { $this->assertStatus(401); return $this; }
+
+    public function assertRedirect($uri = null)
+    {
+        $this->test->assertTrue($this->status >= 300 && $this->status < 400, "Response status {$this->status} is not a redirect.");
+        if ($uri) {
+            if (str_starts_with($this->content, 'REDIRECT:')) {
+                $this->test->assertStringContainsString((string)$uri, $this->content, "Expected redirect to {$uri}");
+            }
+        }
+        return $this;
+    }
+
+    public function assertDontSee($text)
+    {
+        $this->test->assertStringNotContainsString(
+            (string)$text,
+            $this->content,
+            "Expected not to see '$text' in response."
         );
         return $this;
     }
