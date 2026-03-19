@@ -30,6 +30,11 @@ class Queue
      */
     protected static int $retryAfter = 90;
 
+    /**
+     * Max attempts sebelum job dianggap gagal permanen
+     */
+    protected static int $maxAttempts = 5;
+
     // ========================================================
     //  TABLE MANAGEMENT
     // ========================================================
@@ -186,18 +191,25 @@ class Queue
      */
     protected static function createPayload(string|object $job, array $data = []): string
     {
+        $payload = [
+            'version' => '1.0',
+            'job' => '',
+            'data' => [],
+            'id' => bin2hex(random_bytes(8))
+        ];
+
         if ($job instanceof Job) {
-            $payload = $job->toPayload();
+            $jobPayload = $job->toPayload();
+            if (is_string($jobPayload)) {
+                $jobPayload = json_decode($jobPayload, true);
+            }
+            $payload = array_merge($payload, (array)$jobPayload);
         } elseif (is_object($job)) {
-            $payload = [
-                'job' => get_class($job),
-                'data' => method_exists($job, 'getData') ? $job->getData() : get_object_vars($job),
-            ];
+            $payload['job'] = get_class($job);
+            $payload['data'] = method_exists($job, 'getData') ? $job->getData() : get_object_vars($job);
         } else {
-            $payload = [
-                'job' => $job,
-                'data' => $data,
-            ];
+            $payload['job'] = $job;
+            $payload['data'] = $data;
         }
 
         return json_encode($payload, JSON_UNESCAPED_UNICODE);
@@ -241,7 +253,8 @@ class Queue
         $db->beginTransaction();
 
         try {
-            $sql = "SELECT `id`, `queue`, `payload`, `attempts`, `created_at` 
+            // High-safety atomic pop dengan status check
+            $sql = "SELECT `id`, `queue`, `payload`, `attempts` 
                     FROM `" . static::$table . "` 
                     WHERE `queue` = :queue 
                     AND (`reserved_at` IS NULL OR `reserved_at` <= :timeout) 
@@ -255,16 +268,24 @@ class Queue
             $db->bind(':timeout', $now - static::$retryAfter);
             $db->bind(':now', $now);
 
-            $jobRecord = $db->single();
+            $job = $db->single();
 
-            if ($jobRecord) {
+            if ($job) {
+                // Check max attempts (Dead Letter logic)
+                $maxRetry = \TheFramework\App\Core\Config::get('queue.max_attempts', static::$maxAttempts);
+                if ($job['attempts'] >= $maxRetry) {
+                    $db->commit();
+                    static::fail($job['id'], new \Exception("Max attempts reached ($maxRetry)"));
+                    return static::popFromQueue($queue); // Get next one
+                }
+
                 $db->query("UPDATE `" . static::$table . "` SET `reserved_at` = :now, `attempts` = `attempts` + 1 WHERE `id` = :id;");
                 $db->bind(':now', $now);
-                $db->bind(':id', $jobRecord['id']);
+                $db->bind(':id', $job['id']);
                 $db->execute();
 
                 $db->commit();
-                return $jobRecord;
+                return $job;
             }
 
             $db->commit();

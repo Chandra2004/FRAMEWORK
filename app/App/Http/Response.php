@@ -149,7 +149,7 @@ class Response
     }
 
     /**
-     * Factory: Download response
+     * Factory: Download response (Memory-efficient streaming)
      */
     public static function download(string $filePath, ?string $name = null, array $headers = []): static
     {
@@ -161,12 +161,55 @@ class Response
         $size = filesize($filePath);
         $mime = mime_content_type($filePath) ?: 'application/octet-stream';
 
-        $response = new static('', 200, $headers);
+        $response = static::stream(function () use ($filePath) {
+            $stream = fopen($filePath, 'rb');
+            while (!feof($stream)) {
+                echo fread($stream, 8192);
+                flush();
+            }
+            fclose($stream);
+        }, 200, $headers);
+
         $response->header('Content-Type', $mime);
         $response->header('Content-Disposition', "attachment; filename=\"{$name}\"");
         $response->header('Content-Length', (string) $size);
         $response->header('Cache-Control', 'no-cache, must-revalidate');
-        $response->setContent(file_get_contents($filePath));
+
+        return $response;
+    }
+
+    /**
+     * Factory: Stream a file with progress callback support
+     */
+    public static function streamFile(string $filePath, ?callable $progress = null, array $headers = []): static
+    {
+        if (!file_exists($filePath)) {
+            throw new \RuntimeException("File not found: {$filePath}");
+        }
+
+        $size = filesize($filePath);
+        $mime = mime_content_type($filePath) ?: 'application/octet-stream';
+
+        $response = static::stream(function () use ($filePath, $size, $progress) {
+            $stream = fopen($filePath, 'rb');
+            $sent = 0;
+            while (!feof($stream)) {
+                $chunkSize = 8192;
+                $buffer = fread($stream, $chunkSize);
+                $sent += strlen($buffer);
+                
+                echo $buffer;
+                flush();
+
+                if ($progress) {
+                    $progress($sent, $size);
+                }
+            }
+            fclose($stream);
+        }, 200, $headers);
+
+        $response->header('Content-Type', $mime);
+        $response->header('Content-Length', (string) $size);
 
         return $response;
     }
@@ -333,9 +376,31 @@ class Response
 
     public function withCache(int $seconds, bool $public = true): static
     {
+        return $this->setTtl($seconds, $public);
+    }
+
+    /**
+     * Set Cache-Control TTL
+     */
+    public function setTtl(int $seconds, bool $public = true): static
+    {
         $visibility = $public ? 'public' : 'private';
         $this->header('Cache-Control', "{$visibility}, max-age={$seconds}");
         $this->header('Expires', gmdate('D, d M Y H:i:s', time() + $seconds) . ' GMT');
+        return $this;
+    }
+
+    public function public(): static
+    {
+        $current = $this->getHeader('Cache-Control') ?? '';
+        $this->header('Cache-Control', str_replace('private', 'public', $current));
+        return $this;
+    }
+
+    public function private(): static
+    {
+        $current = $this->getHeader('Cache-Control') ?? '';
+        $this->header('Cache-Control', str_replace('public', 'private', $current));
         return $this;
     }
 

@@ -533,17 +533,21 @@ class Validator
 
     protected function validate_after(string $field, string $label, $value, array $params): void
     {
-        $dateStr = $params[0] ?? 'today';
-        if (strtotime($value) <= strtotime($dateStr)) {
-            $this->addError($field, 'after', "{$label} must be a date after {$dateStr}.");
+        $otherField = $params[0] ?? 'today';
+        $otherValue = $this->getValue($this->inputData, $otherField) ?: $otherField;
+        
+        if (strtotime($value) <= strtotime($otherValue)) {
+            $this->addError($field, 'after', "{$label} must be a date after {$otherField}.");
         }
     }
 
     protected function validate_before(string $field, string $label, $value, array $params): void
     {
-        $dateStr = $params[0] ?? 'today';
-        if (strtotime($value) >= strtotime($dateStr)) {
-            $this->addError($field, 'before', "{$label} must be a date before {$dateStr}.");
+        $otherField = $params[0] ?? 'today';
+        $otherValue = $this->getValue($this->inputData, $otherField) ?: $otherField;
+
+        if (strtotime($value) >= strtotime($otherValue)) {
+            $this->addError($field, 'before', "{$label} must be a date before {$otherField}.");
         }
     }
 

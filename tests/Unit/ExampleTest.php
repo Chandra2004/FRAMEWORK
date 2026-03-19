@@ -18,6 +18,20 @@ class ExampleTest extends TestCase
         $this->assertEquals('testing', $env);
     }
 
+    public function test_config_schema_validation()
+    {
+        Config::reset();
+        Config::registerSchema('REQUIRED_KEY', ['required' => true]);
+        Config::registerSchema('INT_KEY', ['type' => 'int']);
+        
+        Config::set('INT_KEY', 'not-an-int');
+        
+        $errors = Config::validateAll();
+        
+        $this->assertContains('Config [REQUIRED_KEY] is required.', $errors);
+        $this->assertContains('Config [INT_KEY] must be an integer.', $errors);
+    }
+
     public function test_helper_encryption()
     {
         $password = 'secret123';

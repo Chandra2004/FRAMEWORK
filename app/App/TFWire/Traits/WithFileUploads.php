@@ -80,6 +80,17 @@ trait WithFileUploads
                     }
                     break;
 
+                case 'mimetypes':
+                    if (isset($fileData['tmp_name']) && file_exists($fileData['tmp_name'])) {
+                        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                        $mime = finfo_file($finfo, $fileData['tmp_name']);
+                        finfo_close($finfo);
+                        if (!in_array($mime, $params)) {
+                            $errors[] = "File {$field} harus memiliki tipe MIME: " . implode(', ', $params) . ".";
+                        }
+                    }
+                    break;
+
                 case 'mimes':
                     $ext = strtolower(pathinfo($fileData['name'] ?? '', PATHINFO_EXTENSION));
                     if (!in_array($ext, $params)) {

@@ -103,6 +103,14 @@ class Database
     }
 
     /**
+     * Set instance manual (untuk testing)
+     */
+    public static function setInstance(self $instance, string $name = 'default'): void
+    {
+        self::$instances[$name] = $instance;
+    }
+
+    /**
      * Ensure database connection (lazy connection)
      * 
      * @param bool $required Jika true, throw exception jika tidak bisa connect
@@ -292,16 +300,25 @@ class Database
             }
             $this->isConnected = true;
         } catch (PDOException $e) {
-            // Log error untuk debugging
-            error_log("Database Connection Error: " . $e->getMessage());
-
-            // Check for common connection errors and provide helpful messages
             $errorCode = $e->getCode();
             $errorMessage = $e->getMessage();
+            $debug = Config::get('APP_DEBUG', 'false') === 'true';
 
+            // Log error untuk debugging
+            error_log("Database Connection Error: " . $errorMessage);
+
+            // Hide sensitive details from end-user in production
+            if (!$debug) {
+                throw new DatabaseException(
+                    "Database connection failed. Please check your configuration.",
+                    500,
+                    $e
+                );
+            }
+
+            // Check for common connection errors and provide helpful messages
             $detailedMessage = "Database connection failed";
 
-            // Provide specific error messages based on error code
             if (strpos($errorMessage, 'Access denied') !== false) {
                 $detailedMessage = "Database access denied. Please check DB_USER and DB_PASS in your .env file.";
                 $envErrors[] = "Access denied - Check DB_USER and DB_PASS credentials";
@@ -536,7 +553,17 @@ class Database
 
         $logIndex = count($this->queryLog) - 1;
         if ($logIndex >= 0) {
-            $this->queryLog[$logIndex]['bindings'][$param] = $value;
+            $maskedValue = $value;
+            $sensitiveKeys = ['password', 'token', 'secret', 'credit_card', 'cvv', 'key'];
+            
+            foreach ($sensitiveKeys as $sensitive) {
+                if (str_contains(strtolower($param), $sensitive)) {
+                    $maskedValue = '********';
+                    break;
+                }
+            }
+            
+            $this->queryLog[$logIndex]['bindings'][$param] = $maskedValue;
         }
 
         if (is_null($type)) {

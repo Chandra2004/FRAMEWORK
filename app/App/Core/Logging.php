@@ -53,6 +53,14 @@ class Logging
     private static array $history = [];
     private static int $maxHistory = 100;
 
+    /**
+     * Sensitive keys to mask in context
+     */
+    private static array $dontLog = [
+        'password', 'password_confirmation', 'token', 'access_token',
+        'refresh_token', 'secret', 'key', 'api_key', 'cc', 'card'
+    ];
+
     // ========================================================
     //  CONFIGURATION
     // ========================================================
@@ -153,10 +161,11 @@ class Logging
     {
         $logDir = static::getLogDir();
 
-        // Daily rotating file handler (max 30 hari)
+        // Daily rotating file handler (max retention from config)
+        $maxFiles = Config::getInt('LOG_MAX_FILES', 30);
         $handler = new RotatingFileHandler(
             $logDir . DIRECTORY_SEPARATOR . $name . '.log',
-            30,
+            $maxFiles,
             static::$minLevel
         );
 
@@ -197,7 +206,7 @@ class Logging
         $logDir = static::getLogDir();
         $driver = $config['driver'] ?? 'daily';
         $level = static::levelFromName($config['level'] ?? 'debug');
-        $maxFiles = $config['max_files'] ?? 30;
+        $maxFiles = $config['max_files'] ?? Config::getInt('LOG_MAX_FILES', 30);
 
         match ($driver) {
             'single' => $logger->pushHandler(
@@ -317,12 +326,44 @@ class Logging
      */
     public static function log(string $level, string $message, array $context = []): void
     {
-        $logger = static::getLogger();
+        static::logToChannel(static::$defaultChannel, $level, $message, $context);
+    }
+
+    /**
+     * Log to a specific channel with masking.
+     */
+    public static function logToChannel(string $channel, string $level, string $message, array $context = []): void
+    {
+        $logger = static::channel($channel);
         $monologLevel = static::levelFromName($level);
+        
+        // Mask sensitive data
+        $context = static::maskContext($context);
+        
         $logger->log($monologLevel, $message, $context);
 
         // Track history
         static::addToHistory($level, $message, $context);
+    }
+
+    /**
+     * Redact sensitive keys in the context array
+     */
+    protected static function maskContext(array $context): array
+    {
+        foreach ($context as $key => &$value) {
+            if (is_array($value)) {
+                $value = static::maskContext($value);
+            } elseif (is_string($key)) {
+                foreach (static::$dontLog as $blacklisted) {
+                    if (str_contains(strtolower($key), $blacklisted)) {
+                        $value = '********';
+                        break;
+                    }
+                }
+            }
+        }
+        return $context;
     }
 
     /**
@@ -578,19 +619,7 @@ class ChannelLogger
 
     public function log(string $level, string $message, array $context = []): void
     {
-        $logger = Logging::channel($this->channel);
-        $monologLevel = match (strtolower($level)) {
-            'debug' => Logger::DEBUG,
-            'info' => Logger::INFO,
-            'notice' => Logger::NOTICE,
-            'warning' => Logger::WARNING,
-            'error' => Logger::ERROR,
-            'critical' => Logger::CRITICAL,
-            'alert' => Logger::ALERT,
-            'emergency' => Logger::EMERGENCY,
-            default => Logger::DEBUG,
-        };
-        $logger->log($monologLevel, $message, $context);
+        Logging::logToChannel($this->channel, $level, $message, $context);
     }
 }
 

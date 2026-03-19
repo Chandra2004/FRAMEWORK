@@ -13,18 +13,14 @@ use TheFramework\App\Core\Config;
  */
 class RateLimiter
 {
-    private static ?string $cacheDir = null;
+    private static string $prefix = 'ratelimit:';
 
     /**
-     * Get rate limit cache directory
+     * Get unique cache key
      */
-    private static function getCacheDir(): string
+    private static function resolveKey(string $key): string
     {
-        if (self::$cacheDir === null) {
-            $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 2));
-            self::$cacheDir = $root . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'ratelimit' . DIRECTORY_SEPARATOR;
-        }
-        return self::$cacheDir;
+        return self::$prefix . md5($key);
     }
 
     /**
@@ -36,26 +32,27 @@ class RateLimiter
      */
     public static function hit(string $key, int $decay = 60): int
     {
-        $dir = self::getCacheDir();
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
+        $cacheKey = self::resolveKey($key);
+        $lockKey = 'lock:' . $cacheKey;
 
-        $file = $dir . md5($key) . '.json';
-        $data = file_exists($file) ? json_decode(file_get_contents($file), true) : [
-            'count' => 0,
-            'timestamp' => time()
-        ];
+        return \TheFramework\App\Cache\CacheManager::lock($lockKey, 2)->get(function () use ($cacheKey, $decay) {
+            $data = \TheFramework\App\Cache\CacheManager::get($cacheKey);
+            
+            if (!$data || time() - $data['timestamp'] > $decay) {
+                $data = [
+                    'count' => 0,
+                    'timestamp' => time(),
+                    'decay' => $decay
+                ];
+            }
 
-        // Reset if window expired
-        if (time() - $data['timestamp'] > $decay) {
-            $data = ['count' => 0, 'timestamp' => time()];
-        }
-
-        $data['count']++;
-        file_put_contents($file, json_encode($data), LOCK_EX);
-
-        return $data['count'];
+            $data['count']++;
+            $data['decay'] = $decay;
+            
+            \TheFramework\App\Cache\CacheManager::put($cacheKey, $data, $decay);
+            
+            return $data['count'];
+        }) ?? 1;
     }
 
     /**
@@ -73,16 +70,14 @@ class RateLimiter
             return false;
         }
 
-        $dir = self::getCacheDir();
-        $file = $dir . md5($key) . '.json';
+        $cacheKey = self::resolveKey($key);
+        $data = \TheFramework\App\Cache\CacheManager::get($cacheKey);
 
-        if (!file_exists($file)) {
+        if (!$data) {
             return false;
         }
 
-        $data = json_decode(file_get_contents($file), true);
-
-        // Reset if window expired
+        // Reset if window expired (Double-check TTL)
         if (time() - $data['timestamp'] > $decay) {
             return false;
         }
@@ -97,11 +92,7 @@ class RateLimiter
      */
     public static function clear(string $key): void
     {
-        $dir = self::getCacheDir();
-        $file = $dir . md5($key) . '.json';
-        if (file_exists($file)) {
-            unlink($file);
-        }
+        \TheFramework\App\Cache\CacheManager::forget(self::resolveKey($key));
     }
 
     /**
@@ -112,22 +103,16 @@ class RateLimiter
      */
     public static function availableIn(string $key): int
     {
-        $dir = self::getCacheDir();
-        $file = $dir . md5($key) . '.json';
+        $cacheKey = self::resolveKey($key);
+        $data = \TheFramework\App\Cache\CacheManager::get($cacheKey);
 
-        if (!file_exists($file)) {
+        if (!$data) {
             return 0;
         }
 
-        $data = json_decode(file_get_contents($file), true);
-
-        // Find decay from hit? No, but we can assume default 60 or 
-        // better yet, we just give the remaining time from the timestamp recorded.
-        // Usually, decay is provided in tooManyAttempts.
-        // We'll use 60 as default or store decay in data.
         $decay = $data['decay'] ?? 60;
-
         $diff = time() - $data['timestamp'];
+        
         return max(0, $decay - $diff);
     }
 
@@ -140,14 +125,13 @@ class RateLimiter
      */
     public static function remaining(string $key, int $maxAttempts): int
     {
-        $dir = self::getCacheDir();
-        $file = $dir . md5($key) . '.json';
+        $cacheKey = self::resolveKey($key);
+        $data = \TheFramework\App\Cache\CacheManager::get($cacheKey);
 
-        if (!file_exists($file)) {
+        if (!$data) {
             return $maxAttempts;
         }
 
-        $data = json_decode(file_get_contents($file), true);
         return max(0, $maxAttempts - $data['count']);
     }
 

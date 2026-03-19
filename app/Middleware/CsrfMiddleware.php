@@ -6,14 +6,27 @@ class CsrfMiddleware implements Middleware
 {
     public static function generateToken()
     {
-        if (!session('csrf_token')) {
-            session(['csrf_token' => bin2hex(random_bytes(32))]);
+        if (!session('csrf_token') || self::isExpired()) {
+            session([
+                'csrf_token' => bin2hex(random_bytes(32)),
+                'csrf_token_expires' => time() + (\TheFramework\App\Core\Config::get('CSRF_TTL', 7200)) // Default 2 hours
+            ]);
         }
         return session('csrf_token');
     }
 
+    private static function isExpired(): bool
+    {
+        $expiresAt = session('csrf_token_expires');
+        return empty($expiresAt) || time() > $expiresAt;
+    }
+
     public static function verifyToken($token)
     {
+        if (self::isExpired()) {
+            return false;
+        }
+
         $sessionToken = session('csrf_token');
         return !empty($sessionToken) && !empty($token) && hash_equals($sessionToken, $token);
     }

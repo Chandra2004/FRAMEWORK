@@ -18,14 +18,32 @@ class SessionManager
             ini_set('session.use_strict_mode', 1);
             ini_set('session.cookie_samesite', 'Lax');
 
-            $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
-            $sessionPath = $root . '/storage/session';
+            $driver = Config::get('SESSION_DRIVER', 'file');
 
-            if (!is_dir($sessionPath)) {
-                @mkdir($sessionPath, 0777, true);
-            }
-            if (is_writable($sessionPath)) {
-                session_save_path($sessionPath);
+            if ($driver === 'redis' && extension_loaded('redis')) {
+                $host = Config::get('REDIS_HOST', '127.0.0.1');
+                $port = Config::get('REDIS_PORT', 6379);
+                $pass = Config::get('REDIS_PASSWORD');
+                $prefix = Config::get('REDIS_PREFIX', 'tf_sess:');
+                
+                $savePath = "tcp://{$host}:{$port}?prefix={$prefix}";
+                if ($pass) {
+                    $savePath .= "&auth=" . urlencode($pass);
+                }
+
+                ini_set('session.save_handler', 'redis');
+                ini_set('session.save_path', $savePath);
+            } else {
+                // File-based session fallback
+                $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+                $sessionPath = $root . '/storage/session';
+
+                if (!is_dir($sessionPath)) {
+                    @mkdir($sessionPath, 0777, true);
+                }
+                if (is_writable($sessionPath)) {
+                    session_save_path($sessionPath);
+                }
             }
 
             session_start();

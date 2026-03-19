@@ -20,6 +20,7 @@ abstract class TestCase extends BaseTestCase
         // Simpan level buffer awal agar tidak menghapus buffer PHPUnit secara tidak sengaja
         $this->obLevel = ob_get_level();
 
+        Router::clearRoutes();
         $this->bootApp();
 
         if (method_exists($this, 'beginDatabaseTransaction')) {
@@ -62,15 +63,15 @@ abstract class TestCase extends BaseTestCase
         // Load Bootstrap
         $this->app = require BASE_PATH . '/bootstrap/app.php';
 
-        // Load Routes only once
+        // Load Routes
         if (file_exists(BASE_PATH . '/routes/web.php')) {
-            require_once BASE_PATH . '/routes/web.php';
+            require BASE_PATH . '/routes/web.php';
         }
         if (file_exists(BASE_PATH . '/routes/api.php')) {
-            require_once BASE_PATH . '/routes/api.php';
+            require BASE_PATH . '/routes/api.php';
         }
         if (file_exists(BASE_PATH . '/app/App/Internal/Controllers/_system/routes.php')) {
-            require_once BASE_PATH . '/app/App/Internal/Controllers/_system/routes.php';
+            require BASE_PATH . '/app/App/Internal/Controllers/_system/routes.php';
         }
     }
 
@@ -84,9 +85,17 @@ abstract class TestCase extends BaseTestCase
         $_SERVER['REQUEST_METHOD'] = strtoupper($method);
         $_SERVER['REQUEST_URI'] = $uri;
         
+        // Parse URI for path() vs query()
+        $parts = parse_url($uri);
+        $_SERVER['QUERY_STRING'] = $parts['query'] ?? '';
+        
         if (strtoupper($method) === 'GET') {
             $_GET = $data;
             $_POST = [];
+            if (!empty($parts['query'])) {
+                parse_str($parts['query'], $queryData);
+                $_GET = array_merge($queryData, $_GET);
+            }
         } else {
             $_GET = [];
             $_POST = $data;
@@ -102,6 +111,9 @@ abstract class TestCase extends BaseTestCase
             }
         }
 
+        // 🚀 CRITICAL: Reset Request in Container to ensure fresh input parsing
+        \TheFramework\App\Core\Container::getInstance()->forgetInstance(\TheFramework\App\Http\Request::class);
+
         // Reset status code sebelum request
         http_response_code(200);
 
@@ -114,8 +126,8 @@ abstract class TestCase extends BaseTestCase
             // Jalankan aplikasi
             Router::run();
         } catch (\Throwable $e) {
-            if ($e instanceof \Exception && str_starts_with($e->getMessage(), 'REDIRECT:')) {
-                http_response_code(302);
+            if ($e instanceof \Exception && (str_starts_with($e->getMessage(), 'REDIRECT:') || str_contains($e->getMessage(), 'JSON_'))) {
+                http_response_code($e->getCode() ?: 302);
                 echo $e->getMessage();
             } elseif ($e instanceof \Exception && $e->getCode() >= 400) {
                 http_response_code($e->getCode());

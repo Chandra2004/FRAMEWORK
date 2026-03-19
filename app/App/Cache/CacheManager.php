@@ -24,6 +24,7 @@ class CacheManager
      * Path folder cache (untuk file driver)
      */
     protected static ?string $cacheDir = null;
+    protected static ?\Redis $redis = null;
 
     /**
      * In-memory cache store (untuk array driver)
@@ -71,7 +72,7 @@ class CacheManager
      */
     public static function driver(string $driver): void
     {
-        $validDrivers = ['file', 'array', 'database'];
+        $validDrivers = ['file', 'array', 'database', 'redis'];
         static::$driver = in_array($driver, $validDrivers) ? $driver : 'file';
     }
 
@@ -161,16 +162,145 @@ class CacheManager
     }
 
     /**
-     * Simpan hanya jika key BELUM ada
+     * Simpan hanya jika key BELUM ada (ATOMIC operation)
      * 
      * @return bool True jika berhasil disimpan, false jika key sudah ada
      */
     public static function add(string $key, mixed $value, ?int $ttl = null): bool
     {
-        if (static::has($key)) {
+        $ttl = $ttl ?? static::$defaultTtl;
+        $expiresAt = $ttl > 0 ? time() + $ttl : 0;
+
+        // Use driver-specific atomic add
+        return match (static::$driver) {
+            'redis' => static::addToRedis($key, $value, $expiresAt),
+            'database' => static::addToDatabase($key, $value, $expiresAt),
+            'array' => static::addToArray($key, $value, $expiresAt),
+            default => static::addToFile($key, $value, $expiresAt),
+        };
+    }
+
+    /**
+     * Atomic add for file driver using file locking
+     */
+    protected static function addToFile(string $key, mixed $value, int $expiresAt): bool
+    {
+        $file = static::getCacheDir() . DIRECTORY_SEPARATOR . static::$prefix . $key . '.cache';
+        $dir = dirname($file);
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        // Use atomic write with LOCK_EX (exclusive lock)
+        $fp = fopen($file, 'c');
+        if (!$fp) {
             return false;
         }
-        return static::put($key, $value, $ttl);
+
+        // Try to acquire exclusive lock without blocking
+        if (!flock($fp, LOCK_EX | LOCK_NB)) {
+            fclose($fp);
+            return false; // Another process has lock
+        }
+
+        try {
+            // Check if file already has content (key exists)
+            if (filesize($file) > 0) {
+                $content = fread($fp, filesize($file));
+                if ($content) {
+                    $data = @unserialize($content);
+                    if ($data !== false && is_array($data)) {
+                        // Check if not expired
+                        if ($data['expires_at'] === 0 || $data['expires_at'] > time()) {
+                            return false; // Key already exists and not expired
+                        }
+                    }
+                }
+            }
+
+            // Write new value
+            $data = [
+                'value' => $value,
+                'expires_at' => $expiresAt,
+                'created_at' => time(),
+            ];
+            ftruncate($fp, 0);
+            rewind($fp);
+            fwrite($fp, serialize($data));
+            fflush($fp);
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        } finally {
+            flock($fp, LOCK_UN);
+            fclose($fp);
+        }
+
+        return false;
+    }
+
+    /**
+     * Atomic add for Redis driver
+     */
+    protected static function addToRedis(string $key, mixed $value, int $expiresAt): bool
+    {
+        $redis = static::getRedis();
+        if (!$redis) {
+            return false; // Fallback to file
+        }
+        $fullKey = static::$prefix . $key;
+        $serialized = serialize(['value' => $value, 'expires_at' => $expiresAt, 'created_at' => time()]);
+        // Use SETNX equivalent for atomic add
+        $result = $redis->set($fullKey, $serialized, ['NX' => true, 'EX' => $expiresAt ?: null]);
+        return $result !== null && $result !== false;
+    }
+
+    /**
+     * Atomic add for database driver
+     */
+    protected static function addToDatabase(string $key, mixed $value, int $expiresAt): bool
+    {
+        $redis = static::getRedis();
+        if ($redis) {
+            return static::addToRedis($key, $value, $expiresAt);
+        }
+        
+        // Fallback: use file driver for database driver add
+        return static::addToFile($key, $value, $expiresAt);
+    }
+
+    /**
+     * Atomic add for array driver
+     */
+    protected static function addToArray(string $key, mixed $value, int $expiresAt): bool
+    {
+        // Check if exists and not expired
+        if (isset(static::$arrayStore[$key])) {
+            $item = static::$arrayStore[$key];
+            if ($item['expires_at'] === 0 || $item['expires_at'] > time()) {
+                return false; // Key exists and not expired
+            }
+        }
+
+        static::$arrayStore[$key] = [
+            'value' => $value,
+            'expires_at' => $expiresAt,
+            'created_at' => time(),
+        ];
+        return true;
+    }
+
+    /**
+     * Cache Warming: Pre-load data into cache if missing
+     */
+    public static function warm(array $data, ?int $ttl = null): void
+    {
+        foreach ($data as $key => $value) {
+            if (static::missing($key)) {
+                static::put($key, $value, $ttl);
+            }
+        }
     }
 
     /**
@@ -709,12 +839,17 @@ class CacheManager
         return match (static::$driver) {
             'array' => static::retrieveFromArray($key),
             'database' => static::retrieveFromDatabase($key),
+            'redis' => static::retrieveFromRedis($key),
             default => static::retrieveFromFile($key),
         };
     }
 
     protected static function retrieveRaw(string $key): ?array
     {
+        if (static::$driver === 'redis') {
+            $data = static::retrieveFromRedis($key);
+            return $data !== null ? ['value' => $data, 'expires_at' => 0] : null;
+        }
         if (static::$driver === 'file') {
             $filePath = static::cacheFilePath($key);
             if (!file_exists($filePath))
@@ -736,6 +871,7 @@ class CacheManager
         return match (static::$driver) {
             'array' => static::storeToArray($key, $value, $expiresAt),
             'database' => static::storeToDatabase($key, $value, $expiresAt),
+            'redis' => static::storeToRedis($key, $value, $expiresAt),
             default => static::storeToFile($key, $value, $expiresAt),
         };
     }
@@ -745,8 +881,68 @@ class CacheManager
         return match (static::$driver) {
             'array' => static::removeFromArray($key),
             'database' => static::removeFromDatabase($key),
+            'redis' => static::removeFromRedis($key),
             default => static::removeFromFile($key),
         };
+    }
+
+    // ========================================================
+    //  REDIS DRIVER IMPLEMENTATION
+    // ========================================================
+
+    /**
+     * @return object|null 
+     */
+    protected static function getRedis(): ?object
+    {
+        if (static::$redis === null && class_exists('Redis') && extension_loaded('redis')) {
+            try {
+                $redisClass = 'Redis';
+                static::$redis = new $redisClass();
+                $host = \TheFramework\App\Core\Config::get('REDIS_HOST', '127.0.0.1');
+                $port = (int) \TheFramework\App\Core\Config::get('REDIS_PORT', 6379);
+                $pass = \TheFramework\App\Core\Config::get('REDIS_PASSWORD');
+                
+                static::$redis->connect($host, $port);
+                if ($pass) {
+                    static::$redis->auth($pass);
+                }
+                static::$redis->setOption(constant('Redis::OPT_SERIALIZER'), constant('Redis::SERIALIZER_PHP'));
+            } catch (\Exception $e) {
+                static::$redis = null;
+            }
+        }
+        return static::$redis;
+    }
+
+    protected static function retrieveFromRedis(string $key): mixed
+    {
+        $redis = static::getRedis();
+        if (!$redis) return null;
+        
+        $value = $redis->get(static::$prefix . $key);
+        return ($value === false) ? null : $value;
+    }
+
+    protected static function storeToRedis(string $key, mixed $value, int $expiresAt): bool
+    {
+        $redis = static::getRedis();
+        if (!$redis) return false;
+
+        $ttl = ($expiresAt > 0) ? ($expiresAt - time()) : 0;
+        if ($ttl < 0 && $expiresAt > 0) return false;
+
+        if ($ttl > 0) {
+            return $redis->setex(static::$prefix . $key, $ttl, $value);
+        }
+        return $redis->set(static::$prefix . $key, $value);
+    }
+
+    protected static function removeFromRedis(string $key): bool
+    {
+        $redis = static::getRedis();
+        if (!$redis) return false;
+        return (bool) $redis->del(static::$prefix . $key);
     }
 
     // ========================================================
@@ -784,6 +980,7 @@ class CacheManager
     protected static function storeToFile(string $key, mixed $value, int $expiresAt): bool
     {
         $filePath = static::cacheFilePath($key);
+        $tempPath = $filePath . '.' . bin2hex(random_bytes(8)) . '.tmp';
 
         $data = [
             'original_key' => $key,
@@ -792,8 +989,15 @@ class CacheManager
             'created_at' => time(),
         ];
 
-        $result = @file_put_contents($filePath, serialize($data), LOCK_EX);
-        return $result !== false;
+        // Atomic write: Write to temp file then rename
+        $result = @file_put_contents($tempPath, serialize($data), LOCK_EX);
+        if ($result !== false) {
+            $renamed = @rename($tempPath, $filePath);
+            if (!$renamed) @unlink($tempPath);
+            return $renamed;
+        }
+
+        return false;
     }
 
     protected static function removeFromFile(string $key): bool

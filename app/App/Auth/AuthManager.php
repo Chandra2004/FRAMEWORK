@@ -403,10 +403,11 @@ class AuthManager
     protected static function setRememberToken(mixed $user): void
     {
         $token = bin2hex(random_bytes(32));
+        $hashedToken = hash('sha256', $token);
 
-        // Store token on user model if supported
+        // Store hashed token on user model if supported
         if (method_exists($user, 'setRememberToken')) {
-            $user->setRememberToken($token);
+            $user->setRememberToken($hashedToken);
             try {
                 $user->save();
             } catch (\Throwable) {

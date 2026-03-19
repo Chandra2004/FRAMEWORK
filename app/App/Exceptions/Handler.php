@@ -53,7 +53,7 @@ class Handler
     /**
      * Max identical errors to log per request (rate limiting)
      */
-    protected static int $maxReportsPerFingerprint = 3;
+    protected static ?int $maxReportsPerFingerprint = null;
 
     /**
      * Log file path
@@ -197,7 +197,9 @@ class Handler
         // Fingerprinting — avoid duplicate reports
         $fingerprint = self::fingerprint($e);
         $count = self::$reportedFingerprints[$fingerprint] ?? 0;
-        if ($count >= self::$maxReportsPerFingerprint) {
+        $maxReports = self::$maxReportsPerFingerprint ?? Config::get('app.max_exception_reports', 3);
+        
+        if ($count >= $maxReports) {
             return;
         }
         self::$reportedFingerprints[$fingerprint] = $count + 1;
@@ -232,7 +234,8 @@ class Handler
     protected static function reportError(int $severity, string $message, string $file, int $line): void
     {
         $severityName = self::getSeverityName($severity);
-        $logMessage = "[{$severityName}] {$message} in {$file}:{$line}";
+        $safeFile = self::sanitizePath($file);
+        $logMessage = "[{$severityName}] {$message} in {$safeFile}:{$line}";
         self::writeRawLog('ERROR', $logMessage);
     }
 
@@ -243,9 +246,10 @@ class Handler
     {
         $severity = self::getLogLevel($e);
         $class = get_class($e);
+        $safeFile = self::sanitizePath($e->getFile());
 
         $logMessage = "[{$class}] {$e->getMessage()}";
-        $logMessage .= " in {$e->getFile()}:{$e->getLine()}";
+        $logMessage .= " in {$safeFile}:{$e->getLine()}";
 
         if (!empty($context['previous'])) {
             $logMessage .= " | Previous: {$context['previous']}";
@@ -301,7 +305,7 @@ class Handler
             'class' => get_class($e),
             'message' => $e->getMessage(),
             'code' => $e->getCode(),
-            'file' => $e->getFile(),
+            'file' => self::sanitizePath($e->getFile()),
             'line' => $e->getLine(),
             'url' => $_SERVER['REQUEST_URI'] ?? 'CLI',
             'method' => $_SERVER['REQUEST_METHOD'] ?? 'CLI',
@@ -319,7 +323,7 @@ class Handler
         // Previous exception chain
         if ($e->getPrevious()) {
             $prev = $e->getPrevious();
-            $context['previous'] = get_class($prev) . ': ' . $prev->getMessage() . ' in ' . $prev->getFile() . ':' . $prev->getLine();
+            $context['previous'] = get_class($prev) . ': ' . $prev->getMessage() . ' in ' . self::sanitizePath($prev->getFile()) . ':' . $prev->getLine();
         }
 
         return $context;
@@ -430,7 +434,7 @@ class Handler
         // Debug mode: include trace info
         if ($env !== 'production') {
             $response['exception'] = get_class($e);
-            $response['file'] = $e->getFile();
+            $response['file'] = self::sanitizePath($e->getFile());
             $response['line'] = $e->getLine();
 
             if ($e instanceof DatabaseException && $e->getSql()) {
@@ -439,7 +443,7 @@ class Handler
 
             $response['trace'] = array_slice(
                 array_map(fn($t) => [
-                    'file' => $t['file'] ?? '',
+                    'file' => isset($t['file']) ? self::sanitizePath($t['file']) : '',
                     'line' => $t['line'] ?? 0,
                     'function' => ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? ''),
                 ], $e->getTrace()),
@@ -620,7 +624,7 @@ class Handler
             'class' => $severityName,
             'error_code_text' => $isFatal ? 'Fatal Error' : 'System Warning',
             'message' => $message,
-            'file' => $file,
+            'file' => self::sanitizePath($file),
             'line' => $line,
             'code_snippet' => self::getSnippet($file, $line),
             'trace_parsed' => [],
@@ -676,7 +680,7 @@ class Handler
             'class' => get_class($e),
             'error_code_text' => 'Exception',
             'message' => $e->getMessage(),
-            'file' => $file,
+            'file' => self::sanitizePath($file),
             'line' => $line,
             'code_snippet' => self::getSnippet($file, $line),
             'trace_parsed' => $trace,
@@ -750,7 +754,7 @@ class Handler
                 'function' => $t['function'] ?? '',
                 'class' => $t['class'] ?? '',
                 'type' => $t['type'] ?? '',
-                'file' => $tFile,
+                'file' => !empty($tFile) ? self::sanitizePath($tFile) : '',
                 'line' => $t['line'] ?? '',
                 'is_app' => $isApp,
                 'snippet' => ($isApp && !empty($tFile)) ? self::getSnippet($tFile, $t['line'] ?? 0, 3) : [],
@@ -770,6 +774,22 @@ class Handler
             ];
         }
         return $trace;
+    }
+
+    /**
+     * Sanitize local paths to prevent information leakage
+     */
+    protected static function sanitizePath(string $path): string
+    {
+        $basePath = Config::get('BASE_PATH', dirname(__DIR__, 3));
+        $normalizedPath = str_replace('\\', '/', $path);
+        $normalizedBase = str_replace('\\', '/', $basePath);
+
+        if (str_starts_with($normalizedPath, $normalizedBase)) {
+            return '.' . substr($normalizedPath, strlen($normalizedBase));
+        }
+
+        return $normalizedPath;
     }
 
     // ========================================================

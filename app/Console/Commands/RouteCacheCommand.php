@@ -25,39 +25,31 @@ class RouteCacheCommand extends BaseCommand
             define('ROOT_DIR', dirname(__DIR__, 3));
         }
 
+        // Load semua service providers & routes agar Router terisi
+        $this->loadApplication();
+
+        try {
+            if (Router::cacheRoutes()) {
+                $this->success("Route berhasil di-cache!");
+                $this->line("  Lokasi: " . ROOT_DIR . '/storage/cache/routes.php');
+            } else {
+                $this->error("Gagal menulis file cache.");
+            }
+        } catch (\Exception $e) {
+            $this->error("Gagal melakukan caching: " . $e->getMessage());
+        }
+    }
+
+    protected function loadApplication(): void
+    {
         $routeFile = ROOT_DIR . '/routes/web.php';
         if (file_exists($routeFile)) {
             require_once $routeFile;
         }
 
-        $routes = Router::getRouteDefinitions();
-
-        if (empty($routes)) {
-            $this->error("Tidak ada route yang ditemukan untuk di-cache.");
-            return;
-        }
-
-        // Filter routes yang mengandung Closure sebelum cache
-        $cacheable = array_filter($routes, function ($route) {
-            return !($route['handler'] instanceof \Closure);
-        });
-
-        if (count($cacheable) < count($routes)) {
-            $this->warn((count($routes) - count($cacheable)) . " route dengan Closure di-skip (tidak bisa di-cache)");
-        }
-
-        $cacheContent = "<?php\n\nreturn " . var_export($cacheable, true) . ";\n";
-        $cacheFile = ROOT_DIR . '/storage/cache/routes.php';
-
-        if (!is_dir(dirname($cacheFile))) {
-            mkdir(dirname($cacheFile), 0755, true);
-        }
-
-        if (file_put_contents($cacheFile, $cacheContent)) {
-            $this->success("Route berhasil di-cache! (" . count($routes) . " routes)");
-            $this->line("  Lokasi: " . $cacheFile);
-        } else {
-            $this->error("Gagal menulis file cache.");
+        $apiFile = ROOT_DIR . '/routes/api.php';
+        if (file_exists($apiFile)) {
+            require_once $apiFile;
         }
     }
 }

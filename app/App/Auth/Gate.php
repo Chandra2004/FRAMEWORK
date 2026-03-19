@@ -294,9 +294,9 @@ class Gate
         // Run before callbacks
         $beforeResult = static::callBeforeCallbacks($user, $ability, $arguments);
         if (!is_null($beforeResult)) {
-            $response = $beforeResult
-                ? GateResponse::allow()
-                : GateResponse::deny('Authorization denied by before hook.');
+            $response = $beforeResult instanceof GateResponse 
+                ? $beforeResult 
+                : ($beforeResult ? GateResponse::allow() : GateResponse::deny('Authorization denied by before hook.'));
 
             static::callAfterCallbacks($user, $ability, $response, $arguments);
             return $response;
@@ -447,12 +447,12 @@ class Gate
     //  BEFORE/AFTER CALLBACKS
     // ========================================================
 
-    protected static function callBeforeCallbacks(mixed $user, string $ability, array $arguments): ?bool
+    protected static function callBeforeCallbacks(mixed $user, string $ability, array $arguments): mixed
     {
         foreach (static::$beforeCallbacks as $callback) {
             $result = $callback($user, $ability, $arguments);
             if (!is_null($result)) {
-                return (bool) $result;
+                return $result;
             }
         }
         return null;

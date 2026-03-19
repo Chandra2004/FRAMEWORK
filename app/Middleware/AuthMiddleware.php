@@ -9,24 +9,27 @@ class AuthMiddleware implements Middleware
 {
     public function before()
     {
-        // Pastikan session aktif
+        // Ensure session started
         if (session_status() === PHP_SESSION_NONE) {
             SessionManager::startSecureSession();
         }
 
-        // Cek login dasar
-        if (!session('user.uid') || !session('auth_token')) {
+        $sessionKey = \TheFramework\App\Core\Config::get('auth.session_key', 'user.uid');
+        $userUid = session($sessionKey);
+        $authToken = session('auth_token');
+
+        // Basic check
+        if (!$userUid || !$authToken) {
             return redirect('/login', 'error', 'Sesi Berakhir. Silakan login kembali.');
         }
 
-        // Validasi token autentikasi (Keamanan Lapis Kedua)
+        // Token validation (Second Layer)
         $storedToken = Helper::getAuthToken();
-        $userUid = session('user.uid');
 
-        if (!$storedToken || !Helper::validateAuthToken($storedToken, $userUid)) {
-            error_log("AuthMiddleware: Token mismatch or not found for UID: $userUid");
+        if (!$storedToken || !Helper::validateAuthToken($storedToken, (string)$userUid)) {
+            error_log("AuthMiddleware: Token mismatch or invalid for UID: $userUid");
             SessionManager::destroySession();
-            return redirect('/login', 'error', 'Token tidak valid. Silakan login ulang.');
+            return redirect('/login', 'error', 'Sesi tidak valid. Silakan login ulang.');
         }
     }
 

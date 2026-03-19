@@ -168,9 +168,27 @@ class Helper
      */
     public static function get_client_ip(): string
     {
-        // REMOTE_ADDR adalah satu-satunya yang tidak bisa di-spoof oleh client secara langsung.
-        // Header lain seperti HTTP_X_FORWARDED_FOR hanya boleh dipercaya jika kita tahu ada proxy/WAF.
-        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+
+        // Trusted Proxies support
+        $trustedProxies = Config::get('app.trusted_proxies', []);
+        
+        if (!empty($trustedProxies)) {
+            $isTrusted = false;
+            foreach ((array)$trustedProxies as $proxy) {
+                if ($proxy === '*' || $proxy === $ip) {
+                    $isTrusted = true;
+                    break;
+                }
+            }
+
+            if ($isTrusted && isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ips = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+                $ip = trim(end($ips));
+            }
+        }
+
+        return $ip;
     }
 
     public static function is_ajax(): bool
@@ -185,8 +203,12 @@ class Helper
     public static function json($data = [], int $statusCode = 200): void
     {
         http_response_code($statusCode);
-        header('Content-Type: application/json');
+        if (!headers_sent()) header('Content-Type: application/json');
         echo json_encode($data);
+        
+        if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing') {
+            throw new \Exception('JSON_RESPONSE:' . json_encode($data), $statusCode);
+        }
         exit();
     }
 
@@ -195,8 +217,13 @@ class Helper
      */
     public static function json_redirect(string $url): void
     {
-        header('Content-Type: application/json');
-        echo json_encode(['redirect' => self::url($url)]);
+        $data = ['redirect' => self::url($url)];
+        if (!headers_sent()) header('Content-Type: application/json');
+        echo json_encode($data);
+
+        if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing') {
+            throw new \Exception('JSON_REDIRECT:' . self::url($url), 302);
+        }
         exit();
     }
 

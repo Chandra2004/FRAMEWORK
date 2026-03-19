@@ -69,9 +69,20 @@ class Router
     public static function redirect(string $uri, string $destination, int $status = 302): Route
     {
         return self::any($uri, function () use ($destination, $status) {
+            if (Config::get('APP_ENV') === 'testing') {
+                throw new \Exception("REDIRECT:$destination");
+            }
             header("Location: $destination", true, $status);
             exit;
         });
+    }
+
+    public static function clearRoutes(): void
+    {
+        self::$routes = [];
+        self::$routeDefinitions = [];
+        self::$namedRoutes = [];
+        self::$fallbackRoute = null;
     }
 
     public static function fallback($controllerOrCallback, ?string $function = null)
@@ -97,6 +108,10 @@ class Router
         }
 
         $fullPath = $prefix . $path;
+        if (!str_starts_with($fullPath, '/')) {
+            $fullPath = '/' . $fullPath;
+        }
+
         $middlewares = array_merge($groupMiddlewares, $middlewares);
 
         $patternPath = preg_replace('/\{([a-zA-Z_][a-zA-Z0-9_-]*)\}/', '(?P<$1>[^/]+)', $fullPath);
@@ -251,7 +266,7 @@ class Router
         // 🚀 PERFORMANCE MOD: Route Caching Check
         $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
         $cacheFile = $root . '/storage/cache/routes.php';
-        if (file_exists($cacheFile) && Config::get('APP_ENV') !== 'local') {
+        if (file_exists($cacheFile) && Config::get('APP_ENV') === 'production') {
             // Production mode + file cache ada -> Load Instant
             $cachedRoutes = require $cacheFile;
             self::$routes = []; // Reset pre-defined static routes (jika ada yang bocor)
@@ -268,6 +283,7 @@ class Router
                     continue;
 
                 if (preg_match($route['path'], $path, $matches)) {
+                    self::$routeFound = true;
                     $activeMiddlewares = [];
                     foreach ($route['middleware'] as $middleware) {
                         $instance = is_array($middleware)
@@ -281,80 +297,36 @@ class Router
                     $params = array_intersect_key($matches, array_flip(array_filter(array_keys($matches), 'is_string')));
 
                     // ✅ FIX: Set route parameters globally so request()->route() works
-                    Request::setRouteParams($params);
+                    $requestInstance = Container::getInstance()->make(\TheFramework\App\Http\Request::class);
+                    $requestInstance->setRouteParams($params);
+                    $container = Container::getInstance();
 
                     if ($route['handler'] instanceof \Closure) {
-                        $reflection = new \ReflectionFunction($route['handler']);
-                        $container = Container::getInstance();
-                        $finalArgs = [];
-                        foreach ($reflection->getParameters() as $param) {
-                            $name = $param->getName();
-                            $type = $param->getType();
-
-                            if (array_key_exists($name, $params)) {
-                                $finalArgs[] = $params[$name];
-                                unset($params[$name]);
-                            } elseif ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                                try {
-                                    $finalArgs[] = $container->make($type->getName());
-                                } catch (\Exception $e) {
-                                    if ($param->isDefaultValueAvailable()) {
-                                        $finalArgs[] = $param->getDefaultValue();
-                                    } else {
-                                        throw $e;
-                                    }
-                                }
-                            } elseif ($param->isDefaultValueAvailable()) {
-                                $finalArgs[] = $param->getDefaultValue();
-                            } else {
-                                $finalArgs[] = null;
-                            }
-                        }
-                        call_user_func_array($route['handler'], $finalArgs);
-
+                        $result = $container->call($route['handler'], $params);
                     } else {
                         if (!class_exists($route['handler'])) {
                             throw new Exception("Controller {$route['handler']} tidak ditemukan");
                         }
 
-                        $container = Container::getInstance();
                         $controller = $container->make($route['handler']);
-
                         $function = $route['function'];
+                        
                         if (!method_exists($controller, $function)) {
                             throw new Exception("Method {$function} tidak ditemukan di {$route['handler']}");
                         }
 
-                        $reflectionMethod = new \ReflectionMethod($controller, $function);
-                        $methodDependencies = $container->resolveDependencies($reflectionMethod->getParameters());
-
-                        $finalArgs = [];
-                        foreach ($reflectionMethod->getParameters() as $param) {
-                            $name = $param->getName();
-                            $type = $param->getType();
-
-                            if (array_key_exists($name, $params)) {
-                                $finalArgs[] = $params[$name];
-                                unset($params[$name]);
-                            } elseif ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
-                                try {
-                                    $finalArgs[] = $container->make($type->getName());
-                                } catch (\Exception $e) {
-                                    if ($param->isDefaultValueAvailable()) {
-                                        $finalArgs[] = $param->getDefaultValue();
-                                    } else {
-                                        throw $e;
-                                    }
-                                }
-                            } elseif ($param->isDefaultValueAvailable()) {
-                                $finalArgs[] = $param->getDefaultValue();
-                            } else {
-                                $finalArgs[] = null;
-                            }
-                        }
-
-                        call_user_func_array([$controller, $function], $finalArgs);
+                        $result = $container->call([$controller, $function], $params);
                     }
+
+                    if (is_string($result) || is_numeric($result)) {
+                        echo $result;
+                    } elseif (is_array($result) || (is_object($result) && !($result instanceof \Closure))) {
+                        if (!headers_sent()) header('Content-Type: application/json');
+                        echo json_encode($result);
+                    }
+                }
+
+                if (self::$routeFound) {
 
                     // Jalankan Middleware After secara reverse (LIFO)
                     foreach (array_reverse($activeMiddlewares) as $instance) {
@@ -666,17 +638,36 @@ class Router
     //  ROUTE CACHE
     // ========================================================
 
-    public static function loadCachedRoutes(array $cachedRoutes)
+    public static function loadCachedRoutes(array $cacheData)
     {
-        foreach ($cachedRoutes as $route) {
-            self::add($route['method'], $route['path'], $route['handler'], $route['function'], $route['middleware']);
-        }
+        self::$routes = $cacheData['routes'] ?? [];
+        self::$namedRoutes = $cacheData['namedRoutes'] ?? [];
     }
 
     public static function cacheRoutes()
     {
-        // TODO: Implement route caching logic
-        // File ini dipanggil oleh composer scripts
+        $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3));
+        $cachePath = $root . '/storage/cache/routes.php';
+
+        // Check for closures (Closures can't be cached easily with var_export)
+        foreach (self::$routes as $route) {
+            if ($route['handler'] instanceof \Closure) {
+                throw new \Exception("Cannot cache routes with closures. please use controller actions.");
+            }
+        }
+
+        $cacheData = [
+            'routes' => self::$routes,
+            'namedRoutes' => self::$namedRoutes,
+        ];
+
+        $content = "<?php\n\nreturn " . var_export($cacheData, true) . ";\n";
+        
+        if (!is_dir(dirname($cachePath))) {
+            mkdir(dirname($cachePath), 0755, true);
+        }
+
+        return file_put_contents($cachePath, $content);
     }
 
     /**

@@ -76,11 +76,26 @@ class Config
 
         // 1. Cek cached config
         if (file_exists($cacheFile)) {
-            $config = require $cacheFile;
-            if (is_array($config)) {
-                foreach ($config as $key => $value) {
-                    $_ENV[$key] = $value;
-                    $_SERVER[$key] = $value;
+            $cached = require $cacheFile;
+            if (is_array($cached)) {
+                $cacheVersion = $cached['__version__'] ?? 'none';
+                $appVersion = $_ENV['APP_VERSION'] ?? getenv('APP_VERSION') ?: '1.0.0';
+
+                if ($cacheVersion === $appVersion) {
+                    // Load ENV values
+                    if (isset($cached['__env__'])) {
+                        foreach ($cached['__env__'] as $key => $value) {
+                            $_ENV[$key] = $value;
+                            $_SERVER[$key] = $value;
+                        }
+                    }
+                    // Load PHP Config Items
+                    if (isset($cached['__items__'])) {
+                        static::$items = $cached['__items__'];
+                    }
+                    
+                    static::$isLoaded = true;
+                    return;
                 }
             }
         } else {
@@ -177,11 +192,10 @@ class Config
         $current = static::$items;
 
         foreach ($segments as $segment) {
-            if (is_array($current) && array_key_exists($segment, $current)) {
-                $current = $current[$segment];
-            } else {
+            if (!is_array($current) || !array_key_exists($segment, $current)) {
                 return null;
             }
+            $current = $current[$segment];
         }
 
         return $current;
@@ -355,7 +369,7 @@ class Config
 
     /**
      * Generate config cache file
-     * Gabungkan semua .env values ke satu PHP file untuk performance
+     * Gabungkan .env dan semua config items ke satu PHP file untuk performance
      */
     public static function cache(): string
     {
@@ -368,15 +382,17 @@ class Config
 
         $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . 'config.php';
 
-        // Collect semua env values
-        $config = [];
-        foreach ($_ENV as $key => $value) {
-            if (is_string($key)) {
-                $config[$key] = $value;
-            }
-        }
+        // Pastikan config sudah terload
+        static::loadEnv();
 
-        $content = "<?php\n\nreturn " . var_export($config, true) . ";\n";
+        // Gabungkan ENV dan Items
+        $cacheData = [
+            '__version__' => $_ENV['APP_VERSION'] ?? getenv('APP_VERSION') ?: '1.0.0',
+            '__env__' => $_ENV,
+            '__items__' => static::$items
+        ];
+
+        $content = "<?php\n\n/**\n * THE FRAMEWORK - CONFIG CACHE\n * Generated at: " . date('Y-m-d H:i:s') . "\n */\n\nreturn " . var_export($cacheData, true) . ";\n";
         file_put_contents($cacheFile, $content, LOCK_EX);
 
         return $cacheFile;
@@ -502,6 +518,46 @@ class Config
     }
 
     /**
+     * Config schemas untuk validation
+     * @var array<string, array>
+     */
+    private static array $schemas = [];
+
+    /**
+     * Register schema untuk sebuah config file/key
+     */
+    public static function registerSchema(string $key, array $rules): void
+    {
+        static::$schemas[$key] = $rules;
+    }
+
+    /**
+     * Validate semua items terhadap registered schemas
+     */
+    public static function validateAll(): array
+    {
+        $errors = [];
+        foreach (static::$schemas as $key => $rules) {
+            $value = static::get($key);
+            // Simple validation logic can be expanded
+            if (isset($rules['required']) && $rules['required'] && $value === null) {
+                $errors[] = "Config [{$key}] is required.";
+            }
+            if (isset($rules['type']) && $value !== null) {
+                if ($rules['type'] === 'int' && !is_int($value)) $errors[] = "Config [{$key}] must be an integer.";
+                if ($rules['type'] === 'bool' && !is_bool($value)) $errors[] = "Config [{$key}] must be a boolean.";
+                if ($rules['type'] === 'array' && !is_array($value)) $errors[] = "Config [{$key}] must be an array.";
+            }
+        }
+        
+        if (!empty($errors) && !static::isTesting()) {
+            throw new \RuntimeException("Configuration validation failed:\n- " . implode("\n- ", $errors));
+        }
+
+        return $errors;
+    }
+
+    /**
      * Reset loaded state (untuk testing)
      */
     public static function reset(): void
@@ -509,5 +565,6 @@ class Config
         static::$isLoaded = false;
         static::$items = [];
         static::$overrides = [];
+        static::$schemas = [];
     }
 }

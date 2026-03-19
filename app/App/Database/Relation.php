@@ -33,6 +33,26 @@ class Relation
     protected $withDefault = false;
     protected array $defaultAttributes = [];
     protected ?string $pivotModel = null;
+    protected static array $morphMap = [];
+
+    /**
+     * Set the morph map (Refactored: Mapping aliased names to full classes)
+     */
+    public static function morphMap(array $map = [], bool $merge = true): array
+    {
+        if (!empty($map)) {
+            static::$morphMap = $merge ? array_merge(static::$morphMap, $map) : $map;
+        }
+        return static::$morphMap;
+    }
+
+    /**
+     * Get the class for a morph name
+     */
+    public static function getMorphedModel(string $alias): string
+    {
+        return static::$morphMap[$alias] ?? $alias;
+    }
 
     public function __construct(
         $type,
@@ -140,7 +160,7 @@ class Relation
             case 'morphMany':
             case 'morphOne':
                 $this->query->where($this->foreignKey, '=', $this->parent->getKey());
-                $this->query->where($this->relatedKey, '=', get_class($this->parent));
+                $this->query->where($this->relatedKey, '=', $this->parent->getMorphClass());
                 break;
 
             case 'hasOneThrough':
@@ -264,7 +284,7 @@ class Relation
         $this->query->whereIn($queryKey, $keys);
 
         if (in_array($this->type, ['morphMany', 'morphOne'])) {
-            $this->query->where($this->relatedKey, get_class($this->parent));
+            $this->query->where($this->relatedKey, $this->parent->getMorphClass());
         }
 
         return $this->query;
@@ -429,7 +449,7 @@ class Relation
             $model->setAttribute($this->foreignKey, $this->parent->getAttribute($this->localKey));
         } elseif (in_array($this->type, ['morphOne', 'morphMany'])) {
             $model->setAttribute($this->foreignKey, $this->parent->getKey());
-            $model->setAttribute($this->relatedKey, get_class($this->parent));
+            $model->setAttribute($this->relatedKey, $this->parent->getMorphClass());
         }
 
         $model->save();

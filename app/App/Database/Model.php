@@ -180,7 +180,7 @@ abstract class Model implements \JsonSerializable, ArrayAccess
 
     protected function finishSave(array $options = [])
     {
-        $this->fireModelEvent('saved');
+        $this->fireModelEvent('saved', false);
         $this->syncOriginal();
         $this->touchOwners();
     }
@@ -226,7 +226,7 @@ abstract class Model implements \JsonSerializable, ArrayAccess
 
     protected function updateTimestamps()
     {
-        $time = date('Y-m-d H:i:s');
+        $time = gmdate('Y-m-d H:i:s'); // Use UTC/GMT for consistency
         if (!$this->exists && !isset($this->attributes['created_at'])) {
             $this->setAttribute('created_at', $time);
         }
@@ -350,12 +350,14 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         $grouped = [];
         foreach ($models as $model) {
             if ($type = $model->$morphType) {
-                $grouped[$type][$model->$morphId][] = $model;
+                // Resolve alias via morphMap
+                $class = Relation::getMorphedModel($type);
+                $grouped[$class][$model->$morphId][] = $model;
             }
         }
 
-        foreach ($grouped as $type => $ids) {
-            $instance = new $type;
+        foreach ($grouped as $className => $ids) {
+            $instance = new $className;
             $results = $instance->query()->whereIn($instance->getKeyName(), array_keys($ids))->get();
 
             foreach ($results as $result) {
@@ -548,11 +550,11 @@ abstract class Model implements \JsonSerializable, ArrayAccess
             return false;
 
         if ($this->softDeletes) {
-            $this->setAttribute(static::DELETED_AT, date('Y-m-d H:i:s'));
+            $this->setAttribute(static::DELETED_AT, gmdate('Y-m-d H:i:s'));
             $saved = $this->newQueryWithoutScopes()
                 ->where($this->getKeyName(), $this->getKey())
                 ->update([static::DELETED_AT => $this->getAttribute(static::DELETED_AT)]);
-            $this->fireModelEvent('trashed');
+            $this->fireModelEvent('trashed', false);
         } else {
             $saved = $this->newQuery()
                 ->where($this->getKeyName(), $this->getKey())
@@ -1309,6 +1311,22 @@ abstract class Model implements \JsonSerializable, ArrayAccess
         return $model !== null
             && $this->getKey() === $model->getKey()
             && $this->getTable() === $model->getTable();
+    }
+
+    /**
+     * Get the morph class name (Refactored: Resolves through Relation map if exists)
+     */
+    public function getMorphClass(): string
+    {
+        $morphMap = Relation::morphMap();
+        
+        foreach ($morphMap as $alias => $class) {
+            if (static::class === $class) {
+                return $alias;
+            }
+        }
+        
+        return static::class;
     }
 
     public function isNot(?Model $model): bool

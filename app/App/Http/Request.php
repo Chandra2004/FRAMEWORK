@@ -8,7 +8,7 @@ class Request
 {
     protected array $input = [];
     protected array $files = [];
-    protected static array $routeParams = [];
+    protected array $routeParams = [];
     protected array $attributes = [];
     protected bool $forceJson = false;
     protected ?string $content = null;
@@ -20,9 +20,14 @@ class Request
 
         // 2. Parse JSON Input
         if ($this->isJson()) {
-            $json = json_decode($this->getContent(), true);
-            if (is_array($json)) {
-                $this->input = array_merge($this->input, $json);
+            $content = $this->getContent();
+            if (!empty($content)) {
+                $json = json_decode($content, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new \RuntimeException("Invalid JSON provided in request body: " . json_last_error_msg(), 400);
+                } elseif (is_array($json)) {
+                    $this->input = array_merge($this->input, $json);
+                }
             }
         }
 
@@ -87,17 +92,17 @@ class Request
     public function route(?string $key = null, $default = null)
     {
         if (is_null($key)) {
-            return self::$routeParams;
+            return $this->routeParams;
         }
-        return self::$routeParams[$key] ?? $default;
+        return $this->routeParams[$key] ?? $default;
     }
 
     /**
      * Internal: Set route parameters from Router
      */
-    public static function setRouteParams(array $params): void
+    public function setRouteParams(array $params): void
     {
-        self::$routeParams = $params;
+        $this->routeParams = $params;
     }
 
     public function only($keys): array
@@ -274,7 +279,19 @@ class Request
 
     public function file(string $key): ?array
     {
-        return $this->hasFile($key) ? $this->files[$key] : null;
+        if (!$this->hasFile($key)) {
+            return null;
+        }
+
+        $file = $this->files[$key];
+        
+        // Simple size limit check (default 10MB)
+        $maxSize = \TheFramework\App\Core\Config::getInt('APP_MAX_UPLOAD_SIZE', 10 * 1024 * 1024);
+        if ($file['size'] > $maxSize) {
+             throw new \RuntimeException("File [{$key}] exceeds max size limit of " . ($maxSize / 1024 / 1024) . "MB");
+        }
+
+        return $file;
     }
 
     // ========================================================

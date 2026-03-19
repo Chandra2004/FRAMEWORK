@@ -271,6 +271,12 @@ class QueryBuilder
         if ($column instanceof Closure) {
             return $this->whereNested($column, 'OR');
         }
+
+        if (func_num_args() === 2) {
+            $value = $operator;
+            $operator = '=';
+        }
+
         return $this->where($column, $operator, $value, 'OR');
     }
 
@@ -931,18 +937,27 @@ class QueryBuilder
             $sql .= ' ' . implode(' ', $this->indexHints);
         }
 
-        if (!empty($this->joins))
+        if (!empty($this->joins)) {
             $sql .= " " . implode(" ", $this->joins);
+        }
+
         [$whereSql, $whereBindings] = $this->compileWheres();
-        $sql .= " " . $whereSql;
+        if (!empty($whereSql)) {
+            $sql .= " " . $whereSql;
+        }
+
         $finalBindings = $whereBindings;
-        if (!empty($this->groupBy))
+
+        if (!empty($this->groupBy)) {
             $sql .= " GROUP BY " . implode(", ", $this->groupBy);
+        }
 
         // having clauses
         [$havingSql, $havingBindings] = $this->compileHavings();
-        $sql .= " " . $havingSql;
-        $finalBindings = array_merge($finalBindings, $havingBindings);
+        if (!empty($havingSql)) {
+            $sql .= " " . $havingSql;
+            $finalBindings = array_merge($finalBindings, $havingBindings);
+        }
 
         if (!empty($this->orders)) {
             $orderClauses = [];
@@ -955,16 +970,20 @@ class QueryBuilder
             }
             $sql .= " ORDER BY " . implode(', ', $orderClauses);
         }
+
         if ($this->limit !== null) {
             $sql .= " LIMIT :main_limit";
             $finalBindings[':main_limit'] = (int) $this->limit;
         }
+
         if ($this->offset !== null) {
             $sql .= " OFFSET :main_offset";
             $finalBindings[':main_offset'] = (int) $this->offset;
         }
-        if ($this->lock)
+
+        if ($this->lock) {
             $sql .= " " . $this->lock;
+        }
 
         // union clauses
         if (!empty($this->unions)) {
@@ -1088,7 +1107,13 @@ class QueryBuilder
 
         if ($this->cacheTtl !== null) {
             $key = $this->cacheKey ?? 'query_' . md5($sql . serialize($bindings));
-            return \TheFramework\App\Cache\CacheManager::remember($key, $this->cacheTtl, function () use ($sql, $bindings) {
+            
+            // Reset cache settings for next query on this builder
+            $ttl = $this->cacheTtl;
+            $this->cacheTtl = null;
+            $this->cacheKey = null;
+
+            return \TheFramework\App\Cache\CacheManager::remember($key, $ttl, function () use ($sql, $bindings) {
                 return $this->rawExecute($sql, $bindings);
             });
         }

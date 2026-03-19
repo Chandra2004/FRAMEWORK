@@ -8,6 +8,9 @@ use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
+use TheFramework\App\Exceptions\ContextResolutionException;
+use TheFramework\App\Exceptions\CircularDependencyException;
+
 
 /**
  * Container — Dependency Injection Container
@@ -235,7 +238,7 @@ class Container
         // Circular dependency detection
         if (in_array($concrete, $this->buildStack)) {
             $chain = implode(' → ', $this->buildStack) . ' → ' . $concrete;
-            throw new \RuntimeException("Circular dependency detected: {$chain}");
+            throw new CircularDependencyException("Circular dependency detected: {$chain}");
         }
 
         $this->buildStack[] = $concrete;
@@ -244,7 +247,7 @@ class Container
             $reflector = new ReflectionClass($concrete);
 
             if (!$reflector->isInstantiable()) {
-                throw new \RuntimeException("Target [{$concrete}] is not instantiable. Did you forget to bind it?");
+                throw new ContextResolutionException("Target [{$concrete}] is not instantiable. Did you forget to bind it?");
             }
 
             $constructor = $reflector->getConstructor();
@@ -258,7 +261,7 @@ class Container
 
             return $reflector->newInstanceArgs($instances);
         } catch (ReflectionException $e) {
-            throw new \RuntimeException("Target class [{$concrete}] does not exist.", 0, $e);
+            throw new ContextResolutionException("Target class [{$concrete}] does not exist.", 0, $e);
         } finally {
             array_pop($this->buildStack);
         }
@@ -305,13 +308,15 @@ class Container
                     throw $e; // Biarkan ValidationException bubble up (jangan ditangkap)
                 } catch (\TheFramework\App\Exceptions\AuthorizationException $e) {
                     throw $e; // Biarkan AuthorizationException bubble up
+                } catch (CircularDependencyException $e) {
+                    throw $e; // Biarkan CircularDependencyException bubble up
                 } catch (\Throwable $e) {
                     if ($dependency->isDefaultValueAvailable()) {
                         $results[] = $dependency->getDefaultValue();
                     } elseif ($type->allowsNull()) {
                         $results[] = null;
                     } else {
-                        throw new \RuntimeException(
+                        throw new ContextResolutionException(
                             "Unresolvable dependency [{$typeName}] in parameter " .
                             "\${$dependency->getName()}" .
                             ($forClass ? " of class [{$forClass}]" : '') . ": " . $e->getMessage(),
@@ -339,7 +344,7 @@ class Container
             return null;
         }
 
-        throw new \RuntimeException(
+        throw new ContextResolutionException(
             "Unresolvable dependency: parameter \${$dependency->getName()} " .
             "has no type hint, no default value, and is not nullable."
         );
