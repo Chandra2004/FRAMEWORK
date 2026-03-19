@@ -12,6 +12,8 @@ Engine ini dibackup oleh engine dari Dompdf, Anda wajib menginstalnya via Compos
 composer require dompdf/dompdf
 ```
 
+> **Catatan IDE-Safe:** Framework menggunakan teknik instansiasi dinamis. Editor Anda (VS Code, dll) **tidak akan menampilkan error merah** meskipun Anda belum menginstal package ini. Error informatif baru akan muncul saat Anda mencoba menjalankan fungsi PDF di browser.
+
 ---
 
 ## 🚀 Cara Penggunaan

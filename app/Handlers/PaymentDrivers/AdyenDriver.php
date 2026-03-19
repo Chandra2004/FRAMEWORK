@@ -24,19 +24,24 @@ class AdyenDriver implements PaymentDriverInterface
     public function createTransaction(array $payload): mixed
     {
         try {
-            $client = new \Adyen\Client();
+            $clientClass = '\Adyen\Client';
+            $client = new $clientClass();
             $client->setXApiKey($this->config['api_key']);
+            
+            $envClass = '\Adyen\Environment';
             $client->setEnvironment(
-                $this->config['environment'] === 'live' ? \Adyen\Environment::LIVE : \Adyen\Environment::TEST,
+                $this->config['environment'] === 'live' ? constant($envClass . '::LIVE') : constant($envClass . '::TEST'),
                 $this->config['live_prefix'] ?? null
             );
 
-            $service = new \Adyen\Service\Checkout\PaymentsApi($client);
+            $serviceClass = '\Adyen\Service\Checkout\PaymentsApi';
+            $service = new $serviceClass($client);
             $params = array_merge([
                 'merchantAccount' => $this->config['merchant_account'],
             ], $payload);
 
-            $result = $service->sessions(new \Adyen\Model\Checkout\CreateCheckoutSessionRequest($params));
+            $requestClass = '\Adyen\Model\Checkout\CreateCheckoutSessionRequest';
+            $result = $service->sessions(new $requestClass($params));
             return $result->getSessionData();
         } catch (Exception $e) {
             throw new Exception("Adyen Error: " . $e->getMessage());
@@ -46,10 +51,13 @@ class AdyenDriver implements PaymentDriverInterface
     public function checkStatus(string $orderId): object
     {
         try {
-            $client = new \Adyen\Client();
+            $clientClass = '\Adyen\Client';
+            $client = new $clientClass();
             $client->setXApiKey($this->config['api_key']);
+            
+            $envClass = '\Adyen\Environment';
             $client->setEnvironment(
-                $this->config['environment'] === 'live' ? \Adyen\Environment::LIVE : \Adyen\Environment::TEST
+                $this->config['environment'] === 'live' ? constant($envClass . '::LIVE') : constant($envClass . '::TEST')
             );
 
             // Menggunakan REST API langsung untuk cek status

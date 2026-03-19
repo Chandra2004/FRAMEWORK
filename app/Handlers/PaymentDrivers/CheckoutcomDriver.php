@@ -26,8 +26,11 @@ class CheckoutcomDriver implements PaymentDriverInterface
         try {
             $api = $this->getApi();
 
-            $paymentRequest = new \Checkout\Payments\Request\PaymentRequest();
-            $paymentRequest->source = new \Checkout\Payments\Request\Source\RequestTokenSource();
+            $paymentRequestClass = '\Checkout\Payments\Request\PaymentRequest';
+            $sourceClass = '\Checkout\Payments\Request\Source\RequestTokenSource';
+            
+            $paymentRequest = new $paymentRequestClass();
+            $paymentRequest->source = new $sourceClass();
             $paymentRequest->source->token = $payload['token'] ?? '';
             $paymentRequest->amount = $payload['amount'] ?? 0;
             $paymentRequest->currency = $payload['currency'] ?? 'USD';
@@ -59,14 +62,16 @@ class CheckoutcomDriver implements PaymentDriverInterface
 
     protected function getApi()
     {
-        $builder = \Checkout\CheckoutSdk::builder()->staticKeys();
+        $sdkClass = '\Checkout\CheckoutSdk';
+        $builder = $sdkClass::builder()->staticKeys();
         $builder->secretKey($this->config['secret_key']);
         $builder->publicKey($this->config['public_key'] ?? '');
 
+        $envClass = '\Checkout\Environment';
         if (($this->config['environment'] ?? 'sandbox') === 'production') {
-            $builder->environment(\Checkout\Environment::production());
+            $builder->environment($envClass::production());
         } else {
-            $builder->environment(\Checkout\Environment::sandbox());
+            $builder->environment($envClass::sandbox());
         }
 
         return $builder->build();

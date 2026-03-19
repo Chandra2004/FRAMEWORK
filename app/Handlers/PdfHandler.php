@@ -21,15 +21,20 @@ class PdfHandler
 
     public function __construct()
     {
-        if (!class_exists('\Dompdf\Dompdf')) {
+        if (!class_exists('\Dompdf\Dompdf') || !class_exists('\Dompdf\Options')) {
             throw new Exception("Dompdf tidak ditemukan! Silakan install dengan: composer require dompdf/dompdf");
         }
 
-        $options = new \Dompdf\Options();
+        // Trick instansiasi dinamis agar IDE tidak menganggapnya sebagai error "Undefined Class" 
+        // jika dompdf belum di-install via Composer.
+        $optionsClass = '\Dompdf\Options';
+        $dompdfClass  = '\Dompdf\Dompdf';
+
+        $options = new $optionsClass();
         $options->set('isRemoteEnabled', true); // Mengizinkan load gambar/CSS eksternal (CDN/URL)
         $options->set('isHtml5ParserEnabled', true);
         
-        $this->dompdf = new \Dompdf\Dompdf($options);
+        $this->dompdf = new $dompdfClass($options);
         $this->dompdf->setPaper('A4', 'portrait'); // Default ukuran A4
     }
 

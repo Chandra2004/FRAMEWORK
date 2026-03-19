@@ -188,6 +188,7 @@ if (!function_exists('csrf_field')) {
     function csrf_field()
     {
         $token = $_SESSION['csrf_token'] ?? '';
+        $token = is_string($token) ? $token : '';
         return '<input type="hidden" name="_token" value="' . $token . '">';
     }
 }

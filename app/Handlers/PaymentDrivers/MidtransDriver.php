@@ -15,16 +15,28 @@ class MidtransDriver implements PaymentDriverInterface
     public function __construct(array $config)
     {
         $this->config = $config;
-        Config::$serverKey = $config['server_key'];
-        Config::$isProduction = $config['is_production'] ?? false;
-        Config::$isSanitized = $config['is_sanitized'] ?? true;
-        Config::$is3ds = $config['is_3ds'] ?? true;
+
+        if (!class_exists('\Midtrans\Config')) {
+            throw new Exception("Midtrans SDK tidak ditemukan! Silakan install dengan: composer require midtrans/midtrans-php");
+        }
+
+        // Trick akses static untuk menghindari IDE error merah
+        $configClass = '\Midtrans\Config';
+        $configClass::$serverKey = $config['server_key'];
+        $configClass::$isProduction = $config['is_production'] ?? false;
+        $configClass::$isSanitized = $config['is_sanitized'] ?? true;
+        $configClass::$is3ds = $config['is_3ds'] ?? true;
     }
 
     public function createTransaction(array $payload): string
     {
+        if (!class_exists('\Midtrans\Snap')) {
+            throw new Exception("Midtrans Snap class tidak ditemukan.");
+        }
+
         try {
-            return Snap::getSnapToken($payload);
+            $snapClass = '\Midtrans\Snap';
+            return $snapClass::getSnapToken($payload);
         } catch (Exception $e) {
             throw new Exception("Midtrans Snap Error: " . $e->getMessage());
         }
@@ -32,8 +44,13 @@ class MidtransDriver implements PaymentDriverInterface
 
     public function checkStatus(string $orderId): object
     {
+        if (!class_exists('\Midtrans\Transaction')) {
+            throw new Exception("Midtrans Transaction class tidak ditemukan.");
+        }
+
         try {
-            return Transaction::status($orderId);
+            $transClass = '\Midtrans\Transaction';
+            return $transClass::status($orderId);
         } catch (Exception $e) {
             throw new Exception("Midtrans Status Error: " . $e->getMessage());
         }
@@ -41,6 +58,7 @@ class MidtransDriver implements PaymentDriverInterface
 
     public function handleWebhook(?array $postData = null): object
     {
-        return new Notification();
+        $notifClass = '\Midtrans\Notification';
+        return new $notifClass();
     }
 }

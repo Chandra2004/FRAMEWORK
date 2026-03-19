@@ -20,7 +20,8 @@ class BraintreeDriver implements PaymentDriverInterface
         }
 
         $this->config = $config;
-        $this->gateway = new \Braintree\Gateway([
+        $gatewayClass = '\Braintree\Gateway';
+        $this->gateway = new $gatewayClass([
             'environment' => $config['environment'] ?? 'sandbox',
             'merchantId'  => $config['merchant_id'],
             'publicKey'   => $config['public_key'],

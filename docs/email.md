@@ -10,6 +10,8 @@ The Framework menyediakan class `MailHandler` yang sangat bertenaga untuk memuda
 composer require phpmailer/phpmailer
 ```
 
+> **Catatan IDE-Safe:** Instansiasi PHPMailer dilakukan secara dinamis untuk mencegah editor Anda menampilkan error merah. Fungsi baru akan memunculkan pesan error yang jelas jika library ini belum dipasang via Composer.
+
 ---
 
 ## ⚙️ Konfigurasi

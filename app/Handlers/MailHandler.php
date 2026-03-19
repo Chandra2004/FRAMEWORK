@@ -2,7 +2,7 @@
 
 namespace TheFramework\Handlers;
 
-use PHPMailer\PHPMailer\PHPMailer;
+// (Tidak meng-use PHPMailer secara native agar editor IDE tidak error jika belum diinstall)
 use Exception;
 
 /**
@@ -30,12 +30,18 @@ class MailHandler
             return false;
         }
 
-        $mail = new PHPMailer(true);
+        if (!class_exists('\PHPMailer\PHPMailer\PHPMailer')) {
+            throw new Exception("PHPMailer tidak ditemukan! Install dengan: composer require phpmailer/phpmailer");
+        }
+
+        // Trik dinamis agar IDE (Intelephense) tidak menggaris-merahi kode saat package belum ada
+        $mailerClass = '\PHPMailer\PHPMailer\PHPMailer';
+        $mail = new $mailerClass(true);
 
         try {
             // 2. Konfigurasi SMTP
             $mail->isSMTP();
-            $mail->CharSet    = PHPMailer::CHARSET_UTF8;
+            $mail->CharSet    = 'utf-8'; // Mengganti PHPMailer::CHARSET_UTF8
             $mail->Timeout    = 25; 
             $mail->Host       = $this->config['host'] ?? '';
             $mail->SMTPAuth   = true;
@@ -45,9 +51,9 @@ class MailHandler
             // Auto-Encryption Berdasarkan Port
             $port = (int)($this->config['port'] ?? 587);
             if ($port === 465) {
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // SSL
+                $mail->SMTPSecure = 'ssl'; // Mengganti PHPMailer::ENCRYPTION_SMTPS
             } else {
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // TLS
+                $mail->SMTPSecure = 'tls'; // Mengganti PHPMailer::ENCRYPTION_STARTTLS
             }
             $mail->Port = $port;
 

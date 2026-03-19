@@ -24,17 +24,22 @@ class SquareDriver implements PaymentDriverInterface
     public function createTransaction(array $payload): mixed
     {
         try {
-            $client = new \Square\SquareClient([
+            $clientClass = '\Square\SquareClient';
+            $client = new $clientClass([
                 'accessToken' => $this->config['access_token'],
                 'environment' => $this->config['environment'] === 'production' ? 'production' : 'sandbox',
             ]);
 
             $checkoutApi = $client->getCheckoutApi();
-            $body = new \Square\Models\CreatePaymentLinkRequest();
             
-            $quickPay = new \Square\Models\QuickPay(
+            $bodyClass = '\Square\Models\CreatePaymentLinkRequest';
+            $body = new $bodyClass();
+            
+            $quickPayClass = '\Square\Models\QuickPay';
+            $moneyClass = '\Square\Models\Money';
+            $quickPay = new $quickPayClass(
                 $payload['name'] ?? 'Order',
-                new \Square\Models\Money($payload['amount'] ?? 0, $payload['currency'] ?? 'USD'),
+                new $moneyClass($payload['amount'] ?? 0, $payload['currency'] ?? 'USD'),
                 $this->config['location_id']
             );
             $body->setQuickPay($quickPay);
@@ -54,7 +59,8 @@ class SquareDriver implements PaymentDriverInterface
     public function checkStatus(string $orderId): object
     {
         try {
-            $client = new \Square\SquareClient([
+            $clientClass = '\Square\SquareClient';
+            $client = new $clientClass([
                 'accessToken' => $this->config['access_token'],
                 'environment' => $this->config['environment'] === 'production' ? 'production' : 'sandbox',
             ]);

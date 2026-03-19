@@ -21,9 +21,11 @@ class XenditDriver implements PaymentDriverInterface
         }
 
         if (class_exists('\Xendit\Configuration')) {
-            \Xendit\Configuration::setXenditKey($config['secret_key']);
+            $configClass = '\Xendit\Configuration';
+            $configClass::setXenditKey($config['secret_key']);
         } elseif (class_exists('\Xendit\Xendit')) {
-            \Xendit\Xendit::setApiKey($config['secret_key']);
+            $xenditClass = '\Xendit\Xendit';
+            $xenditClass::setApiKey($config['secret_key']);
         }
     }
 
@@ -31,13 +33,16 @@ class XenditDriver implements PaymentDriverInterface
     {
         try {
             if (class_exists('\Xendit\Invoice\InvoiceApi')) {
-                $api = new \Xendit\Invoice\InvoiceApi();
-                $result = $api->createInvoice(new \Xendit\Invoice\CreateInvoiceRequest($payload));
+                $invoiceApiClass = '\Xendit\Invoice\InvoiceApi';
+                $requestClass = '\Xendit\Invoice\CreateInvoiceRequest';
+                $api = new $invoiceApiClass();
+                $result = $api->createInvoice(new $requestClass($payload));
                 return $result->getInvoiceUrl();
             }
 
             // Fallback: Legacy SDK
-            return \Xendit\Invoice::create($payload)['invoice_url'];
+            $legacyInvoiceClass = '\Xendit\Invoice';
+            return $legacyInvoiceClass::create($payload)['invoice_url'];
         } catch (Exception $e) {
             throw new Exception("Xendit Error: " . $e->getMessage());
         }
@@ -47,10 +52,12 @@ class XenditDriver implements PaymentDriverInterface
     {
         try {
             if (class_exists('\Xendit\Invoice\InvoiceApi')) {
-                $api = new \Xendit\Invoice\InvoiceApi();
+                $invoiceApiClass = '\Xendit\Invoice\InvoiceApi';
+                $api = new $invoiceApiClass();
                 return (object) $api->getInvoiceById($orderId);
             }
-            return (object) \Xendit\Invoice::retrieve($orderId);
+            $legacyInvoiceClass = '\Xendit\Invoice';
+            return (object) $legacyInvoiceClass::retrieve($orderId);
         } catch (Exception $e) {
             throw new Exception("Xendit Status Error: " . $e->getMessage());
         }

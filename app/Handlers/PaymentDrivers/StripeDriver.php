@@ -20,7 +20,8 @@ class StripeDriver implements PaymentDriverInterface
         }
         
         $this->config = $config;
-        $this->stripe = new \Stripe\StripeClient($config['secret_key']);
+        $stripeClass = '\Stripe\StripeClient';
+        $this->stripe = new $stripeClass($config['secret_key']);
     }
 
     public function createTransaction(array $payload): string
@@ -56,7 +57,8 @@ class StripeDriver implements PaymentDriverInterface
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
         
         try {
-            return (object)\Stripe\Webhook::constructEvent(
+            $webhookClass = '\Stripe\Webhook';
+            return (object)$webhookClass::constructEvent(
                 $payload, $sig_header, $this->config['webhook_secret']
             )->toArray();
         } catch (Exception $e) {

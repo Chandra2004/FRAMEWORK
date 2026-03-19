@@ -636,6 +636,7 @@ app/Handlers/
 ### "SDK not found" Error
 - **Penyebab**: Package Composer untuk gateway tersebut belum diinstall.
 - **Solusi**: Jalankan perintah `composer require` sesuai yang tertulis di tabel Persiapan di atas.
+- **Fitur IDE-Safe**: Framework menggunakan instansiasi dinamis, sehingga editor Anda tetap bersih dari "garis merah" meskipun SDK belum diinstall. Anda akan mendapatkan pesan error yang jelas hanya saat kode tersebut dijalankan.
 
 ### "Configuration not found"
 - **Penyebab**: Key konfigurasi gateway belum ditambahkan di `config/payment.php`.
