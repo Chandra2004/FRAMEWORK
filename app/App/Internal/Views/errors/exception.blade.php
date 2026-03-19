@@ -249,8 +249,12 @@
                             <div class="kv-row">
                                 <div class="kv-key">{{ $key }}</div>
                                 <div class="kv-val">
-                                    @if(in_array($key, ['_token', 'csrf_token']) && is_string($val))
-                                        <span class="text-zinc-600 italic">{{ substr($val, 0, 8) }}••••</span>
+                                    @if(in_array($key, ['_token', 'csrf_token']))
+                                        @if(is_string($val))
+                                            <span class="text-zinc-600 italic">{{ substr($val, 0, 8) }}••••</span>
+                                        @else
+                                            <span class="text-zinc-600 italic">[Array/Object Token]</span>
+                                        @endif
                                     @else
                                         <pre class="text-[11px] whitespace-pre-wrap">{{ is_scalar($val) ? $val : json_encode($val, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                                     @endif
