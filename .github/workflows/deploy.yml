@@ -50,7 +50,7 @@ jobs:
           server: ${{ steps.config.outputs.ftp_server }}
           username: ${{ steps.config.outputs.ftp_username }}
           password: ${{ steps.config.outputs.ftp_password }}
-          server-dir: htdocs/
+          server-dir: chandra-portfolio.rf.gd/htdocs/
           timeout: 3600000
           # KUNCINYA: Exclude semua folder cache & session agar tidak terjadi konflik config di production
           exclude: |
