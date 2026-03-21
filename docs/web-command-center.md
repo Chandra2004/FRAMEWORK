@@ -6,17 +6,19 @@
 
 ## 🏗️ Arsitektur & Keamanan
 
-WCC beroperasi melalui file `routes/system.php` dan dilindungi oleh **3-Layer Premium Security** untuk memastikan akses hanya diberikan kepada pihak berwenang.
+WCC beroperasi melalui file `routes/system.php` dan dilindungi oleh **4-Layer Military-Grade Security** untuk memastikan akses hanya diberikan kepada pihak berwenang.
 
-### 1. Layer 1: Master Switch
+### 1. Layer 1: Master Global Middleware
+Framework kini menerapkan **Automatic Global CSRF Protection** dan **Iron Dome WAF** (Web Application Firewall) di level Router. Setiap request state-changing (`POST`, `PUT`, `DELETE`) divalidasi secara otomatis sebelum menyentuh logika bisnis.
 
+### 2. Layer 2: Master Switch (Environment)
 Fitur ini mati secara default dan harus diaktifkan secara eksplisit di file `.env`.
 
 ```bash
 ALLOW_WEB_MIGRATION=true
 ```
 
-### 2. Layer 2: IP Whitelisting (Dynamic)
+### 3. Layer 3: IP Whitelisting (Dynamic)
 
 Hanya IP yang terdaftar yang bisa melihat dashboard WCC.
 
@@ -28,7 +30,7 @@ SYSTEM_ALLOWED_IPS=127.0.0.1,182.1.2.3
 > [!TIP]
 > Alamat IP saat ini dapat diperiksa melalui endpoint `/_system/my-ip`.
 
-### 3. Layer 3: Basic Authentication (Hashed)
+### 4. Layer 4: Basic Authentication (Hashed)
 
 Sistem akan meminta username dan password sebelum dashboard ditampilkan.
 
@@ -48,8 +50,8 @@ Akses dashboard utama melalui: `https://domain.com/_system`
 | Endpoint                    | Perintah    | Deskripsi                                               |
 | --------------------------- | ----------- | ------------------------------------------------------- |
 | `/_system/migrate`          | `migrate`   | Jalankan migrasi database yang pending.                 |
-| `/_system/migrate/rollback` | `rollback`  | **WARNING**: Batalkan batch migrasi terakhir (with alert). |
-| `/_system/migrate/fresh`    | `fresh`     | **DANGER**: Drop semua tabel dan migrasi ulang.         |
+| `/_system/migrate/rollback` | `rollback`  | **WARNING**: Batalkan batch terakhir + **Kosongkan Uploads**. |
+| `/_system/migrate/fresh`    | `fresh`     | **DANGER**: Drop semua tabel + **Kosongkan Uploads**.         |
 | `/_system/backup`           | `backup`    | **NEW**: Backup Database (SQL) & Aplikasi (ZIP).        |
 | `/_system/seed`             | `db:seed`   | Isi database dengan data dummy dari seeder.             |
 | `/_system/schema`           | `db:schema` | **Premium Inspector**: Lihat daftar tabel & baris data. |
@@ -76,7 +78,7 @@ Akses dashboard utama melalui: `https://domain.com/_system`
 
 ---
 
-## 📦 Backup & Recovery Management (v5.0.2)
+## 📦 Backup & Recovery Management (v5.0.1)
 
 Fitur **Backup Management** memungkinkan Anda mengamankan seluruh aset aplikasi dalam hitungan detik.
 
@@ -106,10 +108,10 @@ Sistem akan mencoba menggunakan `mysqldump` jika tersedia di server untuk kecepa
 
 **Kemampuan:**
 
-- Test query database menggunakan Model (Auto-aliased).
-- Jalankan business logic secara on-the-fly.
-- Cek hasil kalkulasi fungsi helper.
-- Formatted output yang rapi menggunakan `print_r` logic.
+- **Security Scanner**: Memblokir teknik obfuscation, *reflection*, dan *variable functions*.
+- **Clean Output**: Presentasi data otomatis menggunakan **JSON Pretty Print** (Sinkron dengan versi CLI).
+- **Auto-Aliased**: Mendeteksi Class Model secara otomatis tanpa perlu `use` statement panjang.
+- **CSRF Protected**: Terintegrasi penuh dengan sistem keamanan global aplikasi.
 
 ---
 

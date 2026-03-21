@@ -41,6 +41,12 @@ class MigrateRefreshCommand extends BaseCommand
             foreach ($migrator->getOutput() as $line) {
                 $this->line("  " . $line);
             }
+
+            // Safe Clear Uploads (Sync Engine)
+            $this->info("Clearing allowed upload folders...");
+            $fileCount = \TheFramework\Helpers\Helper::clear_uploads();
+            $this->line("  ✔ $fileCount files/folders removed from allowed directories.");
+
             $this->success("Refresh selesai. $count migrasi berhasil dijalankan ulang.");
         } catch (Throwable $e) {
             $this->error("Gagal refresh: " . $e->getMessage());

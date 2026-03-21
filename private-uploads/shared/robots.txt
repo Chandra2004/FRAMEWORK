@@ -1,5 +1,0 @@
-User-agent: *
-Disallow: /_system/
-Disallow: /app/
-
-Sitemap: https://framework.rf.gd/sitemap.xml

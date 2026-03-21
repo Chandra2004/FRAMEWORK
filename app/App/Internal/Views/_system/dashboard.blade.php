@@ -1,240 +1,239 @@
 @extends('Internal::layout')
 
 @section('terminal-content')
-    <div class="mb-8">
-        <div class="flex items-center gap-2 text-cyan-400 mb-2">
-            <span>$</span>
-            <span class="text-white">framework --list-commands</span>
-            <span class="w-2 h-4 bg-cyan-500 cursor-blink ml-1"></span>
-        </div>
-        <p class="text-slate-500 italic">Welcome to the system maintenance console. Please select an operation from the
-            options below.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-        <!-- Database Section -->
+    <div class="mb-8 flex justify-between items-start">
         <div>
-            <div class="text-emerald-500 font-bold uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                <i data-lucide="database" class="w-3.5 h-3.5"></i>
-                Database Management
+            <div class="flex items-center gap-2 text-cyan-400 mb-2">
+                <span>$</span>
+                <span class="text-white">framework --all-in-one --v5.0.1</span>
+                <span class="w-2 h-4 bg-cyan-500 cursor-blink ml-1"></span>
             </div>
-            <ul class="space-y-3">
-                <li>
-                    <a href="{{ url('_system/migrate') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">01.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">migrate</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Run pending database migrations</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/migrate/rollback') }}" class="group flex items-start gap-4"
-                        onclick="return confirm('WARNING: DATABASE ROLLBACK!\n\nThis will UNDO the last batch of migrations. Some data might be removed depending on the migration design.\n\nAre you sure you want to proceed?')">
-                        <span class="text-slate-600 group-hover:text-amber-500 font-bold transition-colors">1a.</span>
-                        <div>
-                            <span
-                                class="text-slate-300 group-hover:text-white font-bold transition-colors">migrate:rollback</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Revert last migration batch</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/migrate/fresh') }}" class="group flex items-start gap-4"
-                        onclick="return confirm('DANGER ZONE: DATA LOSS WARNING!\n\nThis will DELETE ALL TABLES and DATA in your database.\nAction cannot be undone.\n\nAre you sure you want to proceed?')">
-                        <span class="text-slate-600 group-hover:text-rose-500 font-bold transition-colors">1b.</span>
-                        <div>
-                            <span
-                                class="text-slate-300 group-hover:text-white font-bold transition-colors">migrate:fresh</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5 text-rose-500/70 group-hover:text-rose-400">⚠️ Drop
-                                all tables & re-migrate</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/seed') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">02.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">db:seed</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Seed database with initial data</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/test-connection') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">03.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">db:test</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Test database connection details</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/schema') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">04.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">db:schema</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Inspect database table structure</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/backup') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-emerald-400 font-bold transition-colors">05.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">backup</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Download database SQL or full app backup</p>
-                        </div>
-                    </a>
-                </li>
-            </ul>
+            <p class="text-slate-500 italic text-xs">Premium Web Command Center. Mode: <span class="text-emerald-500 font-bold uppercase">{{ strtoupper(\TheFramework\App\Core\Config::get('APP_ENV', 'local')) }}</span></p>
         </div>
-
-        <!-- Maintenance Section -->
-        <div>
-            <div class="text-amber-500 font-bold uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-                Maintenance & Cache
-            </div>
-            <ul class="space-y-3">
-                <li>
-                    <a href="{{ url('_system/optimize') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">04.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">optimize</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Clear views and reset OpCache</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/clear-cache') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">05.</span>
-                        <div>
-                            <span
-                                class="text-slate-300 group-hover:text-white font-bold transition-colors">cache:clear</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Remove manual cache files and logs</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/storage-link') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">06.</span>
-                        <div>
-                            <span
-                                class="text-slate-300 group-hover:text-white font-bold transition-colors">storage:link</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Create storage symbolic link</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/asset-publish') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">07.</span>
-                        <div>
-                            <span
-                                class="text-slate-300 group-hover:text-white font-bold transition-colors">asset:publish</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Copy resources to public/assets</p>
-                        </div>
-                    </a>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Monitoring Section -->
-        <div>
-            <div class="text-blue-500 font-bold uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                <i data-lucide="activity" class="w-3.5 h-3.5"></i>
-                Monitoring & Diagnostics
-            </div>
-            <ul class="space-y-3">
-                <li>
-                    <a href="{{ url('_system/diagnose') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">08.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">diagnose</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Check Session, CSRF and DB details</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/logs') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">09.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">logs</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">View last 50 lines of app.log</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/health') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">10.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">health</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">System health status (JSON)</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/tinker') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-warning-400 font-bold transition-colors">11.</span>
-                        <div>
-                            <span
-                                class="text-slate-300 group-hover:text-warning-400 font-bold transition-colors">tinker</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Interactive PHP Shell (Web REPL)</p>
-                        </div>
-                    </a>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Information Section -->
-        <div>
-            <div class="text-purple-500 font-bold uppercase text-xs tracking-widest mb-4 flex items-center gap-2">
-                <i data-lucide="info" class="w-3.5 h-3.5"></i>
-                System Information
-            </div>
-            <ul class="space-y-3">
-                <li>
-                    <a href="{{ url('_system/routes') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">12.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">routes</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">List all registered routes</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/status') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">13.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">status</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Check PHP & Extension status</p>
-                        </div>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url('_system/phpinfo') }}" class="group flex items-start gap-4">
-                        <span class="text-slate-600 group-hover:text-cyan-400 font-bold transition-colors">14.</span>
-                        <div>
-                            <span class="text-slate-300 group-hover:text-white font-bold transition-colors">phpinfo</span>
-                            <p class="text-[11px] text-slate-500 mt-0.5">Display complete PHP configuration</p>
-                        </div>
-                    </a>
-                </li>
-            </ul>
+        
+        <!-- Global Quick Actions -->
+        <div class="flex gap-2">
+            @php $isDown = file_exists(BASE_PATH . '/storage/framework/down'); @endphp
+            @if($isDown)
+                <a href="{{ url('_system/maintenance/up') }}" class="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/50 text-emerald-400 text-[10px] font-bold rounded flex items-center gap-2 hover:bg-emerald-500 hover:text-white transition-all">
+                    <i data-lucide="play" class="w-3 h-3"></i> ACTIVATE SITE
+                </a>
+            @else
+                <a href="{{ url('_system/maintenance/down') }}" onclick="return confirm('DANGER: This will put the site into Maintenance Mode (503). Continue?')" class="px-3 py-1.5 bg-rose-500/10 border border-rose-500/50 text-rose-400 text-[10px] font-bold rounded flex items-center gap-2 hover:bg-rose-500 hover:text-white transition-all">
+                    <i data-lucide="pause" class="w-3 h-3"></i> MAINTENANCE MODE
+                </a>
+            @endif
         </div>
     </div>
 
-    <div class="mt-12 pt-8 border-t border-slate-800/50">
-        <div class="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl flex gap-4">
-            <i data-lucide="alert-triangle" class="w-6 h-6 text-rose-500 shrink-0"></i>
-            <div class="text-xs">
-                <span class="text-rose-400 font-bold uppercase block mb-1 underline">Security Warning</span>
-                <p class="text-slate-400 leading-relaxed">
-                    These tools affect core system components. Always disable <code
-                        class="bg-slate-950 px-1 rounded text-rose-300">ALLOW_WEB_MIGRATION</code> in your <code
-                        class="text-slate-300">.env</code> file after maintenance.
-                </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- 1. DATABASE CONTROL -->
+        <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/50 hover:border-emerald-500/30 transition-all group">
+            <div class="text-emerald-500 font-bold uppercase text-[10px] tracking-widest mb-4 flex items-center justify-between">
+                <span class="flex items-center gap-2"><i data-lucide="database" class="w-3.5 h-3.5"></i> DATABASE</span>
+                <span class="text-slate-700 group-hover:text-emerald-500/40 transition-colors">01-07</span>
             </div>
+            <ul class="space-y-4">
+                <li>
+                    <a href="{{ url('_system/migrate') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors underline decoration-slate-800 group-hover/item:decoration-emerald-500 underline-offset-4">migrate</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Jalankan database migration</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/migrate/status') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">migrate:status</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Status database migration</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/migrate/rollback') }}" class="group/item block" onclick="return confirm('UNDO last migration?')">
+                        <span class="text-slate-300 group-hover/item:text-amber-500 text-xs font-bold block transition-colors">migrate:rollback</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Rollback batch terakhir</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/migrate/fresh') }}" class="group/item block" onclick="return confirm('DROP ALL TABLES?')">
+                        <span class="text-rose-500 group-hover/item:text-rose-400 text-xs font-bold block transition-colors">migrate:fresh</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Hapus SEMUA tabel & run</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/seed') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">db:seed</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Jalankan seeder database</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/schema') }}" class="group/item block text-cyan-400/80">
+                        <span class="text-cyan-400/80 group-hover/item:text-cyan-300 text-xs font-bold block transition-colors flex items-center gap-1.5">
+                           db:schema <i data-lucide="zoom-in" class="w-3 h-3"></i>
+                        </span>
+                        <p class="text-[10px] text-slate-500 mt-1">Inspeksi tabel database</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 2. OPTIMIZE & CACHE -->
+        <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/50 hover:border-amber-500/30 transition-all group">
+            <div class="text-amber-500 font-bold uppercase text-[10px] tracking-widest mb-4 flex items-center justify-between">
+                <span class="flex items-center gap-2"><i data-lucide="zap" class="w-3.5 h-3.5"></i> PERFORMANCE</span>
+                <span class="text-slate-700 group-hover:text-amber-500/40 transition-colors">08-16</span>
+            </div>
+            <ul class="space-y-4">
+                <li>
+                    <a href="{{ url('_system/optimize/clear') }}" class="group/item block" onclick="return confirm('Hard clear all caches?')">
+                        <span class="text-slate-300 group-hover/item:text-amber-400 text-xs font-bold block transition-colors">optimize:clear</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Hapus SEMUA cache & session</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/view/clear') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">view:clear</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Hapus compiled Blade views</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/route/cache') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">route:cache</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Cache file rute (Production)</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/route/clear') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">route:clear</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Hapus file cache rute</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/config/cache') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">config:cache</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Cache konfigurasi .env</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/config/clear') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">config:clear</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Hapus file cache config</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/cache/clear') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">cache:clear</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Hapus semua cache aplikasi</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 3. MONITORING & HEALTH -->
+        <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/50 hover:border-blue-500/30 transition-all group">
+            <div class="text-blue-500 font-bold uppercase text-[10px] tracking-widest mb-4 flex items-center justify-between">
+                <span class="flex items-center gap-2"><i data-lucide="activity" class="w-3.5 h-3.5"></i> MONITORING</span>
+                <span class="text-slate-700 group-hover:text-blue-500/40 transition-colors">17-23</span>
+            </div>
+            <ul class="space-y-4">
+                <li>
+                    <a href="{{ url('_system/env') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-blue-400 text-xs font-bold block transition-colors">env</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Cek Environment aplikasi</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/health') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">health</span>
+                        <p class="text-[10px] text-slate-500 mt-1">System health status (JSON)</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/test') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-emerald-400 text-xs font-bold block transition-colors flex items-center gap-1.5">
+                            test <i data-lucide="check-circle" class="w-3 h-3"></i>
+                        </span>
+                        <p class="text-[10px] text-slate-500 mt-1">Run Unit & Feature Tests</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/diagnose') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">diagnose</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Deep analysis state sitem</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/status') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">status</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Check PHP & Extensions</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/my-ip') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">my-ip</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Tampilkan IP saya saat ini</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 4. DEV TOOLS & INFO -->
+        <div class="bg-slate-900/40 p-5 rounded-2xl border border-slate-800/50 hover:border-purple-500/30 transition-all group">
+            <div class="text-purple-500 font-bold uppercase text-[10px] tracking-widest mb-4 flex items-center justify-between">
+                <span class="flex items-center gap-2"><i data-lucide="code" class="w-3.5 h-3.5"></i> DEV TOOLS</span>
+                <span class="text-slate-700 group-hover:text-purple-500/40 transition-colors">24-30</span>
+            </div>
+            <ul class="space-y-4">
+                <li>
+                    <a href="{{ url('_system/tinker') }}" class="group/item block">
+                        <span class="text-warning-400 group-hover/item:text-warning-300 text-xs font-bold block transition-colors flex items-center gap-1.5">
+                            tinker <i data-lucide="terminal" class="w-3 h-3"></i>
+                        </span>
+                        <p class="text-[10px] text-slate-500 mt-1">Interactive Web REPLShell</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/routes') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">route:list</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Tampilkan daftar rute premium</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/logs') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">logs</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Lihat 50 baris terakhir log</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/storage/link') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">storage:link</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Buat symbolic link storage</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/asset/publish') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">asset:publish</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Push resource ke public/assets</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url('_system/phpinfo') }}" class="group/item block">
+                        <span class="text-slate-300 group-hover/item:text-white text-xs font-bold block transition-colors">phpinfo</span>
+                        <p class="text-[10px] text-slate-500 mt-1">Full PHP Configuration</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Security Guard -->
+    <div class="mt-12 pt-6 border-t border-slate-800/50 flex flex-wrap gap-4 items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span class="text-[10px] text-slate-500 uppercase tracking-tighter">System is Secure. WAF Active.</span>
+        </div>
+        <div class="bg-rose-500/5 px-4 py-2 rounded-lg border border-rose-500/10 max-w-md">
+            <p class="text-[9px] text-slate-500 leading-relaxed text-center">
+                 🚨 <b class="text-rose-400 uppercase">Warning:</b> All actions logged with IP <b>{{ $_SERVER['REMOTE_ADDR'] }}</b>. Improper use may result in data loss or service disruption.
+            </p>
         </div>
     </div>
 @endsection

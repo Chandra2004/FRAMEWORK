@@ -172,7 +172,7 @@ class Helper
 
         // Trusted Proxies support
         $trustedProxies = Config::get('app.trusted_proxies', []);
-        
+
         if (!empty($trustedProxies)) {
             $isTrusted = false;
             foreach ((array)$trustedProxies as $proxy) {
@@ -205,7 +205,7 @@ class Helper
         http_response_code($statusCode);
         if (!headers_sent()) header('Content-Type: application/json');
         echo json_encode($data);
-        
+
         if (isset($_ENV['APP_ENV']) && $_ENV['APP_ENV'] === 'testing') {
             throw new \Exception('JSON_RESPONSE:' . json_encode($data), $statusCode);
         }
@@ -320,5 +320,42 @@ class Helper
     public static function slugify(string $text): string
     {
         return self::slug($text);
+    }
+
+    /**
+     * Clear all contents of the allowed upload folders (Sync Engine).
+     * Prevents deleting critical files like .htaccess in the root.
+     */
+    public static function clear_uploads(): int
+    {
+        $uploadDir = Config::get('UPLOAD_DIR', '/private-uploads');
+        $root = defined('ROOT_DIR') ? ROOT_DIR : (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__));
+        $privateRoot = $root . $uploadDir;
+        
+        if (!is_dir($privateRoot)) {
+            return 0;
+        }
+
+        // Get whitelist from FileController
+        $allowedFolders = \TheFramework\App\Internal\Controllers\FileController::getAllowedFolders();
+        $count = 0;
+
+        foreach ($allowedFolders as $folder) {
+            $folderPath = $privateRoot . DIRECTORY_SEPARATOR . $folder;
+            if (is_dir($folderPath)) {
+                $files = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($folderPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                    \RecursiveIteratorIterator::CHILD_FIRST
+                );
+
+                foreach ($files as $fileinfo) {
+                    $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
+                    if ($todo($fileinfo->getRealPath())) {
+                        $count++;
+                    }
+                }
+            }
+        }
+        return $count;
     }
 }

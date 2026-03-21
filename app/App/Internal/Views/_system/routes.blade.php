@@ -1,116 +1,170 @@
 @extends('Internal::layout')
 
 @section('terminal-content')
-    <div class="mb-6 flex items-center justify-between">
-        <div>
-            <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                <span class="text-purple-500">◆</span>
-                Registered Routes
-            </h2>
-            <p class="text-slate-400 text-sm">List of all active routes in the application.</p>
+    <div class="mb-6 flex items-end justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-900/40">
+                <i data-lucide="route" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-white tracking-tight">Route Inventory</h2>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-[9px] text-slate-500 font-black uppercase tracking-widest border-r border-slate-800 pr-2">Build 5.2.1</span>
+                    <span class="text-[10px] text-purple-400 font-mono">{{ array_sum(array_map('count', $categories)) }} total endpoints detected</span>
+                </div>
+            </div>
         </div>
-        <div class="flex gap-2 text-xs">
-            <span class="px-2 py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">Total:
-                {{ count($routes) }}</span>
+        
+        <div class="flex items-center gap-2">
+            <div class="relative group">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-purple-400 transition-colors"></i>
+                <input type="text" id="routeSearch" placeholder="Filter endpoints..."
+                    class="bg-slate-900 border border-slate-800 text-slate-200 text-xs pl-9 pr-4 py-2 rounded-lg focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 w-56 transition-all placeholder:text-slate-600">
+            </div>
+            <button onclick="toggleAll(true)" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-[10px] font-black text-slate-400 transition-all uppercase tracking-tighter">Expand</button>
+            <button onclick="toggleAll(false)" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-[10px] font-black text-slate-400 transition-all uppercase tracking-tighter">Collapse</button>
         </div>
     </div>
 
-    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
-        <!-- Toolbar -->
-        <div class="px-4 py-3 bg-slate-950/50 border-b border-slate-800 flex items-center justify-between">
-            <div class="flex items-center gap-4 text-xs">
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
-                    <span class="text-slate-400">GET</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                    <span class="text-slate-400">POST</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                    <span class="text-slate-400">DELETE</span>
-                </div>
-            </div>
-            <div class="relative">
-                <input type="text" id="routeSearch" placeholder="Filter routes..."
-                    class="bg-slate-900 text-slate-300 text-xs px-3 py-1.5 rounded border border-slate-700 focus:outline-none focus:border-cyan-500 w-48 transition-colors">
-            </div>
-        </div>
+    <!-- Accordion List -->
+    <div class="space-y-2 mb-10">
+        @php 
+            $icons = ['APPLICATION' => 'layout', 'FILE STORAGE' => 'file-code', 'STATIC ASSETS' => 'image', 'SEO & SITEMAP' => 'globe', 'SYSTEM CONTROL' => 'settings'];
+            $colors = ['APPLICATION' => 'emerald', 'FILE STORAGE' => 'blue', 'STATIC ASSETS' => 'amber', 'SEO & SITEMAP' => 'cyan', 'SYSTEM CONTROL' => 'purple'];
+        @endphp
 
-        <!-- Table -->
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-                <thead class="bg-slate-950 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
-                    <tr>
-                        <th class="px-4 py-3 border-b border-slate-800 w-20">Method</th>
-                        <th class="px-4 py-3 border-b border-slate-800">URI Path</th>
-                        <th class="px-4 py-3 border-b border-slate-800">Handler / Controller</th>
-                        <th class="px-4 py-3 border-b border-slate-800 w-32">Middleware</th>
-                        <th class="px-4 py-3 border-b border-slate-800 text-right w-24">Type</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-800/50 text-xs font-mono" id="routeTable">
-                    @foreach ($routes as $route)
-                        @php
-                            $methodColor = match ($route['method']) {
-                                'GET' => 'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
-                                'POST' => 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-                                'PUT', 'PATCH' => 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-                                'DELETE' => 'text-rose-400 bg-rose-400/10 border-rose-400/20',
-                                default => 'text-slate-400 bg-slate-400/10 border-slate-400/20',
-                            };
-                        @endphp
-                        <tr class="group hover:bg-slate-800/30 transition-colors route-row">
-                            <td class="px-4 py-3 font-bold">
-                                <span class="px-2 py-0.5 rounded border {{ $methodColor }} text-[10px]">
-                                    {{ $route['method'] }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-white">
-                                {{ $route['uri'] }}
-                            </td>
-                            <td class="px-4 py-3 text-slate-400">
-                                {{ $route['handler'] }}
-                            </td>
-                            <td class="px-4 py-3 text-slate-500 italic">
-                                {{ $route['middleware'] ?: '-' }}
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                @if ($route['type'] === 'System')
-                                    <span
-                                        class="text-[10px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">SYSTEM</span>
-                                @elseif($route['type'] === 'Asset')
-                                    <span
-                                        class="text-[10px] text-slate-400 bg-slate-500/10 px-1.5 py-0.5 rounded border border-slate-500/20">ASSET</span>
-                                @else
-                                    <span
-                                        class="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">APP</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+        @foreach($categories as $catName => $routes)
+            @if(count($routes) > 0)
+                <div class="accordion-item {{ $loop->first ? 'is-active' : '' }} border border-slate-800 rounded-xl overflow-hidden bg-slate-900/20 group" id="cat-{{ str_replace(' ', '-', $catName) }}">
+                    <!-- Header -->
+                    <button class="accordion-header w-full px-5 py-3.5 flex items-center justify-between hover:bg-slate-800/40 transition-all">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="{{ $icons[$catName] ?? 'circle' }}" class="w-4 h-4 text-slate-500 group-[.is-active]:text-{{ $colors[$catName] ?? 'purple' }}-400 transition-all"></i>
+                            <h3 class="text-[11px] font-black group-[.is-active]:text-white text-slate-400 tracking-widest uppercase">{{ $catName }}</h3>
+                            <span class="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-bold">{{ count($routes) }}</span>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-700 group-[.is-active]:rotate-180 transition-all duration-300"></i>
+                    </button>
+                    
+                    <!-- Content -->
+                    <div class="accordion-content max-h-0 overflow-hidden transition-all duration-300 group-[.is-active]:max-h-[3000px] border-t border-slate-800/50">
+                        <div class="bg-black/20 overflow-x-auto no-scrollbar">
+                            <table class="w-full text-left border-collapse table-fixed">
+                                <thead>
+                                    <tr class="text-[9px] text-slate-600 font-black uppercase tracking-widest border-b border-slate-800/30">
+                                        <th class="px-5 py-2 w-[110px]">Method</th>
+                                        <th class="px-5 py-2 w-1/3">Path</th>
+                                        <th class="px-5 py-2">Action / Controller</th>
+                                        <th class="px-5 py-2 text-right w-[150px]">Metadata</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800/20 text-[11px] font-mono">
+                                    @foreach($routes as $route)
+                                        @php
+                                            $method = strtoupper($route['method']);
+                                            $mColor = match ($method) {
+                                                'GET' => 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20',
+                                                'POST' => 'text-amber-500 bg-amber-500/10 border-amber-500/20',
+                                                'PUT', 'PATCH' => 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+                                                'DELETE' => 'text-rose-500 bg-rose-500/10 border-rose-500/20',
+                                                default => 'text-slate-500 bg-slate-500/10 border-slate-500/20',
+                                            };
+                                            
+                                            // Split Handler
+                                            $parts = explode('@', $route['handler']);
+                                            $shortHandler = basename(str_replace('\\', '/', $parts[0]));
+                                            if (isset($parts[1])) $shortHandler .= '@' . $parts[1];
+                                        @endphp
+                                        <tr class="route-row hover:bg-purple-500/[0.03] transition-colors group/row">
+                                            <td class="px-5 py-2.5">
+                                                <span class="px-1.5 py-0.5 rounded border {{ $mColor }} text-[9px] font-black">{{ $method }}</span>
+                                            </td>
+                                            <td class="px-5 py-2.5">
+                                                <div class="flex flex-col">
+                                                    <span class="text-zinc-100 font-bold group-hover/row:text-purple-400 transition-colors break-all">
+                                                        {!! preg_replace('/\{([a-zA-Z0-9_-]+)\}/', '<span class="text-amber-500">$0</span>', $route['uri']) !!}
+                                                    </span>
+                                                    @if($route['name'])
+                                                        <span class="text-[8px] text-slate-600 uppercase tracking-widest mt-0.5">Name: {{ $route['name'] }}</span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="px-5 py-2.5 align-top">
+                                                <div class="flex flex-col">
+                                                    <span class="text-slate-300 font-bold">{{ $shortHandler }}</span>
+                                                    @if(str_contains($route['handler'], '\\'))
+                                                        <span class="text-[8px] text-slate-700 truncate block max-w-[200px]" title="{{ $route['handler'] }}">{{ str_replace($shortHandler, '', $route['handler']) }}</span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="px-5 py-2.5 text-right align-top">
+                                                <div class="flex flex-col items-end gap-1">
+                                                    @if($route['middleware'] && $route['middleware'] !== '-')
+                                                        <div class="flex flex-wrap justify-end gap-1">
+                                                            @foreach(explode(', ', $route['middleware']) as $mw)
+                                                                <span class="text-[8px] bg-slate-800 text-slate-500 px-1 rounded">{{ $mw }}</span>
+                                                            @endforeach
+                                                        </div>
+                                                    @else
+                                                        <span class="text-[9px] text-slate-800">No Middleware</span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        @endforeach
     </div>
 
-    <div class="mt-8 text-center pt-8 border-t border-slate-800/50">
-        <a href="{{ url('_system') }}"
-            class="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            <span>Back to Dashboard</span>
+    <div class="text-center mt-12 pb-16">
+        <a href="{{ url('_system') }}" class="text-[10px] font-black text-slate-600 hover:text-purple-400 transition-all uppercase tracking-widest flex items-center justify-center gap-2">
+            <i data-lucide="chevrons-left" class="w-3.5 h-3.5"></i>
+            Back to Dashboard
         </a>
     </div>
 
     <script>
-        // Simple filter script
-        document.getElementById('routeSearch').addEventListener('keyup', function(e) {
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const item = header.parentElement;
+                item.classList.toggle('is-active');
+            });
+        });
+
+        function toggleAll(expand) {
+            document.querySelectorAll('.accordion-item').forEach(item => {
+                expand ? item.classList.add('is-active') : item.classList.remove('is-active');
+            });
+        }
+
+        const sInput = document.getElementById('routeSearch');
+        sInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
+            const items = document.querySelectorAll('.accordion-item');
+            
+            if (term.length > 0) toggleAll(true);
+            else items.forEach((it, idx) => idx === 0 ? it.classList.add('is-active') : it.classList.remove('is-active'));
+
             document.querySelectorAll('.route-row').forEach(row => {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
+                row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none';
+            });
+
+            items.forEach(item => {
+                const hasMatch = Array.from(item.querySelectorAll('.route-row')).some(r => r.style.display !== 'none');
+                item.style.display = hasMatch ? '' : 'none';
             });
         });
     </script>
+    
+    <style>
+        .accordion-content { transition: max-height 0.3s ease-out; }
+        .is-active { border-color: #7c3aed !important; background: #0f172a !important; }
+        .is-active .accordion-header { background: rgba(124, 58, 237, 0.05); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
 @endsection

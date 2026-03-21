@@ -173,6 +173,9 @@ $migrator->rollback();
 $migrator->rollback(steps: 3);
 ```
 
+> [!NOTE]
+> **Safe Move (Pembersihan File)**: Saat melakukan `migrate:rollback`, sistem akan secara otomatis mengosongkan folder upload di dalam `private-uploads` (seperti `shared/`, `docs/`) untuk menjaga sinkronisasi, namun tetap menjaga file sistem seperti `.htaccess` tetap aman.
+
 ### Reset (Rollback Semua)
 
 ```bash
@@ -193,6 +196,9 @@ php artisan migrate:fresh
 // ⚠️ DANGER: DROP SEMUA tabel, lalu jalankan ulang semua migrasi
 $migrator->fresh();
 ```
+
+> [!IMPORTANT]
+> **Clean Slate Policy**: Perintah `migrate:fresh` tidak hanya menghapus tabel, tetapi juga **mengosongkan seluruh folder upload yang diizinkan** (Whitelist Folders). Pastikan Anda telah melakukan backup jika diperlukan!
 
 > ⚠️ **PERHATIAN:** `fresh()` memiliki guard produksi. Jika `APP_ENV=production`, method ini akan throw RuntimeException untuk mencegah kehilangan data.
 

@@ -78,7 +78,8 @@ if (php_sapi_name() !== 'cli') {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
     RateLimiter::check($ip, 100, 120);
 
-    CsrfMiddleware::generateToken();
+    // Global Middleware (Military Grade Safety)
+    Router::globalMiddleware(\TheFramework\Middleware\CsrfMiddleware::class);
 }
 
 // --- 🚀 OPTIMIZED CONTAINER BINDING 🚀 ---

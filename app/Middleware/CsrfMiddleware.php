@@ -33,6 +33,8 @@ class CsrfMiddleware implements Middleware
 
     public function before()
     {
+        self::generateToken();
+
         // Periksa semua metode yang mengubah state (POST, PUT, PATCH, DELETE)
         if (!in_array(request()->method(), ['GET', 'HEAD', 'OPTIONS'])) {
             $token = request('_token') ?? request()->header('X-CSRF-TOKEN') ?? request()->header('X-Csrf-Token');

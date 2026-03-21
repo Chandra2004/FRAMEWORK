@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ \TheFramework\Middleware\CsrfMiddleware::generateToken() }}">
     <link rel="icon" href="{{ url('/assets/ico/favicon-debug.ico') }}">
     <title>THE-FRAMEWORK | System Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>

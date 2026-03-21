@@ -14,6 +14,7 @@ class Router
     private static array $routeDefinitions = [];
     private static bool $routeFound = false;
     private static array $groupStack = [];
+    private static array $globalMiddlewares = [];
     private static array $namedRoutes = [];
     private static ?array $fallbackRoute = null;
     private static ?string $currentRouteName = null;
@@ -91,6 +92,15 @@ class Router
             'handler' => $controllerOrCallback,
             'function' => $function,
         ];
+    }
+
+    public static function globalMiddleware(string|array $middleware): void
+    {
+        if (is_array($middleware)) {
+            self::$globalMiddlewares = array_merge(self::$globalMiddlewares, $middleware);
+        } else {
+            self::$globalMiddlewares[] = $middleware;
+        }
     }
 
     public static function add(string $method, string $path, $controllerOrCallback, ?string $function = null, array $middlewares = []): Route
@@ -269,22 +279,37 @@ class Router
         if (file_exists($cacheFile) && Config::get('APP_ENV') === 'production') {
             // Production mode + file cache ada -> Load Instant
             $cachedRoutes = require $cacheFile;
-            self::$routes = []; // Reset pre-defined static routes (jika ada yang bocor)
+            // ✅ S-B4-001: Preserve internal system routes (diload manual di index.php)
+            $systemRoutes = array_filter(self::$routes, function($r) {
+                return str_starts_with($r['path'], "#^/_system");
+            });
+
             self::loadCachedRoutes($cachedRoutes);
+            
+            // Merge system routes back
+            self::$routes = array_merge(self::$routes, $systemRoutes);
         } else {
             // Development mode atau cache tidak ada -> Regex Parsing on-the-fly
             // Manual load route file karena tidak diload di tempat lain
             // REMOVED redundant require to prevent double registration since index.php already loads it
         }
 
+        $activeMiddlewares = [];
+        
+        // 🛡️ SECURITY LAYER: Run Global Middlewares before route matching
         try {
+            foreach (self::$globalMiddlewares as $middleware) {
+                $instance = new $middleware();
+                $instance->before();
+                $activeMiddlewares[] = $instance;
+            }
+
             foreach (self::$routes as $route) {
                 if ($route['method'] !== 'ANY' && $method !== $route['method'])
                     continue;
 
                 if (preg_match($route['path'], $path, $matches)) {
                     self::$routeFound = true;
-                    $activeMiddlewares = [];
                     foreach ($route['middleware'] as $middleware) {
                         $instance = is_array($middleware)
                             ? new $middleware[0](...array_slice($middleware, 1))
@@ -651,15 +676,39 @@ class Router
 
         // Check for closures (Closures can't be cached easily with var_export)
         foreach (self::$routes as $route) {
+            // IGNORE internal system routes from closure check
+            // These are loaded via index.php directly and don't need to be in the cache
+            if (str_starts_with($route['path'], "#^/_system")) {
+                continue;
+            }
+
             if ($route['handler'] instanceof \Closure) {
                 throw new \Exception("Cannot cache routes with closures. please use controller actions.");
             }
         }
 
+        // FILTER out system routes from cache data
+        $cacheRoutes = [];
+        foreach (self::$routes as $i => $r) {
+            // Kita keluarkan rute /_system dari cache karena 
+            // rute tersebut mengandung Closure dan diload manual di index.php
+            if (!str_starts_with($r['path'], "#^/_system")) {
+                $cacheRoutes[$i] = $r;
+            }
+        }
+
         $cacheData = [
-            'routes' => self::$routes,
+            'routes' => $cacheRoutes,
             'namedRoutes' => self::$namedRoutes,
         ];
+
+        // Ensure we don't have dangling named routes for system routes
+        // (Though system routes usually don't have names)
+        foreach ($cacheData['namedRoutes'] as $name => $index) {
+            if (!isset($cacheData['routes'][$index])) {
+                unset($cacheData['namedRoutes'][$name]);
+            }
+        }
 
         $content = "<?php\n\nreturn " . var_export($cacheData, true) . ";\n";
         

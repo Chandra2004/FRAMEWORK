@@ -13,6 +13,8 @@ Setiap perintah Artisan dibangun di atas `BaseCommand.php` yang menawarkan:
 - **Premium Tables**: Render tabel data yang rapi dan artistik (digunakan di `route:list`).
 - **Interactive Prompts**: Kemudahan mengambil input (`ask`) dan konfirmasi (`confirm`) dari user.
 - **Auto-Alias Tinker**: Mengakses Model tanpa perlu menulis namespace lengkap.
+- **Premium JSON Output**: Presentasi data yang rapi dan elegan menggunakan `JSON_PRETTY_PRINT`.
+- **Deep Security Audit**: Proteksi terhadap eksekusi kode berbahaya (RCE) via REPL.
 
 ---
 
@@ -61,9 +63,9 @@ Sistem Generator kami menggunakan **Stub Premium** yang menghasilkan kode siap p
 | Perintah           | Deskripsi                                                 |
 | :----------------- | :-------------------------------------------------------- |
 | `migrate`          | Jalankan migrasi database dengan status tracking.         |
-| `migrate:rollback` | Membatalkan batch migrasi terakhir.                       |
-| `migrate:fresh`    | Hapus SEMUA tabel lalu jalankan ulang migrasi.            |
-| `migrate:reset`    | Rollback SEMUA migrasi database.                          |
+| `migrate:rollback` | Batalkan batch terakhir + **Safe Clear Uploads**.        |
+| `migrate:fresh`    | **DANGER**: Hapus SEMUA tabel + **Safe Clear Uploads**.   |
+| `migrate:reset`    | Rollback SEMUA migrasi + **Safe Clear Uploads**.         |
 | `migrate:status`   | Menampilkan status setiap migrasi (Ran/Pending).          |
 | `db:seed`          | Mengisi database dengan data dummy dari folder `seeders`. |
 
@@ -112,7 +114,14 @@ Di dalam Tinker, semua Model di `app/Models` di-alias secara otomatis:
 
 ```php
 >>> User::where('id', 1)->first();
+=> {
+    "id": 1,
+    "name": "Admin",
+    "email": "admin@mail.com"
+}
 ```
+
+Tinker CLI kini menggunakan presentation layer yang sama dengan Tinker Web untuk konsistensi data.
 
 ---
 

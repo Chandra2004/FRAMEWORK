@@ -8,8 +8,8 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PHP Version](https://img.shields.io/badge/php-%3E%3D%208.3-8892BF.svg)](https://php.net/)
-[![Version](https://img.shields.io/badge/version-5.0.1-red.svg)](https://github.com/chandra2004/the-framework/releases)
-[![Security](https://img.shields.io/badge/security-A%2B--grade-brightgreen.svg)](SECURITY.md)
+[![Version](https://img.shields.io/badge/version-5.0.1--Security--Patch-red.svg)](https://github.com/chandra2004/the-framework/releases)
+[![Security](https://img.shields.io/badge/security-Military--Grade-brightgreen.svg)](SECURITY.md)
 
 [Website](https://framework.rf.gd) • [Documentation](#-documentation) • [Get Started](#-quick-start) • [Changelog](CHANGELOG.md)
 
@@ -25,12 +25,24 @@
 
 ```
 ✅ No VPS required          ✅ Laravel-style DX
-✅ Works on free hosting    ✅ Built-in security (WAF, CSRF)
-✅ Centralized Config       ✅ Comprehensive documentation
-✅ Handlers Architecture    ✅ Web-based management
+✅ Works on free hosting    ✅ Built-in security (WAF, CSRF)     ✅ Ultra-Lightweight (~27MB)
+✅ Comprehensive documentation      ✅ 20x Smaller than Laravel
 ✅ Auto-WebP Uploads        ✅ Production-ready
 ✅ Fluent Helpers           ✅ Clean Internal Split
 ```
+
+---
+
+## 🛡️ Major Security Patch (v5.0.1-Secure)
+
+**"The Iron Dome" Update**
+
+- ✅ **Military-Grade Security (Phase 2):** Introduced a 4-Layer security model for the Web Command Center.
+- ✅ **Automatic Global CSRF:** All state-changing routes (`POST`, `PUT`, `DELETE`) are now protected by default via Global Router Middleware.
+- ✅ **Strict File Whitelist:** Replaced the legacy blacklist with a strict whitelist protocol for serving private files.
+- ✅ **Clean Tinker Engine:** Web Tinker now produces clean, JSON-pretty output identical to the CLI version, with enhanced RCE obfuscation detection.
+- ✅ **Sensitive Data Masking:** Professional-grade logging that automatically masks passwords and secret tokens in database execution logs.
+- ✅ **Global Middleware System:** New CORE support for registering middlewares that run on every single request.
 
 ---
 
@@ -43,6 +55,7 @@
 - ✅ **Premium Flash Helper:** New `flash('notification')` utility for elegant transient message handling.
 - ✅ **Trait Logic Migration:** System traits moved to `App\Traits` to prevent accidental modification.
 - ✅ **Enhanced Redirects:** Fluent redirect builder supporting `redirect()->back()`.
+- ✅ **Safe Auto-File Clearing:** Migrasi (`fresh`/`rollback`) kini otomatis membersihkan folder upload yang diizinkan (`shared`, `docs`, dll) tanpa menghapus file sistem seperti `.htaccess`.
 
 ### Installation
 

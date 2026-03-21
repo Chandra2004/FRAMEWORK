@@ -18,7 +18,16 @@ class FileController
     public function Serve($params = [])
     {
         $allowedFolders = self::getAllowedFolders();
-        $forbiddenExtensions = ['php', 'phtml', 'phar', 'exe', 'sh', 'bat', 'sql', 'htaccess', 'env'];
+        $allowedExtensions = [
+            // Images
+            'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', 
+            // Documents
+            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'rtf',
+            // Archives
+            'zip', 'rar', '7z', 'gz', 'tar',
+            // Web Assets (If needed for shared components)
+            'css', 'js', 'json', 'map', 'xml'
+        ];
 
         $requested = '';
 
@@ -67,10 +76,10 @@ class FileController
             $this->abort(403, "Akses folder '{$topFolder}' tidak diizinkan.");
         }
 
-        // Blacklist ekstensi check
+        // Strict Whitelist Extension Check
         $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-        if (in_array($ext, $forbiddenExtensions)) {
-            $this->abort(403, "Tipe file tidak diizinkan untuk diakses.");
+        if (!in_array($ext, $allowedExtensions)) {
+            $this->abort(403, "Tipe file '.{$ext}' tidak diizinkan untuk diakses secara publik.");
         }
 
         // Serve file dengan header yang tepat

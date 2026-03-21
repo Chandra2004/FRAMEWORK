@@ -52,6 +52,11 @@ class MigrateFreshCommand extends BaseCommand
                 $this->line("  " . $line);
             }
 
+            // Safe Clear Uploads (Sync Engine)
+            $this->info("Clearing allowed upload folders...");
+            $fileCount = \TheFramework\Helpers\Helper::clear_uploads();
+            $this->line("  ✔ $fileCount files/folders removed from allowed directories.");
+
             $this->success("Fresh migration selesai. $count migrasi dijalankan.");
         } catch (Throwable $e) {
             $this->error("Gagal: " . $e->getMessage());

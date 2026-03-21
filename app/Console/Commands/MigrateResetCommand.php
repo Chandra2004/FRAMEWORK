@@ -41,12 +41,18 @@ class MigrateResetCommand extends BaseCommand
         }
 
         $this->info("Resetting " . count($ran) . " migrasi...");
-        
+
         try {
             $count = $migrator->reset();
             foreach ($migrator->getOutput() as $line) {
                 $this->line("  " . $line);
             }
+
+            // Safe Clear Uploads (Sync Engine)
+            $this->info("Clearing allowed upload folders...");
+            $fileCount = \TheFramework\Helpers\Helper::clear_uploads();
+            $this->line("  ✔ $fileCount uploaded files/folders removed from allowed directories.");
+
             $this->success("Reset selesai. $count migrasi berhasil di-rollback.");
         } catch (Throwable $e) {
             $this->error("Gagal reset: " . $e->getMessage());

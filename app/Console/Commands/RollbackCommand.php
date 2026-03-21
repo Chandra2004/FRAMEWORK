@@ -63,6 +63,12 @@ class RollbackCommand extends BaseCommand
             }
 
             echo PHP_EOL;
+
+            // Safe Clear Uploads (Sync Engine)
+            $this->info("Clearing allowed upload folders...");
+            $fileCount = \TheFramework\Helpers\Helper::clear_uploads();
+            $this->line("  ✔ $fileCount files/folders removed from allowed directories.");
+
             $this->success("Rollback selesai. $count migrasi berhasil di-rollback.");
         } catch (Throwable $e) {
             $this->error("Gagal rollback: " . $e->getMessage());

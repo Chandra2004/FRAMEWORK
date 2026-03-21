@@ -4,11 +4,13 @@
 
 ## Key Features
 
-- **Extreme Security:** Built-in CSRF, WAF, and input sanitization.
-- **High Performance:** Lightweight architecture with minimal dependencies.
-- **Laravel-like DX:** Eloquent-like ORM, Artisan-like commands, and familiar routing.
-- **Production Ready:** Optimized for speed and security out of the box.
+- **Military-Grade Security:** Built-in Automatic Global CSRF, Iron Dome WAF, and Strict Whitelist File Serving.
+- **High Performance:** Lightweight architecture with Route Caching and Lazy Loading Support.
+- **Laravel-like DX:** Eloquent-query ORM, Artisan-CLI commands, and familiar Blade templating.
+- **Hybrid-Deployment:** Optimized for both VPS (CLI) and Shared Hosting (Web Command Center).
 
 ## Why Choose The Framework?
 
-If you're tired of "black box" frameworks where you don't know what's happening under the hood, The Framework is for you. Every component is designed to be readable, extensible, and secure.
+- **Extreme Efficiency:** Our initial installation is just **~27MB**, whereas modern alternatives like Laravel can reach **500MB+** at install time.
+- **No Black Box:** If you're tired of "black box" frameworks where you don't know what's happening under the hood, The Framework is for you. Every component is designed to be readable, extensible, and secure.
+- **Shared Hosting Friendly:** Specifically built for developers who don't have SSH access.

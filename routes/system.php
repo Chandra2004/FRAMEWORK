@@ -20,7 +20,7 @@ Router::add('GET', '/sitemap.xml', SitemapController::class, 'index', [WAFMiddle
 /**
  * Robust Client IP Detection (Proxy Aware)
  */
-function getSystemClientIp(): string 
+function getSystemClientIp(): string
 {
     $headers = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR'];
     foreach ($headers as $header) {
@@ -37,7 +37,7 @@ function checkSystemKey()
     // === LAYER 0: Config Integrity Check ===
     $isCached = \TheFramework\App\Core\Config::isCached();
     $dbHost = \TheFramework\App\Core\Config::get('DB_HOST');
-    
+
     // Jika config ter-cache tapi isinya kosong (karena salah deploy), ingatkan user.
     if ($isCached && empty($dbHost)) {
         abort(403, "🚨 CONFIG CACHE DETECTED: Sistem mendeteksi file cache (storage/cache/config.php) kosong. Silakan hapus file tersebut via FTP agar .env terbaca.");
@@ -211,6 +211,12 @@ Router::add('GET', '/_system/migrate/rollback', function () {
                 echo "❌ File missing: $migration.php\n";
             }
         }
+        
+        // Safe Clear Uploads (Sync Engine)
+        echo "\n\n🧹 Clearing allowed upload folders...\n";
+        $fileCount = \TheFramework\Helpers\Helper::clear_uploads();
+        echo "✔ $fileCount files/folders removed from allowed directories.\n";
+        
         echo "\n✨ Rollback Completed!";
     });
 });
@@ -250,12 +256,48 @@ Router::add('GET', '/_system/migrate/fresh', function () {
                 echo "✔ Migrated: $baseName\n";
             }
         }
+
+        // Safe Clear Uploads (Sync Engine)
+        echo "\n\n🧹 Clearing allowed upload folders...\n";
+        $fileCount = \TheFramework\Helpers\Helper::clear_uploads();
+        echo "✔ $fileCount files/folders removed from allowed directories.\n";
+
         echo "\n✨ Fresh Migration Completed!";
     });
 });
 
+// 1.c.2 MIGRATE STATUS
+Router::add('GET', '/_system/migrate/status', function () {
+    checkSystemKey();
+    return renderTerminal('migrate:status', function () {
+        echo "📊 DATABASE MIGRATION STATUS\n==============================\n\n";
+        $migrator = new Migrator();
+        $migrator->ensureTableExists();
+        $ran = $migrator->getRan();
+        
+        $migrationDir = BASE_PATH . '/database/migrations/';
+        $files = glob($migrationDir . '*.php');
+        
+        if (empty($files)) {
+            echo "ℹ No migration files found.\n";
+            return;
+        }
+
+        printf("%-10s | %-50s\n", "Status", "Migration Name");
+        echo str_repeat("-", 65) . "\n";
+
+        foreach ($files as $file) {
+            $name = basename($file, '.php');
+            $status = in_array($name, $ran) ? "✅ RAN" : "⏳ PENDING";
+            printf("%-10s | %-50s\n", $status, $name);
+        }
+        echo str_repeat("-", 65) . "\n";
+        echo "✨ Total: " . count($files) . " migrations monitored.";
+    });
+});
+
 // 1.d ASSET PUBLISH
-Router::add('GET', '/_system/asset-publish', function () {
+Router::add('GET', '/_system/asset/publish', function () {
     checkSystemKey();
     return renderTerminal('asset:publish', function () {
         echo "📦 ASSET PUBLISHER\n==============================\n";
@@ -279,7 +321,6 @@ Router::add('GET', '/_system/asset-publish', function () {
             );
 
             foreach ($iterator as $item) {
-                // Fix Linter Error: getSubPathName belongs to RecursiveDirectoryIterator, not the wrapper
                 /** @var \RecursiveDirectoryIterator $innerIterator */
                 $innerIterator = $iterator->getInnerIterator();
                 $sub = $innerIterator->getSubPathName();
@@ -303,10 +344,10 @@ Router::add('GET', '/_system/schema', function () {
     return renderTerminal('db:schema', function () {
         echo "🔍 DATABASE SCHEMA INSPECTOR\n==============================\n";
         $db = \TheFramework\App\Database\Database::getInstance();
-        
+
         // Get Tables
         $tables = array_map(fn($row) => array_values((array) $row)[0] ?? '', $db->query("SHOW TABLES")->resultSet());
-        
+
         if (empty($tables)) {
             echo "ℹ No tables found in the database.\n";
             return;
@@ -325,9 +366,64 @@ Router::add('GET', '/_system/schema', function () {
             $count = $db->query("SELECT COUNT(*) as total FROM `{$table}`")->single();
             printf("%-30s | %-10d\n", $table, $count['total'] ?? 0);
         }
-        
+
         echo str_repeat("-", 45) . "\n";
         echo "✨ Schema scan completed!";
+    });
+});
+
+// 1.f ENVIRONMENT
+Router::add('GET', '/_system/env', function () {
+    checkSystemKey();
+    return renderTerminal('env', function () {
+        echo "🌍 APPLICATION ENVIRONMENT\n==============================\n\n";
+        $env = \TheFramework\App\Core\Config::get('APP_ENV', 'local');
+        $debug = \TheFramework\App\Core\Config::get('APP_DEBUG', 'false');
+        $host = \TheFramework\App\Core\Config::get('DB_HOST', 'N/A');
+        
+        echo "CURRENT_ENV : " . strtoupper((string)$env) . "\n";
+        echo "APP_DEBUG   : " . (strtolower((string)$debug) === 'true' ? "✅ ENABLED" : "❌ DISABLED") . "\n";
+        echo "DB_HOST     : " . $host . "\n";
+        echo "APP_URL     : " . \TheFramework\App\Core\Config::get('APP_URL', 'http://localhost') . "\n";
+        echo "\n✨ Configuration snapshot completed.";
+    });
+});
+
+// 1.g MAINTENANCE DOWN
+Router::add('GET', '/_system/maintenance/down', function () {
+    checkSystemKey();
+    return renderTerminal('down', function () {
+        echo "🚧 ENABLING MAINTENANCE MODE\n==============================\n";
+        $file = BASE_PATH . '/storage/framework/down';
+        if (file_put_contents($file, json_encode([
+            'time' => time(),
+            'message' => 'System is under maintenance',
+            'allowed' => [\TheFramework\App\Core\Config::get('SYSTEM_ALLOWED_IPS', '127.0.0.1')]
+        ]))) {
+            echo "✅ Maintenance mode is now ACTIVE.\n";
+            echo "ℹ  The site will return 503 for non-whitelisted IPs.\n";
+        } else {
+            echo "❌ Failed to create maintenance file.\n";
+        }
+    });
+});
+
+// 1.h MAINTENANCE UP
+Router::add('GET', '/_system/maintenance/up', function () {
+    checkSystemKey();
+    return renderTerminal('up', function () {
+        echo "🚢 DISABLING MAINTENANCE MODE\n==============================\n";
+        $file = BASE_PATH . '/storage/framework/down';
+        if (file_exists($file)) {
+            if (unlink($file)) {
+                echo "✅ Maintenance mode is now INACTIVE.\n";
+                echo "🚀  The application is back online!\n";
+            } else {
+                echo "❌ Failed to remove maintenance file.\n";
+            }
+        } else {
+            echo "ℹ Website was already online.\n";
+        }
     });
 });
 
@@ -375,15 +471,14 @@ Router::add('GET', '/_system/seed', function () {
     });
 });
 
-// 3. CLEAR CACHE
-Router::add('GET', '/_system/clear-cache', function () {
+// 3. CACHE CLEAR
+Router::add('GET', '/_system/cache/clear', function () {
     checkSystemKey();
     return renderTerminal('cache:clear', function () {
         echo "🧹 SYSTEM CACHE CLEANER\n==============================\n";
         $cacheDirs = [
-            BASE_PATH . '/storage/framework/views',
             BASE_PATH . '/storage/framework/cache',
-            BASE_PATH . '/storage/logs'
+            BASE_PATH . '/storage/cache'
         ];
 
         foreach ($cacheDirs as $dir) {
@@ -393,16 +488,16 @@ Router::add('GET', '/_system/clear-cache', function () {
             foreach ($files as $file) {
                 if (is_file($file) && basename($file) !== '.gitignore') {
                     unlink($file);
-                    echo "Deleted: " . basename($file) . "\n";
+                    echo "✔ Deleted: " . basename($file) . "\n";
                 }
             }
         }
-        echo "\n✨ Cache Cleared!";
+        echo "\n✨ Application cache cleared!";
     });
 });
 
 // 4. STORAGE LINK
-Router::add('GET', '/_system/storage-link', function () {
+Router::add('GET', '/_system/storage/link', function () {
     checkSystemKey();
     return renderTerminal('storage:link', function () {
         echo "🔗 STORAGE LINKER\n==============================\n";
@@ -472,6 +567,25 @@ Router::add('GET', '/_system/check-files', function () {
     });
 });
 
+// 5.b TEST RUNNER
+Router::add('GET', '/_system/test', function () {
+    checkSystemKey();
+    return renderTerminal('test', function () {
+        echo "🧪 APPLICATION TEST RUNNER\n==============================\n";
+        $phpunit = BASE_PATH . '/vendor/bin/phpunit';
+        if (!file_exists($phpunit)) {
+            echo "❌ PHPUnit not found in vendor/bin/phpunit\n";
+            return;
+        }
+
+        echo "Running: vendor/bin/phpunit --testdox\n\n";
+        // Use shell_exec to capture output
+        $output = shell_exec("php $phpunit --testdox --colors=never");
+        echo $output ?: "⚠ No output received from test runner. Check if tests exist in /tests assembly.";
+        echo "\n\n✨ Test suite finished.";
+    });
+});
+
 // 6. WHAT'S MY IP
 Router::add('GET', '/_system/my-ip', function () {
     // === SARAN-B4-003: Rate Limit for reconnaissance protection ===
@@ -485,23 +599,81 @@ Router::add('GET', '/_system/my-ip', function () {
     });
 });
 
-// 7. SYSTEM STATUS
+// 7. SYSTEM STATUS (Comprehensive Audit)
 Router::add('GET', '/_system/status', function () {
     checkSystemKey();
 
-    $required = ['pdo_mysql', 'mbstring', 'openssl', 'json', 'ctype', 'xml', 'curl', 'gd'];
+    // 1. Core Extensions Audit
+    $required = ['pdo_mysql', 'mbstring', 'openssl', 'json', 'ctype', 'xml', 'curl', 'gd', 'intl', 'bcmath', 'zip'];
     $extensions = [];
     foreach ($required as $ext) {
-        $extensions[$ext] = extension_loaded($ext);
+        $extensions[$ext] = [
+            'enabled' => extension_loaded($ext),
+            'version' => extension_loaded($ext) ? phpversion($ext) : 'N/A'
+        ];
+    }
+
+    // 2. Resource Limits
+    $limits = [
+        'Memory Limit' => ini_get('memory_limit'),
+        'Max Execution Time' => ini_get('max_execution_time') . 's',
+        'Max Input Vars' => ini_get('max_input_vars'),
+        'Upload Max Size' => ini_get('upload_max_filesize'),
+        'Post Max Size' => ini_get('post_max_size'),
+        'Max Input Time' => ini_get('max_input_time') . 's',
+    ];
+
+    // 3. Engine & Server
+    $engine = [
+        'PHP Version' => PHP_VERSION,
+        'SAPI' => php_sapi_name(),
+        'OS' => PHP_OS_FAMILY . ' (' . PHP_OS . ')',
+        'Zend Engine' => zend_version(),
+        'OpCache' => extension_loaded('Zend OPcache') && ini_get('opcache.enable') ? '✅ Enabled' : '❌ Disabled',
+        'JIT' => extension_loaded('Zend OPcache') && ini_get('opcache.jit') ? '✅ Active' : '❌ Inactive',
+    ];
+
+    // 4. Critical Security & Networking
+    $security = [
+        'HTTPS' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? '✅ Secure' : '⚠️ Insecure',
+        'OpenSSL' => OPENSSL_VERSION_TEXT,
+        'cURL' => function_exists('curl_version') ? curl_version()['version'] : '❌ Missing',
+        'Safe Mode' => ini_get('safe_mode') ? '⚠️ ON' : '✅ OFF',
+    ];
+
+    // 5. Disabled Functions (Common on Free Hosting)
+    $disabled = explode(',', (string)ini_get('disable_functions'));
+    $critical_functions = ['exec', 'shell_exec', 'passthru', 'system', 'popen', 'proc_open'];
+    $function_audit = [];
+    foreach ($critical_functions as $func) {
+        $function_audit[$func] = !in_array($func, array_map('trim', $disabled)) && function_exists($func);
+    }
+
+    // 6. Path Permissions
+    $paths = [
+        'Root' => BASE_PATH,
+        'Storage' => BASE_PATH . '/storage',
+        'Logs' => BASE_PATH . '/storage/logs',
+        'Cache' => BASE_PATH . '/storage/framework/cache'
+    ];
+    $path_audit = [];
+    foreach ($paths as $label => $path) {
+        $path_audit[$label] = [
+            'exists' => is_dir($path),
+            'writable' => is_writable($path)
+        ];
     }
 
     return \TheFramework\App\Http\View::render('Internal::_system.status', [
         'php_version' => phpversion(),
         'server' => $_SERVER['SERVER_SOFTWARE'] ?? 'Unknown',
+        'engine' => $engine,
+        'limits' => $limits,
         'extensions' => $extensions,
-        'memory_limit' => ini_get('memory_limit'),
-        'upload_max' => ini_get('upload_max_filesize'),
-        'post_max' => ini_get('post_max_size')
+        'security' => $security,
+        'function_audit' => $function_audit,
+        'path_audit' => $path_audit,
+        'server_time' => date('Y-m-d H:i:s T')
     ]);
 });
 
@@ -542,92 +714,220 @@ Router::add('GET', '/_system/diagnose', function () {
     });
 });
 
-// 9. LOGS
+// 9. LOGS (Daily & System)
 Router::add('GET', '/_system/logs', function () {
     checkSystemKey();
 
-    $logFile = BASE_PATH . '/storage/logs/app.log';
+    $logDir = BASE_PATH . '/storage/logs';
+    $logFiles = glob($logDir . '/*.log');
+    
+    // Sort log files by modification time (latest first)
+    if (!empty($logFiles)) {
+        usort($logFiles, fn($a, $b) => filemtime($b) - filemtime($a));
+    }
+
+    // Determine the current file to view
+    $selectedFile = $_GET['file'] ?? (!empty($logFiles) ? basename($logFiles[0]) : 'app.log');
+    
+    // 🛡️ SECURITY: Prevent path traversal (Allow only alphanumeric, dash, underscores, dots, and must end in .log)
+    if (!preg_match('/^[a-zA-Z0-9\.\-_]+\.log$/', $selectedFile)) {
+        $selectedFile = !empty($logFiles) ? basename($logFiles[0]) : 'app.log';
+    }
+
+    $logPath = $logDir . '/' . $selectedFile;
     $logs = [];
+    $fileSize = 0;
 
-    if (file_exists($logFile)) {
-        // Read last 100 lines efficiently
-        $file = new \SplFileObject($logFile, 'r');
-        $file->seek(PHP_INT_MAX);
-        $totalLines = $file->key();
-        $startLine = max(0, $totalLines - 100);
+    if (file_exists($logPath)) {
+        $fileSize = filesize($logPath);
+        // Read last 200 lines efficiently if the file exists
+        if ($fileSize > 0) {
+            $file = new \SplFileObject($logPath, 'r');
+            $file->seek(PHP_INT_MAX);
+            $totalLines = $file->key();
+            $startLine = max(0, $totalLines - 200);
 
-        $file->seek($startLine);
-        while (!$file->eof()) {
-            $line = trim($file->current());
-            if (!empty($line)) {
-                $logs[] = $line;
+            $file->seek($startLine);
+            while (!$file->eof()) {
+                $line = trim((string)$file->current());
+                if (!empty($line)) {
+                    $logs[] = $line;
+                }
+                $file->next();
             }
-            $file->next();
+            $logs = array_reverse($logs); // Show newest first
         }
-        $logs = array_reverse($logs); // Show newest first
     }
 
     return \TheFramework\App\Http\View::render('Internal::_system.logs', [
         'logs' => $logs,
-        'path' => $logFile
+        'path' => $logPath,
+        'all_files' => array_map(function($f) {
+            return [
+                'name' => basename($f),
+                'size' => round(filesize($f) / 1024, 2) . ' KB',
+                'modified' => date('Y-m-d H:i', filemtime($f))
+            ];
+        }, $logFiles),
+        'current_file' => $selectedFile,
+        'file_size' => round($fileSize / 1024, 2) . ' KB'
     ]);
 });
 
-// 10. OPTIMIZE
-Router::add('GET', '/_system/optimize', function () {
+// 10. OPTIMIZE CLEAR
+Router::add('GET', '/_system/optimize/clear', function () {
     checkSystemKey();
-    return renderTerminal('optimize', function () {
-        echo "🚀 SYSTEM OPTIMIZER\n==============================\n";
+    return renderTerminal('optimize:clear', function () {
+        echo "🚀 SYSTEM HARD OPTIMIZE CLEAR\n==============================\n";
         $cleared = 0;
-        foreach ([BASE_PATH . '/storage/framework/views', BASE_PATH . '/storage/framework/cache'] as $dir) {
-            if (!is_dir($dir))
-                continue;
-            foreach (glob($dir . '/*.php') as $file) {
-                if (@unlink($file)) {
-                    $cleared++;
-                    echo "Cleared: " . basename($file) . "\n";
+        $dirs = [
+            BASE_PATH . '/storage/framework/views',
+            BASE_PATH . '/storage/framework/cache',
+            BASE_PATH . '/storage/cache',
+            BASE_PATH . '/storage/logs',
+            BASE_PATH . '/storage/session'
+        ];
+        
+        foreach ($dirs as $dir) {
+            if (!is_dir($dir)) continue;
+            foreach (glob($dir . '/*') as $file) {
+                if (is_file($file) && basename($file) !== '.gitignore') {
+                    if (@unlink($file)) {
+                        $cleared++;
+                    }
                 }
             }
+            echo "✔ Cleared directory: " . basename($dir) . "\n";
         }
-        if (function_exists('opcache_reset'))
-            @opcache_reset();
-        echo "\n✨ Total compiled files cleared: $cleared\n";
+
+        if (function_exists('opcache_reset')) @opcache_reset();
+        echo "\n✨ SEMUA cache, views terkompilasi, log, dan session berhasil dihapus!";
     });
 });
 
-// 11. ROUTES
+// 10.b VIEW CLEAR
+Router::add('GET', '/_system/view/clear', function () {
+    checkSystemKey();
+    return renderTerminal('view:clear', function () {
+        echo "🖼️ VIEW CACHE CLEAR\n==============================\n";
+        $dir = BASE_PATH . '/storage/framework/views';
+        $count = 0;
+        if (is_dir($dir)) {
+            foreach (glob($dir . '/*.php') as $file) {
+                if (@unlink($file)) $count++;
+            }
+        }
+        echo "✔ Total $count compiled views removed.\n";
+        echo "\n✨ View cache cleared!";
+    });
+});
+
+// 10.c CONFIG CACHE
+Router::add('GET', '/_system/config/cache', function () {
+    checkSystemKey();
+    return renderTerminal('config:cache', function () {
+        echo "⚙️ CONFIG CACHE GENERATOR\n==============================\n";
+        $file = \TheFramework\App\Core\Config::cache();
+        echo "✔ Config cached successfully to: " . basename($file) . "\n";
+        echo "\n✨ Configuration cached for faster performance!";
+    });
+});
+
+// 10.d CONFIG CLEAR
+Router::add('GET', '/_system/config/clear', function () {
+    checkSystemKey();
+    return renderTerminal('config:clear', function () {
+        echo "⚙️ CONFIG CACHE CLEANER\n==============================\n";
+        if (\TheFramework\App\Core\Config::clearCache()) {
+            echo "✔ Config cache file removed.\n";
+        } else {
+            echo "ℹ No config cache file found.\n";
+        }
+        echo "\n✨ Configuration cache cleared!";
+    });
+});
+
+// 10.e ROUTE CACHE
+Router::add('GET', '/_system/route/cache', function () {
+    checkSystemKey();
+    return renderTerminal('route:cache', function () {
+        echo "📍 ROUTE CACHE GENERATOR\n==============================\n";
+        try {
+            if (Router::cacheRoutes()) {
+                echo "✔ Routes cached successfully.\n";
+            }
+        } catch (\Throwable $e) {
+            echo "❌ Error: " . $e->getMessage() . "\n";
+            echo "Tip: Make sure you don't have closures in routes/web.php or system.php if you want to cache them.\n";
+            return;
+        }
+        echo "\n✨ Route cache generated!";
+    });
+});
+
+// 10.f ROUTE CLEAR
+Router::add('GET', '/_system/route/clear', function () {
+    checkSystemKey();
+    return renderTerminal('route:clear', function () {
+        echo "📍 ROUTE CACHE CLEANER\n==============================\n";
+        $cacheFile = BASE_PATH . '/storage/cache/routes.php';
+        if (file_exists($cacheFile)) {
+            unlink($cacheFile);
+            echo "✔ Route cache file removed.\n";
+        } else {
+            echo "ℹ No route cache file found.\n";
+        }
+        echo "\n✨ Route cache cleared!";
+    });
+});
+
+// 11. ROUTES (Categorized Inventory)
 Router::add('GET', '/_system/routes', function () {
     checkSystemKey();
 
     $rawRoutes = Router::getRoutes();
-    $routes = [];
+    
+    $categories = [
+        'APPLICATION'    => [],
+        'FILE STORAGE'   => [],
+        'STATIC ASSETS'  => [],
+        'SEO & SITEMAP'  => [],
+        'SYSTEM CONTROL' => []
+    ];
 
     foreach ($rawRoutes as $r) {
         $handlerStr = 'Closure';
         if (is_string($r['handler'])) {
             $handlerStr = $r['handler'] . '@' . ($r['function'] ?? 'index');
         } elseif (is_array($r['handler'])) {
-            $handlerStr = 'Array Controller';
+            $handlerStr = basename(str_replace('\\', '/', $r['handler'][0])) . '@' . ($r['handler'][1] ?? 'index');
         }
 
-        // Detect Type
-        $type = 'App';
-        if (strpos($r['path'], '/_system') === 0)
-            $type = 'System';
-        elseif (strpos($r['path'], '/file/') === 0)
-            $type = 'Asset';
+        $path = $r['path'];
+        $cat = 'APPLICATION';
+        
+        if (strpos($path, '/_system') === 0) {
+            $cat = 'SYSTEM CONTROL';
+        } elseif (strpos($path, '/file/') === 0) {
+            $cat = 'FILE STORAGE';
+        } elseif (strpos($path, '/assets/') === 0) {
+            $cat = 'STATIC ASSETS';
+        } elseif ($path === '/sitemap.xml') {
+            $cat = 'SEO & SITEMAP';
+        }
 
-        $routes[] = [
+        $categories[$cat][] = [
             'method' => $r['method'],
-            'uri' => $r['path'],
+            'uri' => $path,
+            'name' => $r['name'] ?? null,
             'handler' => $handlerStr,
-            'middleware' => implode(', ', array_map(fn($m) => is_string($m) ? basename(str_replace('\\', '/', $m)) : 'Closure', $r['middleware'])),
-            'type' => $type
+            'middleware' => implode(', ', array_map(fn($m) => is_string($m) ? basename(str_replace('\\', '/', $m)) : 'λ', $r['middleware'])),
+            'type' => $cat
         ];
     }
 
     return \TheFramework\App\Http\View::render('Internal::_system.routes', [
-        'routes' => $routes
+        'categories' => $categories
     ]);
 });
 
@@ -683,15 +983,30 @@ Router::add('POST', '/_system/tinker', function () {
         return json(['output' => '', 'result' => null]);
     }
 
-    // === BLACKLIST DANGEROUS FUNCTIONS (RCE Protection) ===
-    $blocked = [
-        'system', 'exec', 'shell_exec', 'passthru', 'popen', 'proc_open', 'pcntl_exec',
-        'eval', 'assert', 'preg_replace', 'create_function', 'include', 'require',
-        'file_put_contents', 'file_get_contents', 'unlink', 'rmdir', 'chmod', 'chown'
+    // === MILITARY GRADE SECURITY SCANNER (RCE PROTECTION) ===
+    // We scan for ANY presence of blocked keywords to prevent concatenation/callback bypasses.
+    $blockedKeywords = [
+        // Execution
+        'system', 'exec', 'shell_exec', 'passthru', 'popen', 'proc_open', 'pcntl_exec', 'eval', 'assert',
+        // Filesystem (Direct & Objects)
+        'fopen', 'fwrite', 'fputs', 'file_put_contents', 'file_get_contents', 'unlink', 'rmdir', 'mkdir', 
+        'chmod', 'chown', 'copy', 'rename', 'SplFileObject', 'SplFileInfo', 'SplTempFileObject',
+        // Callbacks & Reflection (Bypass vectors)
+        'call_user_func', 'call_user_func_array', 'ReflectionClass', 'ReflectionFunction', 'ReflectionMethod', 
+        'ReflectionObject', 'ReflectionProperty', 'create_function', 'preg_replace',
+        // Other dangerous
+        'include', 'require', 'include_once', 'require_once', 'move_uploaded_file', 'is_uploaded_file'
     ];
-    foreach ($blocked as $func) {
-        if (preg_match('/\b' . preg_quote($func) . '\s*\(/i', $code)) {
-            return json(['output' => '', 'result' => "🔥 Security Error: Function '$func' is blocked for security reasons."], 403);
+
+    $cleanCode = str_replace([' ', "\n", "\r", "\t", '.', "'", '"'], '', $code); // Strip whitespace & common bypass chars
+    
+    foreach ($blockedKeywords as $keyword) {
+        // Double Check: Direct match in raw code OR match in cleaned code (prevents 'file'.'put'.'contents')
+        if (stripos($code, $keyword) !== false || stripos($cleanCode, $keyword) !== false) {
+             return json([
+                'output' => '', 
+                'result' => "🔥 MILITARY SECURITY ALERT: Executing '$keyword' is strictly prohibited. Your IP has been logged."
+            ], 403);
         }
     }
 
@@ -731,16 +1046,27 @@ Router::add('POST', '/_system/tinker', function () {
     // 3. Execute
     ob_start();
     try {
-        $result = eval ($evalCode);
+        $result = eval($evalCode);
         $output = ob_get_clean();
 
-        // Format Result
+        // Format Result (CLI Standard Alignment)
         $formattedResult = null;
         if (!$isEcho && $result !== null) {
-            // Gunakan print_r agar lebih bersih daripada var_dump untuk Web
-            $formattedResult = print_r($result, true);
+            // Jika object punya method toArray() (seperti Model/Collection), panggil dulu
+            $dataToDump = $result;
+            if (is_object($result) && method_exists($result, 'toArray')) {
+                $dataToDump = $result->toArray();
+            }
 
-            // Jika ada circular reference atau terlalu panjang, cegah crash
+            // Jika array/object, gunakan JSON Pretty Print biar bersih (mirip CLI)
+            if (is_array($dataToDump) || is_object($dataToDump)) {
+                $formattedResult = json_encode($dataToDump, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            } else {
+                // Skalar (string/bool/int) tetap pakai print_r biasa
+                $formattedResult = print_r($dataToDump, true);
+            }
+
+            // Jika hasil terlalu panjang, cegah crash
             if (strlen($formattedResult) > 50000) {
                 $formattedResult = substr($formattedResult, 0, 5000) . "\n\n... (Output truncated, too long) ...";
             }
@@ -755,7 +1081,6 @@ Router::add('POST', '/_system/tinker', function () {
             'output' => $output,
             'result' => $formattedResult
         ]);
-
     } catch (\Throwable $e) {
         ob_end_clean();
         echo json_encode([
@@ -1009,12 +1334,12 @@ function generateAppBackup(bool $includeDb = false)
     $includeFiles = ['composer.json', 'composer.lock', 'artisan', 'index.php', '.env', '.htaccess', '.gitignore'];
     // Patterns to exclude (subdirectories or specific files)
     $excludePatterns = [
-        'vendor/', 
-        'node_modules/', 
-        '.git/', 
-        'storage/logs/', 
-        'storage/framework/views/', 
-        'storage/framework/cache/', 
+        'vendor/',
+        'node_modules/',
+        '.git/',
+        'storage/logs/',
+        'storage/framework/views/',
+        'storage/framework/cache/',
         'storage/session/'
     ];
 
@@ -1131,4 +1456,3 @@ function generateAppBackup(bool $includeDb = false)
     @unlink($tempPath);
     exit;
 }
-
