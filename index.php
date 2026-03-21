@@ -26,20 +26,25 @@ define('ROOT_DIR', __DIR__);
 // 1. Load Environment & Core Services
 require_once __DIR__ . '/bootstrap/app.php';
 
-// --- 🚧 MAINTENANCE MODE CHECK ("Paten" Feature) 🚧 ---
+// 3. --- 🚧 MAINTENANCE MODE CHECK ("Paten" Feature) 🚧 ---
 // Check if app is down via .env or maintenance file
 $isDown = \TheFramework\App\Core\Config::get('APP_MAINTENANCE', 'false') === 'true';
 $maintenanceFile = __DIR__ . '/storage/framework/down';
 
 if ($isDown || file_exists($maintenanceFile)) {
-    // Check if current IP is allowed to bypass (for developers)
-    $allowedIps = array_map('trim', explode(',', \TheFramework\App\Core\Config::get('MAINTENANCE_IPS', '')));
+    // 🛡️ SECURITY FIX: Gabungkan IP Maintenance dengan IP Sistem agar admin tidak terkunci
+    $maintIps = array_map('trim', explode(',', \TheFramework\App\Core\Config::get('MAINTENANCE_IPS', '')));
+    $sysIps = array_map('trim', explode(',', \TheFramework\App\Core\Config::get('SYSTEM_ALLOWED_IPS', '')));
+    $allowedIps = array_unique(array_filter(array_merge($maintIps, $sysIps)));
+
     // ✅ SECURITY FIX: Gunakan REMOTE_ADDR langsung agar tidak bisa di-spoof via header HTTP_CLIENT_IP
     $clientIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
-    if (!in_array($clientIp, $allowedIps)) {
+    if (!in_array($clientIp, $allowedIps) && !in_array('*', $allowedIps)) {
         header('HTTP/1.1 503 Service Unavailable');
         header('Retry-After: 3600');
+        
+        // Cek view internal dulu untuk dashboard maintenance yang cantik
         if (file_exists(__DIR__ . '/app/App/Internal/Views/errors/maintenance.blade.php')) {
             echo \TheFramework\App\Http\View::render('Internal::errors.maintenance');
         } elseif (file_exists(__DIR__ . '/resources/views/errors/503.blade.php')) {
