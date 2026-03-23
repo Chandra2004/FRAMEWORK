@@ -343,7 +343,9 @@ class Router
                         $result = $container->call([$controller, $function], $params);
                     }
 
-                    if (is_string($result) || is_numeric($result)) {
+                    if ($result instanceof \TheFramework\App\Http\Response) {
+                        $result->send();
+                    } elseif (is_string($result) || is_numeric($result)) {
                         echo $result;
                     } elseif (is_array($result) || (is_object($result) && !($result instanceof \Closure))) {
                         if (!headers_sent()) header('Content-Type: application/json');
