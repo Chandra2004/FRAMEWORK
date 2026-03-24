@@ -4,6 +4,7 @@
 use TheFramework\Console\CommandInterface;
 use TheFramework\Console\BaseCommand;
 
+require_once __DIR__ . '/app/Helpers/helpers.php';
 require __DIR__ . '/vendor/autoload.php';
 
 define('BASE_PATH', __DIR__);
@@ -48,6 +49,10 @@ foreach ($commandFiles as $file) {
         }
     }
 }
+
+// ── 🔥 HYBRID BRIDGE: Automatic Vendor Command Discovery 🔥 ──
+// Memindai folder vendor secara cerdas untuk mendeteksi perintah Laravel/Symfony.
+\TheFramework\App\Console\HybridCommandScanner::scan($commands);
 
 // Global Args
 $args = $argv;

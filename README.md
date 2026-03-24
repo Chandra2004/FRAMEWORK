@@ -43,6 +43,9 @@
 - ✅ **Clean Tinker Engine:** Web Tinker now produces clean, JSON-pretty output identical to the CLI version, with enhanced RCE obfuscation detection.
 - ✅ **Sensitive Data Masking:** Professional-grade logging that automatically masks passwords and secret tokens in database execution logs.
 - ✅ **Global Middleware System:** New CORE support for registering middlewares that run on every single request.
+- ✅ **TFWire 2.0 (Component Engine):** Major rewrite with Facade support, Plugin system, and State Encryption.
+- ✅ **Fluent Tester API:** New TFWire component testing which is 10x faster than browser testing.
+- ✅ **Artisan Generator v2:** New `make:command` and `make:component` for faster scaffolding.
 
 ---
 

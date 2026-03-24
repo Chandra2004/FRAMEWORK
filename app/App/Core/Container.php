@@ -21,7 +21,7 @@ use TheFramework\App\Exceptions\CircularDependencyException;
  * @package TheFramework\App\Core
  * @version 5.0.1
  */
-class Container
+class Container implements \ArrayAccess
 {
     private static ?self $instance = null;
 
@@ -78,6 +78,8 @@ class Container
      */
     private array $extenders = [];
 
+    // ========================================================
+    //  SINGLETON PATTERN
     // ========================================================
     //  SINGLETON PATTERN
     // ========================================================
@@ -175,6 +177,20 @@ class Container
      */
     public function make(string $abstract, array $parameters = []): mixed
     {
+        // 🌟 IDE EXTENSIONS (LARAVEL) IMMUNITY SHIELD 🌟
+        // Jika ekstensi IDE seperti Laravel Extra Intellisense meminta komponen 
+        // internal Laravel murni (Illuminate\*), berikan mock object agar tidak crash.
+        if (str_starts_with($abstract, 'Illuminate\\')) {
+            return new class {
+                public function __call($name, $args) { 
+                    if (in_array($name, ['all', 'getRoutes', 'getPaths', 'getHints'])) return [];
+                    if (in_array($name, ['handle', 'call'])) return 0; // Return exit status 0 (Success)
+                    return $this;
+                }
+                public static function __callStatic($name, $args) { return []; }
+            };
+        }
+
         // Resolve alias
         $abstract = $this->getAlias($abstract);
 
@@ -663,6 +679,79 @@ class Container
         $lines[] = "   Contextual:  " . count($this->contextual);
 
         return implode("\n", $lines);
+    }
+    // ========================================================
+    // 🌟 ARRAY ACCESS POLYFILL (Standar Ekosistem Laravel) 🌟
+    // ========================================================
+    
+    public function offsetExists($offset): bool
+    {
+        return $this->has($offset);
+    }
+
+    public function offsetGet($offset): mixed
+    {
+        // 💡 MOCK OBJECTS FOR IDE EXTENSIONS (TFWire <-> Laravel Bridge) 💡
+        if ($offset === 'view') {
+            return new class {
+                public function getFinder() {
+                    return new class {
+                        public function getHints() {
+                            return ['Internal' => [base_path('app/App/Internal/Views')]];
+                        }
+                        public function getPaths() {
+                            return [base_path('resources/views')];
+                        }
+                    };
+                }
+            };
+        }
+
+        if ($offset === 'router') {
+            return new class {
+                public function getRoutes() {
+                    return new class {
+                        public function get() {
+                            return []; // IDE will parse this cleanly without crashing
+                        }
+                    };
+                }
+            };
+        }
+
+        // Mock default framework bindings that IDE extensions usually require
+        $mockBindings = [
+            'db'      => \TheFramework\App\Database\Database::class,
+            'config'  => \TheFramework\App\Core\Config::class,
+            'request' => \TheFramework\App\Http\Request::class,
+        ];
+
+        if (isset($mockBindings[$offset]) && !$this->has($offset)) {
+            return $this->make($mockBindings[$offset]);
+        }
+
+        try {
+            return $this->make($offset);
+        } catch (\Throwable $e) {
+            // IDE extensions often request non-existing bindings gracefully
+            return null;
+        }
+    }
+
+    public function offsetSet($offset, $value): void
+    {
+        if (!is_string($offset)) {
+            return;
+        }
+        
+        $this->bind($offset, function() use ($value) {
+            return $value;
+        });
+    }
+
+    public function offsetUnset($offset): void
+    {
+        unset($this->bindings[$offset], $this->instances[$offset]);
     }
 }
 

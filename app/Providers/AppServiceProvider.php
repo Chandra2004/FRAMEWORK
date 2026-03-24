@@ -11,7 +11,7 @@ class AppServiceProvider
      */
     public function register(): void
     {
-        // Example: $container = Container::getInstance();
+        // $container = Container::getInstance();
         // $container->singleton(SomeService::class, function() { ... });
     }
 

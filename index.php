@@ -13,8 +13,8 @@ register_shutdown_function(function () {
         ob_end_flush();
     }
 });
-require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/app/Helpers/helpers.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 // Early Error Reporting (Replaced later by .env setting)
 ini_set('display_errors', 1);

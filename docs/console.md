@@ -8,10 +8,11 @@ The Framework menyediakan **Console Engine** yang sangat powerful dan berestetik
 
 1. [Arsitektur Command](#arsitektur-command)
 2. [Auto-Discovery System](#auto-discovery-system-) — **PREMIUM**
-3. [Premium Output Styling](#premium-output-styling)
-4. [User Interaction (STDIN)](#user-interaction-stdin)
-5. [Sistem Stubs (Templating)](#sistem-stubs-templating)
-6. [Referensi 41 Commands](#referensi-41-commands)
+3. [Hybrid Command Discovery](#hybrid-command-discovery-) — **NEW (v5.0.1)**
+4. [Premium Output Styling](#premium-output-styling)
+5. [User Interaction (STDIN)](#user-interaction-stdin)
+6. [Sistem Stubs (Templating)](#sistem-stubs-templating)
+7. [Referensi 43 Commands](#referensi-43-commands)
 
 ---
 
@@ -68,6 +69,16 @@ $ php artisan make:controler
 ✖ ERROR  Perintah [make:controler] tidak ditemukan.
 Mungkin maksud Anda: make:controller
 ```
+
+---
+
+## Hybrid Command Discovery 🔌 
+
+Mulai **v5.0.1**, The Framework dilengkapi dengan `LaravelCommandAdapter` dan `HybridCommandScanner`. 
+Sistem ini memungkinkan Artisan untuk **memindai folder `vendor/`** dan secara otomatis mendaftarkan native Symfony/Laravel commands yang dibawa oleh *package* pihak ketiga.
+
+- **Lazy Loading**: Command eksternal dibalut oleh Adapter ini, dan dependensinya baru di-*instantiate* secara tepat waktu (*Just-in-Time*) saat dipanggil. Hal ini mencegah *Fatal Error* akibat *heavy bindings*.
+- **Seamless Integration**: Perintah eksternal dapat dijalankan persis sama seperti perintah bawaan, lengkap dengan argumen dan flag-nya.
 
 ---
 
@@ -154,7 +165,7 @@ file_put_contents($targetFile, $final);
 
 ---
 
-## Referensi 41 Commands
+## Referensi 43 Commands
 
 ### 🚀 Application & Performance
 
@@ -178,7 +189,10 @@ file_put_contents($targetFile, $final);
 | `make:service`     | Service Layer class                                                                                   |
 | `make:repository`  | Repository Pattern class                                                                              |
 | `make:request`     | Form Request Validation class                                                                         |
-| ...                | (Total 14 generator commands)                                                                         |
+| `make:command`     | Perintah Artisan baru (Stub Based)                                                                    |
+| `make:component`   | Komponen TFWire + View                                                                                |
+| `make:test`        | Feature atau Unit Test baru                                                                           |
+| ...                | (Total 18 generator commands)                                                                         |
 
 ### 🗄️ Database
 

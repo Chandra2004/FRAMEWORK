@@ -88,5 +88,16 @@ $info = DatabaseHelper::auditConnection();
 
 ---
 
+## ⚡ TFWire & Turbo (v2.0 UI Update)
+
+Fungsi-fungsi khusus untuk membangun UI reaktif tanpa JavaScript.
+
+- `tfwire($class, $id, $params)`: Render komponen TFWire ke Blade. Mendukung *Auto-Resolve Namespace* dan *Nested Components*.
+- `turbo_stream()`: Mengakses fluent TurboStream builder untuk update DOM spesifik dari controller.
+- `is_turbo_request()`: Cek apakah request datang dari Hotwire Turbo.
+- `is_tfwire_request()`: Cek apakah request adalah internal TFWire action call.
+
+---
+
 ## 📝 Tips Developer
 Anda dapat menambahkan fungsi helper buatan sendiri di file `app/Helpers/custom_helpers.php` (silakan buat file ini jika diperlukan) dan masukkannya ke dalam `composer.json` bagian `autoload.files`.

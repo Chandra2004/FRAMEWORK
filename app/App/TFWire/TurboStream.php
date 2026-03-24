@@ -229,6 +229,14 @@ class TurboStream
         return $this->append('tf-scripts', $script);
     }
 
+    /** Dispatch an event to a specific target element ID */
+    public function dispatchTo(string $target, string $event, array $data = []): self
+    {
+        $json = htmlspecialchars(json_encode($data, JSON_UNESCAPED_UNICODE));
+        $script = "<script>document.getElementById('{$target}')?.dispatchEvent(new CustomEvent('{$event}',{detail:{$json},bubbles:true}))</script>";
+        return $this->append('tf-scripts', $script);
+    }
+
     // ╔══════════════════════════════════════════════════════════╗
     // ║  BULK OPERATIONS                                         ║
     // ╚══════════════════════════════════════════════════════════╝

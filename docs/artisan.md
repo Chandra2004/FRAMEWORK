@@ -10,10 +10,10 @@ Setiap perintah Artisan dibangun di atas `BaseCommand.php` yang menawarkan:
 
 - **Rich Level Logging**: Indikator visual untuk `SUCCESS` (green), `INFO` (blue), `WARN` (yellow), dan `ERROR` (red).
 - **Interactive Assistance**: Sarana bantuan cerdas (levenshtein distance) yang memberikan saran perintah jika Anda salah ketik.
+- **Hybrid Command Discovery**: Menjalankan *native Laravel/Symfony commands* secara langsung, terintegrasi dari folder `vendor/`.
 - **Premium Tables**: Render tabel data yang rapi dan artistik (digunakan di `route:list`).
 - **Interactive Prompts**: Kemudahan mengambil input (`ask`) dan konfirmasi (`confirm`) dari user.
 - **Auto-Alias Tinker**: Mengakses Model tanpa perlu menulis namespace lengkap.
-- **Premium JSON Output**: Presentasi data yang rapi dan elegan menggunakan `JSON_PRETTY_PRINT`.
 - **Deep Security Audit**: Proteksi terhadap eksekusi kode berbahaya (RCE) via REPL.
 
 ---
@@ -55,6 +55,8 @@ Sistem Generator kami menggunakan **Stub Premium** yang menghasilkan kode siap p
 | `make:job`        | Membuat class Job untuk antrean (_Queue_).                             |
 | `make:provider`   | Membuat Service Provider baru.                                         |
 | `make:test`       | Membuat file test baru untuk PHPUnit.                                  |
+| `make:command`    | Membuat class perintah Artisan (Command) baru.                         |
+| `make:component`  | Membuat komponen TFWire baru beserta view-nya.                         |
 
 ---
 
@@ -127,7 +129,13 @@ Tinker CLI kini menggunakan presentation layer yang sama dengan Tinker Web untuk
 
 ## 📝 Membuat Perintah Kustom
 
-Anda dapat membuat perintah sendiri dengan mewarisi class `BaseCommand`. Simpan di `app/Console/Commands/`.
+Anda dapat membuat perintah sendiri secara otomatis menggunakan generator:
+
+```bash
+php artisan make:command MyNewCommand
+```
+
+Atau membuatnya secara manual dengan mewarisi class `BaseCommand`. Simpan di `app/Console/Commands/`.
 
 ```php
 <?php
@@ -150,6 +158,20 @@ class HaloDunia extends BaseCommand {
     }
 }
 ```
+
+---
+
+---
+
+## 🔌 Hybrid System: Menjalankan Laravel/Symfony Commands
+
+Artisan pada v5.0.1 menyertakan **`LaravelCommandAdapter`** dan **`HybridCommandScanner`**. Ini adalah fitur _Killer_ yang membuat The Framework dapat mendeteksi dan menjalankan _Command_ bawaan dari package eksternal (Symfony/Laravel) secara *seamless*.
+
+**Bagaimana cara kerjanya?**
+1. `HybridCommandScanner` memindai package yang terinstall di folder `vendor/`.
+2. Perintah-perintah eksternal tersebut dibalut oleh `LaravelCommandAdapter`.
+3. Adapter ini di-instantiate secara *Lazy Load* dan diteruskan *Dependency Injection Container* hanya saat perintah dieksekusi.
+4. Hasilnya: _No fatal error_ walau package memiliki segudang *heavy dependencies*.
 
 ---
 

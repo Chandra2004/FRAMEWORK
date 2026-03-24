@@ -13,6 +13,7 @@ The Framework menyediakan sistem testing yang setara dengan Laravel, namun denga
 5. [Authentication & Session](#authentication--session)
 6. [Response Assertions](#response-assertions)
 7. [⚡ Performance Assertions (Beyond Laravel)](#-performance-assertions-beyond-laravel)
+8. [🧪 TFWire Component Testing (Next Generation)](#-tfwire-component-testing-next-generation)
 
 ---
 

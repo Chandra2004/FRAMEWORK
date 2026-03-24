@@ -1,0 +1,19 @@
+<div id="{{id}}" class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md space-y-4">
+    <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ $title }}</h3>
+    
+    <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-dashed border-gray-300 dark:border-gray-600">
+        {{-- Logika komponen Anda di sini --}}
+        <p class="text-gray-600 dark:text-gray-400">
+            Selamat datang di komponen <strong>{{ $id }}</strong>. 
+            Mulai coding interaktivitas Anda di sini!
+        </p>
+    </div>
+
+    <div class="flex gap-2">
+        <button tf-wire:click="doSomething"
+                tf-wire:loading.class="opacity-50 cursor-wait"
+                class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700">
+            Panggil Aksi
+        </button>
+    </div>
+</div>

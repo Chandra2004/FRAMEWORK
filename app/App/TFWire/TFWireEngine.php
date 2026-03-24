@@ -17,8 +17,40 @@ namespace TheFramework\App\TFWire;
  * ║  • Error handling & recovery                                 ║
  * ╚══════════════════════════════════════════════════════════════╝
  */
+use \TheFramework\App\TFWire\Component;
+use \TheFramework\App\TFWire\TurboStream;
+use \TheFramework\App\TFWire\Plugin\PluginManager;
+use \TheFramework\App\TFWire\Security\SecurityException;
+use \Throwable;
+
 class TFWireEngine
 {
+    /** @var Component[] Stack pendukung nested components */
+    private static array $componentStack = [];
+
+    /**
+     * Push component to stack (Parent tracking)
+     */
+    public static function pushComponent(Component $component): void
+    {
+        self::$componentStack[] = $component;
+    }
+
+    /**
+     * Pop component from stack
+     */
+    public static function popComponent(): ?Component
+    {
+        return array_pop(self::$componentStack);
+    }
+
+    /**
+     * Get current rendering parent component
+     */
+    public static function getParent(): ?Component
+    {
+        return end(self::$componentStack) ?: null;
+    }
     // ═══════════════════════════════════════════════════════════
     //  REQUEST DETECTION
     // ═══════════════════════════════════════════════════════════
@@ -78,59 +110,69 @@ class TFWireEngine
         }
 
         try {
-            // ── 1. Instantiate ──
             /** @var Component $component */
             $component = new $class($id);
 
-            // ── 2. Hydrate or Mount ──
+            // ── 1. Hydrate or Mount ──
             if ($state) {
                 $component->hydrateState($state);
-            } elseif ($isLazy) {
-                $component->mount();
             }
 
-            // ── 3. Process model bindings (tf-wire:model) ──
+            // ── 2. Sync tf-wire:model ──
             $modelData = self::extractModelData($data);
             if (!empty($modelData)) {
                 $component->fill($modelData);
             }
 
-            // ── 4. Execute action ──
-            $actionResult = null;
+            // ── 3. Execute action ──
             if ($action) {
-                $actionResult = $component->callAction($action, $params ?: []);
-
-                // If action returns a TurboStream, send it directly
-                if ($actionResult instanceof TurboStream) {
-                    return $actionResult->render();
+                // Plugin hook: beforeAction
+                $pluginResult = PluginManager::run('beforeAction', $component, $action, $params);
+                if ($pluginResult === false) {
+                    return self::errorResponse('Action blocked by plugin');
                 }
+
+                try {
+                    $result = $component->callAction($action, $params ?: []);
+                } catch (\ReflectionException $e) {
+                    return self::errorResponse("Action '{$action}' not found on component [{$class}]");
+                }
+
+                // Plugin hook: afterAction
+                PluginManager::run('afterAction', $component, $action, $result ?? null);
             }
 
-            // ── 5. Handle redirect ──
+            // ── 4. Handle redirect ──
             if ($component->getRedirectUrl()) {
-                if (!headers_sent()) {
-                    header('Turbo-Location: ' . $component->getRedirectUrl());
-                    header('Content-Type: text/vnd.turbo-stream.html; charset=utf-8');
-                }
+                header('Turbo-Location: ' . $component->getRedirectUrl());
                 return '';
             }
 
-            // ── 6. Skip render check ──
+            // ── 5. Skip render check ──
             if ($component->shouldSkipRender()) {
                 return '';
             }
 
-            // ── 7. Re-render component ──
-            $html = $component->render();
+            // ── 5. Re-render component ──
+            PluginManager::run('beforeRender', $component);
+            $html = (string) $component->render();
+            PluginManager::run('afterRender', $component, $html);
 
-            // ── 8. Build response ──
+            // ── 6. Build response with TurboStream ──
             $stream = new TurboStream();
             $stream->replace($component->id, $html);
 
-            // ── 9. Process event queue ──
+            // ── 7. Process event queue ──
             self::processEvents($component, $stream);
 
-            return $stream->render();
+            // ── 8. Append Flash Notifications (Turbo Streams) ──
+            $output = (string) $stream->render();
+            $notifications = (string) $component->getStreamNotifications();
+
+            return $output . "\n" . $notifications;
+
+        } catch (SecurityException $e) {
+            return self::errorResponse('Security: ' . $e->getMessage());
 
         } catch (\TheFramework\App\Exceptions\ValidationException $e) {
             // Re-render with validation errors visible
@@ -170,8 +212,12 @@ class TFWireEngine
     private static function processEvents(Component $component, TurboStream $stream): void
     {
         foreach ($component->getEventQueue() as $event) {
-            if ($event['scope'] === 'browser') {
+            if ($event['scope'] === 'browser' || $event['scope'] === 'global') {
                 $stream->dispatch($event['event'], $event['params']);
+            } elseif ($event['scope'] === 'parent' || $event['scope'] === 'target') {
+                if (isset($event['to'])) {
+                    $stream->dispatchTo($event['to'], 'tfwire:event:' . $event['event'], $event['params']);
+                }
             }
         }
 

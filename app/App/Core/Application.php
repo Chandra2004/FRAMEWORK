@@ -86,7 +86,7 @@ class Application extends Container
     /**
      * Register a service provider
      */
-    public function register(string|ServiceProvider $provider): ServiceProvider
+    public function register(string|object $provider, bool $force = false): object
     {
         if (is_string($provider)) {
             $provider = new $provider($this);
@@ -95,20 +95,27 @@ class Application extends Container
         $className = get_class($provider);
 
         // Already registered? Return existing
-        if (isset($this->loadedProviders[$className])) {
+        if (!$force && isset($this->loadedProviders[$className])) {
             return $this->serviceProviders[$className];
         }
 
-        // Register dependencies first
-        foreach ($provider->getDependencies() as $dep) {
-            if (!isset($this->loadedProviders[$dep])) {
-                $this->register($dep);
+        // Register dependencies first (Native Providers only)
+        if (method_exists($provider, 'getDependencies')) {
+            foreach ($provider->getDependencies() as $dep) {
+                if (!isset($this->loadedProviders[$dep])) {
+                    $this->register($dep);
+                }
             }
         }
 
         // Call register()
-        $provider->register();
-        $provider->markRegistered();
+        if (method_exists($provider, 'register')) {
+            $provider->register();
+        }
+        
+        if (method_exists($provider, 'markRegistered')) {
+            $provider->markRegistered();
+        }
 
         $this->serviceProviders[$className] = $provider;
         $this->loadedProviders[$className] = true;
@@ -161,14 +168,19 @@ class Application extends Container
     /**
      * Boot a single provider
      */
-    protected function bootProvider(ServiceProvider $provider): void
+    protected function bootProvider(object $provider): void
     {
-        if ($provider->isBooted()) {
+        if (method_exists($provider, 'isBooted') && $provider->isBooted()) {
             return;
         }
 
-        $provider->boot();
-        $provider->markBooted();
+        if (method_exists($provider, 'boot')) {
+            $this->call([$provider, 'boot']);
+        }
+        
+        if (method_exists($provider, 'markBooted')) {
+            $provider->markBooted();
+        }
     }
 
     /**

@@ -600,21 +600,48 @@ if (!function_exists('tfwire')) {
      */
     function tfwire(string $componentClass, ?string $id = null, array $params = []): string
     {
+        // 🔥 AUTO-RESOLVE: Jika class tidak ditemukan, coba cari di folder Component default.
         if (!class_exists($componentClass)) {
-            return "<!-- TFWire Error: Component [{$componentClass}] not found -->";
+            $namespacedClass = "\\TheFramework\\Components\\" . ltrim($componentClass, '\\');
+            if (class_exists($namespacedClass)) {
+                $componentClass = $namespacedClass;
+            } else {
+                // Fallback terakhir: Cek di App\Components jika namespace eksplisit dilewatkan
+                $namespacedClass = "\\App\\Components\\" . ltrim($componentClass, '\\');
+                if (class_exists($namespacedClass)) {
+                    $componentClass = $namespacedClass;
+                } else {
+                    return "<!-- TFWire Error: Component [{$componentClass}] tidak ditemukan -->";
+                }
+            }
         }
 
         try {
             /** @var \TheFramework\App\TFWire\Component $component */
-            $component = new $componentClass($id);
+            $instance = new $componentClass($id);
 
-            // Panggil lifecycle mount() dengan parameter
-            $component->mount(...$params);
+            // 🌳 NESTED SUPPORT: Lacak parent component via Engine
+            $parent = \TheFramework\App\TFWire\TFWireEngine::getParent();
+            if ($parent) {
+                $instance->setParent($parent);
+            }
 
-            return $component->render();
+            // Masukkan ke stack sebelum render
+            \TheFramework\App\TFWire\TFWireEngine::pushComponent($instance);
+
+            // Jalankan mount
+            $instance->mount(...$params);
+
+            // Render komponen
+            $html = $instance->render();
+
+            // Keluarkan dari stack setelah selesai render
+            \TheFramework\App\TFWire\TFWireEngine::popComponent();
+
+            return $html;
         } catch (\Throwable $e) {
             if (config('app.debug', false)) {
-                return "<!-- TFWire Error: " . htmlspecialchars($e->getMessage()) . " -->";
+                return "<!-- TFWire Error: " . htmlspecialchars($e->getMessage()) . " in " . basename($e->getFile()) . ":" . $e->getLine() . " -->";
             }
             return "<!-- TFWire: Component render failed -->";
         }
@@ -655,6 +682,80 @@ if (!function_exists('is_tfwire_request')) {
     function is_tfwire_request(): bool
     {
         return \TheFramework\App\TFWire\TFWireEngine::isTFWireRequest();
+    }
+}
+
+// ==============================================================================
+// 🌟 LARAVEL MOCKS (COMPATIBILITY HELPERS) 🌟
+// ==============================================================================
+
+if (!function_exists('base_path')) {
+    function base_path($path = '') {
+        $root = defined('BASE_PATH') ? BASE_PATH : dirname(dirname(dirname(__DIR__)));
+        return rtrim($root . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''), DIRECTORY_SEPARATOR);
+    }
+}
+
+if (!function_exists('app_path')) {
+    function app_path($path = '') {
+        return base_path('app' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+    }
+}
+
+if (!function_exists('config_path')) {
+    function config_path($path = '') {
+        return base_path('config' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+    }
+}
+
+if (!function_exists('storage_path')) {
+    function storage_path($path = '') {
+        return base_path('storage' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+    }
+}
+
+if (!function_exists('public_path')) {
+    function public_path($path = '') {
+        return base_path('public' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+    }
+}
+
+if (!function_exists('resource_path')) {
+    function resource_path($path = '') {
+        return base_path('resources' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+    }
+}
+
+if (!function_exists('database_path')) {
+    function database_path($path = '') {
+        return base_path('database' . ($path ? DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR) : ''));
+    }
+}
+
+if (!function_exists('app')) {
+    function app($abstract = null, array $parameters = []) {
+        $container = \TheFramework\App\Core\Application::getInstance();
+        if ($abstract === null) {
+            return clone $container;
+        }
+        try {
+            return $container->make($abstract, $parameters);
+        } catch (\Throwable $e) {
+            // Fallback for missing bindings heavily requested by Vendor Packages
+            if (class_exists($abstract)) {
+                return new $abstract;
+            }
+            throw $e;
+        }
+    }
+}
+
+if (!function_exists('config')) {
+    function config($key = null, $default = null) {
+        if (is_null($key)) {
+            return \TheFramework\App\Core\Config::all();
+        }
+        return \TheFramework\App\Core\Config::get($key, $default);
     }
 }
 

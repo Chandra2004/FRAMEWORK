@@ -13,6 +13,9 @@
 - 🛠️ **Clean Architecture:** Framework internal controllers moved to `App\Internal`.
 - 🚀 **Fluent Helpers:** Modern `view()`, `redirect()`, `json()`, and `flash()` syntax.
 - 🎨 **Cleaner Controllers:** Expressive return types without redundant imports.
+- ⚡ **TFWire 2.0:** New Facade, Plugins, and State Encryption for components.
+- 🧪 **Component Testing:** High-performance fluent testing API for TFWire.
+- 🛠️ **Artisan make:** New `make:command` and `make:component` generator.
 
 ---
 
@@ -62,8 +65,8 @@
 23. [DI Container](container.md) - Dependency Injection & auto-wiring ⭐ NEW
 24. [Logging](logging.md) - Multi-channel logging system ⭐ NEW
 25. [Cache](cache.md) - Caching system
-26. [Helpers](helpers.md) - Global functions
-27. [Utility Classes](utilities.md) - Arr, Str, Collection, DatabaseHelper ⭐ NEW
+26. [Helpers](helpers.md): Global functions, TFWire integration ⭐
+27. [Utility Classes](utilities.md): Arr, Str, Collection ⭐
 28. [CRUD Trait](crud-trait.md) - Auto CRUD via Trait ⭐ NEW
 29. [Performance](performance.md) - Caching & optimization
 30. [Testing](testing-guide.md) - Unit & feature tests
@@ -81,9 +84,9 @@
 39. [Queue System](queue.md) - Background jobs
 40. [SEO & Sitemap](seo.md) - Search engine optimization
 41. [Email Handler](email.md) - SMTP & Queue sending ⭐
-42. [Payment Handler](payment.md) - Midtrans integration ⭐
-43. [Upload Handler](file-uploads.md) - Smart Image Engine ⭐
-44. [TFWire Components](tfwire.md) - Turbo-Powered Livewire Alternative ⚡ NEW
+43. [Upload Handler](file-uploads.md) - Auto-WebP & Resize Engine ⭐
+44. [⚡ TFWire 2.0](tfwire.md) - Turbo-Powered Components & Plugins (NEW)
+45. [🧪 Component Testing](testing.md#testing-komponen) - 10x Faster UI Tests (NEW)
 
 ### 📝 Tutorials
 

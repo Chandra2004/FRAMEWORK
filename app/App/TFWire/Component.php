@@ -3,6 +3,8 @@
 namespace TheFramework\App\TFWire;
 
 use TheFramework\App\Http\View;
+use TheFramework\App\TFWire\Security\StateEncryptor;
+use TheFramework\App\TFWire\Security\SecurityException;
 
 /**
  * ╔══════════════════════════════════════════════════════════════╗
@@ -38,6 +40,9 @@ abstract class Component
 
     /** Component name (auto-generated from class basename) */
     protected string $componentName;
+
+    /** Parent component ID if nested */
+    protected ?string $parentId = null;
 
     // ╔══════════════════════════════════════════════════════════╗
     // ║  STATE MANAGEMENT                                        ║
@@ -468,7 +473,27 @@ abstract class Component
     /** Emit event to parent component */
     public function emitUp(string $event, ...$params): void
     {
-        $this->eventQueue[] = ['event' => $event, 'params' => $params, 'scope' => 'parent'];
+        if ($this->parentId) {
+            $this->eventQueue[] = ['event' => $event, 'params' => $params, 'scope' => 'parent', 'to' => $this->parentId];
+        }
+    }
+
+    /** Emit event to a specific component by ID */
+    public function emitTo(string $id, string $event, ...$params): void
+    {
+        $this->eventQueue[] = ['event' => $event, 'params' => $params, 'scope' => 'target', 'to' => $id];
+    }
+
+    /** Internal: Set parent component */
+    public function setParent(Component $parent): void
+    {
+        $this->parentId = $parent->id;
+    }
+
+    /** Internal: Get parent ID */
+    public function getParentId(): ?string
+    {
+        return $this->parentId;
     }
 
     /** Dispatch browser/Alpine.js event */
@@ -624,8 +649,8 @@ abstract class Component
             '_flash'     => $this->flashBag,
         ]);
 
-        // Render Blade view
-        $html = (string) View::render($this->view(), $data);
+        // Render Blade view menggunakan renderToString agar hasilnya bisa di-wrap ke frame
+        $html = (string) View::renderToString($this->view(), $data);
 
         // Lifecycle post-render
         $this->rendered($html);
@@ -679,18 +704,10 @@ abstract class Component
             $scripts .= "\n  <script>document.dispatchEvent(new CustomEvent('{$dispatch['event']}', {detail: {$eventData}}))</script>";
         }
 
-        // Flash messages — render menggunakan internal notification.blade.php
-        $toasts = '';
-        foreach ($this->flashBag as $flash) {
-            $notifData = ['notification' => ['status' => $flash['type'], 'message' => $flash['message']]];
-            $toasts .= "\n  " . (string) View::render('notification.notification', $notifData);
-        }
-
         return "<!-- TFWire: " . class_basename(static::class) . " [{$this->id}] -->\n"
              . "<turbo-frame id=\"{$this->id}\" {$attrs}>\n"
              . "  {$hiddenFields}\n"
              . $html
-             . $toasts
              . $scripts
              . "\n</turbo-frame>";
     }
@@ -710,13 +727,20 @@ abstract class Component
     public function serializeState(): string
     {
         $data = $this->getPublicProperties();
-        $json = json_encode($data, JSON_UNESCAPED_UNICODE);
-        return base64_encode($json);
+        return StateEncryptor::encrypt($data, static::class);
     }
 
     public function hydrateState(string $state): void
     {
-        $data = json_decode(base64_decode($state), true);
+        try {
+            $data = StateEncryptor::decrypt($state, static::class);
+        } catch (SecurityException $e) {
+            // Jika state rusak/expired, mount ulang sebagai fallback
+            $this->mount();
+            $this->originalState = $this->getPublicProperties();
+            return;
+        }
+
         if (is_array($data)) {
             foreach ($data as $key => $value) {
                 if (property_exists($this, $key) && !in_array($key, $this->locked)) {
@@ -791,6 +815,18 @@ abstract class Component
     protected function isSubsequentRequest(): bool
     {
         return isset($_POST['_tf_state']) || isset($_GET['_tf_lazy']);
+    }
+
+    /** Get pending notifications as Turbo Streams */
+    public function getStreamNotifications(): string
+    {
+        if (empty($this->flashBag)) return '';
+        $toasts = '';
+        foreach ($this->flashBag as $flash) {
+            $notifData = ['notification' => ['status' => $flash['type'], 'message' => $flash['message']]];
+            $toasts .= "\n  " . (string) View::renderToString('notification.notification', $notifData);
+        }
+        return "<turbo-stream action=\"append\" target=\"tf-notifications\"><template>{$toasts}</template></turbo-stream>";
     }
 
     /** Get the component name */

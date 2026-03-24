@@ -1,4 +1,4 @@
-# ⚡ TFWire — The Turbo-Powered Component System
+# ⚡ TFWire — The Turbo-Powered Component System (v2.0.0)
 
 TFWire adalah **Livewire alternative** yang dibangun di atas Hotwire Turbo. Sistem komponen interaktif yang memungkinkan developer membangun UI dinamis menggunakan **PHP saja** — tanpa perlu menulis JavaScript.
 
@@ -35,7 +35,11 @@ TFWire adalah **Livewire alternative** yang dibangun di atas Hotwire Turbo. Sist
 27. [TurboStream API](#turbostream-api)
 28. [Integrasi Alpine.js](#integrasi-alpinejs)
 29. [Portabilitas (Laravel)](#portabilitas)
-30. [Method Reference](#method-reference)
+30. [TFWire Facade (v2.0)](#tfwire-facade)
+31. [Plugin System](#plugin-system)
+32. [Security & Encryption](#security--encryption)
+33. [Testing Komponen](#testing-komponen)
+34. [Method Reference](#method-reference)
 
 ---
 
@@ -129,6 +133,86 @@ Browser                          Server
 │  │  append()  │  │             │  →success()      │
 │  └────────────┘  │             │  →redirect()     │
 └──────────────────┘             └──────────────────┘
+
+---
+
+## TFWire Facade (v2.0)
+
+Mulai versi 2.0, TFWire memperkenalkan **Facade** sebagai entry point utama untuk interaksi dengan engine:
+
+```php
+use TheFramework\App\TFWire\TFWire;
+
+// Cek Versi
+echo TFWire::version(); // '2.0.0'
+
+// Register Plugin
+TFWire::plugin(\App\Plugins\MyCustomPlugin::class);
+
+// Inisialisasi Testing
+$test = TFWire::test(\App\Components\Counter::class);
+```
+
+---
+
+## Plugin System
+
+TFWire kini mendukung plugin untuk memperluas fungsionalitas komponen secara global.
+
+### 1. Membuat Plugin
+
+Buat class yang meng-extend `TFWirePlugin`:
+
+```php
+namespace App\Plugins;
+
+use TheFramework\App\TFWire\Plugin\TFWirePlugin;
+
+class MyPlugin extends TFWirePlugin {
+    public function boot(): void {
+        // Logika saat plugin dimuat
+    }
+}
+```
+
+### 2. Built-in Plugin: Rate Limiter
+
+TFWire menyertakan `RateLimiter` plugin bawaan untuk mencegah spamming pada action komponen:
+
+```php
+TFWire::plugin(\TheFramework\App\TFWire\Plugin\RateLimiter::class);
+```
+
+---
+
+## Security & Encryption
+
+TFWire 2.0 menyertakan lapisan keamanan **State Encryption** untuk mencegah tempering (perubahan paksa) state komponen di sisi client.
+
+- **StateEncryptor**: Mengenkripsi payload state menggunakan `APP_KEY`.
+- **Integrity Check**: Memastikan data yang dikirim balik dari browser tidak dimodifikasi.
+- **SecurityException**: Dilemparkan otomatis jika payload tidak valid atau corrupt.
+
+Semua proses ini berjalan di balik layar (transparent) pada `TFWireEngine`.
+
+---
+
+## Testing Komponen
+
+Anda dapat mengetes logika komponen secara terisolasi tanpa browser menggunakan Fluent Testing API:
+
+```php
+public function test_counter_works()
+{
+    TFWire::test(Counter::class)
+        ->set('count', 0)
+        ->call('increment')
+        ->assertSet('count', 1)
+        ->assertSee('1');
+}
+```
+
+> Selengkapnya lihat di [Dokumentasi Testing](testing.md).
 ```
 
 **Alur Kerja:**
@@ -144,7 +228,25 @@ Browser                          Server
 
 ## Membuat Komponen
 
-### Struktur Dasar
+### Via Artisan CLI (Rekomendasi)
+
+Gunakan perintah Artisan untuk membuat komponen beserta view-nya secara instan:
+
+```bash
+php artisan make:component Counter
+```
+
+Untuk komponen di sub-direktori:
+
+```bash
+php artisan make:component Admin/StatsCard
+```
+
+Perintah ini akan menghasilkan:
+- `app/Components/Counter.php`
+- `resources/views/component/counter.blade.php`
+
+### Struktur Dasar (Manual)
 
 Buat file PHP di folder `app/Components/` (atau lokasi lain yang autoloaded):
 

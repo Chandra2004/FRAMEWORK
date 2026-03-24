@@ -47,6 +47,52 @@ class BladeInit
             $resolver->register('blade', function () use ($filesystem, $cachePath) {
                 $compiler = new BladeCompiler($filesystem, $cachePath);
 
+                // --- 🚀 BLADE ICONS AUTO-DISCOVERY (ZERO CONFIG) 🚀 ---
+                if (class_exists(\BladeUI\Icons\Factory::class)) {
+                    $container = \TheFramework\App\Core\Container::getInstance();
+                    if (!$container->has(\BladeUI\Icons\Factory::class)) {
+                        $container->singleton(\BladeUI\Icons\Factory::class, function () use ($filesystem) {
+                            $manifestPath = storage_path('framework/cache/blade-icons.php');
+                            $manifest = new \BladeUI\Icons\IconsManifest($filesystem, $manifestPath);
+                            $factory = new \BladeUI\Icons\Factory($filesystem, $manifest);
+
+                            // Cari semua package blade-icons di vendor secara otomatis
+                            $installedJson = base_path('vendor/composer/installed.json');
+                            if (file_exists($installedJson)) {
+                                $data = json_decode(file_get_contents($installedJson), true);
+                                $packages = $data['packages'] ?? $data;
+                                foreach ($packages as $pkg) {
+                                    $pkgPath = base_path('vendor/' . $pkg['name']);
+                                    $svgPath = $pkgPath . '/resources/svg';
+                                    if (is_dir($svgPath)) {
+                                        // Cari tahu prefix-nya (biasanya dari nama package, e.g. blade-mdi -> mdi)
+                                        $nameParts = explode('/', $pkg['name']);
+                                        $basename = end($nameParts);
+                                        $prefix = str_replace(['blade-', '-icons'], '', $basename);
+                                        $factory->add($prefix, [
+                                            'path' => $svgPath,
+                                            'prefix' => $prefix,
+                                        ]);
+                                    }
+                                }
+                            }
+                            return $factory;
+                        });
+                    }
+
+                    // Daftarkan Custom Directive (@svg & @icon)
+                    // Catatan: Tanda merah di IDE Anda terjadi karena plugin VS Code tidak mengenali multi-parameter di custom directive.
+                    // Ini murni bug visual IDE, kompilasi aslinya berjalan normal.
+                    $compiler->directive('svg', function ($expression) {
+                        return "<?php echo svg($expression)->toHtml(); ?>";
+                    });
+                    
+                    $compiler->directive('icon', function ($expression) {
+                        return "<?php echo svg($expression)->toHtml(); ?>";
+                    });
+                }
+                // --------------------------------------------------------
+
                 // @csrf
                 $compiler->directive('csrf', function () {
                     return "<?php echo '<input type=\"hidden\" name=\"_token\" value=\"' . csrf_token() . '\">'; ?>";

@@ -1,0 +1,41 @@
+<?php
+
+namespace {{namespace}};
+
+use TheFramework\App\TFWire\Component;
+
+class {{class}} extends Component
+{
+    /**
+     * Properti publik otomatis tersedia di view.
+     * TFWire akan menyimpannya ke state secara otomatis.
+     */
+    public string $title = 'Halo dari Komponen {{class}}';
+
+    /**
+     * Dipanggil sekali saat komponen dimount pertama kali.
+     */
+    public function mount(): void
+    {
+        // Logika inisialisasi di sini
+    }
+
+    /**
+     * Tentukan view mana yang akan dirender.
+     * Gunakan dot notation (contoh: 'component.counter')
+     */
+    protected function view(): string
+    {
+        return '{{view_path}}';
+    }
+
+    /**
+     * Contoh aksi yang bisa dipanggil dari frontend:
+     * <button tf-wire:click="doSomething">Klik Saya</button>
+     */
+    public function doSomething()
+    {
+        $this->title = 'Aksi berhasil dilakukan!';
+        $this->flashSuccess('Data berhasil diperbarui!');
+    }
+}

@@ -1,0 +1,46 @@
+<?php
+
+namespace TheFramework\Console\Commands;
+
+use TheFramework\Console\BaseCommand;
+
+class {{class}} extends BaseCommand
+{
+    /**
+     * Nama perintah Artisan Anda.
+     * Contoh penggunaan: php artisan {{name}}
+     */
+    public function getName(): string
+    {
+        return '{{name}}';
+    }
+
+    /**
+     * Deskripsi yang muncul saat menjalankan php artisan list.
+     */
+    public function getDescription(): string
+    {
+        return '{{description}}';
+    }
+
+    /**
+     * Logika utama perintah Anda di sini.
+     */
+    public function handle(array $args): void
+    {
+        $this->info("Menjalankan perintah '{{name}}'...");
+
+        // Ambil argumen pertama: $args[0]
+        $firstArg = $args[0] ?? 'Lala';
+
+        // Tampilkan output cantik
+        $this->success("Halo, {$firstArg}! Perintah Anda berhasil dieksekusi.");
+        
+        $this->table(['Key', 'Value'], [
+            ['Status', 'Success ✅'],
+            ['Message', 'Framework All-In Paten!'],
+        ]);
+        
+        $this->line("Detail log lebih lanjut...", self::COLOR_GRAY);
+    }
+}

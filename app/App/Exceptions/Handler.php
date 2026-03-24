@@ -98,7 +98,10 @@ class Handler
             if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_COMPILE_ERROR, E_CORE_ERROR])) {
                 if (ob_get_length())
                     ob_end_clean();
-                http_response_code(500);
+                    
+                if (php_sapi_name() !== 'cli' && !headers_sent()) {
+                    http_response_code(500);
+                }
 
                 self::reportError($error['type'], $error['message'], $error['file'], $error['line']);
 

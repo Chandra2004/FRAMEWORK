@@ -326,6 +326,17 @@ class Collection implements ArrayAccess, IteratorAggregate, JsonSerializable, Co
         return $target;
     }
 
+    public function implode($value, $glue = null): string
+    {
+        $first = $this->first();
+
+        if (is_array($first) || is_object($first)) {
+            return implode($glue ?? '', $this->pluck($value)->all());
+        }
+
+        return implode($value ?? '', $this->items);
+    }
+
     public function toJson($options = 0): string
     {
         return json_encode($this->jsonSerialize(), $options);

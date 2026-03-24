@@ -106,16 +106,21 @@
             applyOptimistic(options.optimisticEl);
         }
 
+        // CSRF Token logic
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const headers = {
+            'Accept': 'text/vnd.turbo-stream.html',
+            'X-TFWire': '1',
+            'X-Requested-With': 'XMLHttpRequest',
+        };
+        if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken;
+
         try {
             const res = await fetch(ENDPOINT, {
                 method: 'POST',
                 body: formData,
                 signal: controller.signal,
-                headers: {
-                    'Accept': 'text/vnd.turbo-stream.html',
-                    'X-TFWire': '1',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
+                headers: headers,
             });
 
             // Turbo-Location redirect
@@ -134,6 +139,9 @@
             } else {
                 processStreams(html);
             }
+
+            // 🔥 Event untuk re-init library pihak ke-3 (Lucide, dll)
+            document.dispatchEvent(new CustomEvent('tfwire:dom-updated'));
 
         } catch (err) {
             if (err.name === 'AbortError') return;
@@ -710,12 +718,16 @@
                 }
 
                 // Execute inline scripts
-                (node.querySelectorAll?.('script') || []).forEach(script => {
-                    const ns = document.createElement('script');
-                    ns.textContent = script.textContent;
-                    document.body.appendChild(ns);
-                    ns.remove();
-                });
+                const inlineScripts = node.querySelectorAll?.('script') || [];
+                if (inlineScripts.length > 0) {
+                    inlineScripts.forEach(script => {
+                        const ns = document.createElement('script');
+                        ns.textContent = script.textContent;
+                        document.body.appendChild(ns);
+                        ns.remove();
+                    });
+                    document.dispatchEvent(new CustomEvent('tfwire:dom-updated'));
+                }
             }
         }
     });

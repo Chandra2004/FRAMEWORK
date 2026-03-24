@@ -31,7 +31,7 @@
             animation: blink 1s step-end infinite;
         }
 
-        @keyframes blink {
+        @@keyframes blink {
 
             from,
             to {

@@ -39,8 +39,8 @@
                     <!-- Header -->
                     <button class="accordion-header w-full px-5 py-3.5 flex items-center justify-between hover:bg-slate-800/40 transition-all">
                         <div class="flex items-center gap-3">
-                            <i data-lucide="{{ $icons[$catName] ?? 'circle' }}" class="w-4 h-4 text-slate-500 group-[.is-active]:text-{{ $colors[$catName] ?? 'purple' }}-400 transition-all"></i>
-                            <h3 class="text-[11px] font-black group-[.is-active]:text-white text-slate-400 tracking-widest uppercase">{{ $catName }}</h3>
+                            <i data-lucide="{{ $icons[(string)$catName] ?? 'circle' }}" class="w-4 h-4 text-slate-500 group-[.is-active]:text-{{ $colors[(string)$catName] ?? 'purple' }}-400 transition-all"></i>
+                            <h3 class="text-[11px] font-black group-[.is-active]:text-white text-slate-400 tracking-widest uppercase">{{ (string)$catName }}</h3>
                             <span class="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded font-bold">{{ count($routes) }}</span>
                         </div>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-slate-700 group-[.is-active]:rotate-180 transition-all duration-300"></i>
@@ -62,13 +62,14 @@
                                     @foreach($routes as $route)
                                         @php
                                             $method = strtoupper($route['method']);
-                                            $mColor = match ($method) {
-                                                'GET' => 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20',
-                                                'POST' => 'text-amber-500 bg-amber-500/10 border-amber-500/20',
-                                                'PUT', 'PATCH' => 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
-                                                'DELETE' => 'text-rose-500 bg-rose-500/10 border-rose-500/20',
-                                                default => 'text-slate-500 bg-slate-500/10 border-slate-500/20',
-                                            };
+                                            $mColor = 'text-slate-500 bg-slate-500/10 border-slate-500/20';
+                                            switch ($method) {
+                                                case 'GET': $mColor = 'text-cyan-500 bg-cyan-500/10 border-cyan-500/20'; break;
+                                                case 'POST': $mColor = 'text-amber-500 bg-amber-500/10 border-amber-500/20'; break;
+                                                case 'PUT':
+                                                case 'PATCH': $mColor = 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'; break;
+                                                case 'DELETE': $mColor = 'text-rose-500 bg-rose-500/10 border-rose-500/20'; break;
+                                            }
                                             
                                             // Split Handler
                                             $parts = explode('@', $route['handler']);
